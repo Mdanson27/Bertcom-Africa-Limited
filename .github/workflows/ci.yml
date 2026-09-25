@@ -233,7 +233,7 @@ jobs:
       - name: Install Backend & Frontend Dependencies
         run: |
           cd backend && uv sync --dev
-          cd ../frontend && npm ci
+          cd ../frontend && npm install --no-audit --no-fund
 
       - name: Export OpenAPI Schema
         working-directory: backend
