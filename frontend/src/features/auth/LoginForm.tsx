@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { Logo } from "@/components/common/Logo";
+import LoginMascot, { type MascotMode } from "@/components/auth/LoginMascot";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { ApiError } from "@/lib/api";
@@ -24,11 +25,25 @@ export const LoginForm: React.FC = () => {
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [activeField, setActiveField] = useState<MascotMode>("idle");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isRateLimited, setIsRateLimited] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const emailHelper = useMemo(() => {
+    if (activeField !== "email") return "Use the email linked to your Bertcom workspace.";
+    if (!email.trim()) return "Start with your work email.";
+    if (!email.includes("@")) return "Add the full email address.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return "Almost complete.";
+    return "Email looks good.";
+  }, [activeField, email]);
+
+  const passwordHelper =
+    activeField === "password"
+      ? "Private mode on — the assistant is looking away."
+      : "Your password stays hidden while you type.";
 
   const validateEmail = (val: string): boolean => {
     if (!val.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
@@ -108,21 +123,23 @@ export const LoginForm: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="mb-7 lg:hidden">
+      <div className="mb-6 lg:hidden">
         <Logo variant="full" className="h-14 w-48" />
       </div>
 
-      <div className="mb-7">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#DC1D2D]">
+      <div className="mb-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#DC1D2D]">
           Bertcom Africa
         </p>
-        <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#07233c] dark:text-white">
+        <h2 className="mt-2 text-[38px] font-semibold tracking-[-0.045em] text-[#07233c] dark:text-white">
           Welcome back.
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-[15px] text-muted-foreground">
           Sign in to your workspace.
         </p>
       </div>
+
+      <LoginMascot mode={activeField} email={email} />
 
       {serverError && (
         <Alert variant={isRateLimited ? "warning" : "destructive"} className="mb-5">
@@ -135,7 +152,7 @@ export const LoginForm: React.FC = () => {
         variant="outline"
         onClick={handleGoogleSignIn}
         disabled={!authConfigured}
-        className="h-11 w-full gap-3 rounded-xl border-[#d8e0ea] bg-white text-[#17324a] shadow-sm hover:bg-[#f8fafc] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+        className="h-12 w-full gap-3 rounded-xl border-[#d8e0ea] bg-white text-[#17324a] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f8fafc] hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
       >
         <GoogleMark />
         Continue with Google
@@ -143,7 +160,7 @@ export const LoginForm: React.FC = () => {
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           or
         </span>
         <div className="h-px flex-1 bg-border" />
@@ -157,15 +174,21 @@ export const LoginForm: React.FC = () => {
           label="Email"
           placeholder="name@bertcomafrica.com"
           value={email}
+          onFocus={() => setActiveField("email")}
           onChange={(e) => {
             setEmail(e.target.value);
             if (emailError) setEmailError(null);
             clearServerError();
           }}
-          onBlur={() => email && validateEmail(email)}
+          onBlur={() => {
+            if (email) validateEmail(email);
+            setActiveField("idle");
+          }}
           error={emailError ?? undefined}
+          helperText={emailError ? undefined : emailHelper}
           icon={<Mail className="h-4 w-4" />}
           autoComplete="username"
+          className="h-11 rounded-xl"
           required
         />
 
@@ -193,15 +216,21 @@ export const LoginForm: React.FC = () => {
             name="password"
             placeholder="Enter your password"
             value={password}
+            onFocus={() => setActiveField("password")}
             onChange={(e) => {
               setPassword(e.target.value);
               if (passwordError) setPasswordError(null);
               clearServerError();
             }}
-            onBlur={() => password && validatePassword(password)}
+            onBlur={() => {
+              if (password) validatePassword(password);
+              setActiveField("idle");
+            }}
             error={passwordError ?? undefined}
+            helperText={passwordError ? undefined : passwordHelper}
             showLeftLock={true}
             autoComplete="current-password"
+            className="h-11 rounded-xl"
             required
           />
         </div>
@@ -209,14 +238,14 @@ export const LoginForm: React.FC = () => {
         <Button
           type="submit"
           variant="primary"
-          className="mt-2 h-11 w-full rounded-xl bg-[#022E55] font-semibold shadow-lg shadow-[#022E55]/10 hover:bg-[#063d6e] dark:bg-[#DC1D2D] dark:hover:bg-[#ef3040]"
+          className="mt-2 h-12 w-full rounded-xl bg-[#022E55] font-semibold shadow-[0_12px_30px_rgba(2,46,85,0.16)] transition hover:-translate-y-0.5 hover:bg-[#063d6e] hover:shadow-[0_16px_34px_rgba(2,46,85,0.20)] dark:bg-[#DC1D2D] dark:hover:bg-[#ef3040]"
           loading={isLoading}
         >
           Sign in
         </Button>
       </form>
 
-      <div className="mt-7 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+      <div className="mt-6 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
         <Lock className="h-3 w-3" />
         Secure Bertcom access
       </div>
