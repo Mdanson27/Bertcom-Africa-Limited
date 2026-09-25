@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Building2, Lock, Mail, ShieldCheck } from "lucide-react";
+import { Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -8,8 +8,6 @@ import { Logo } from "@/components/common/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { ApiError } from "@/lib/api";
-
-const defaultEmail = "";
 
 const GoogleMark = () => (
   <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
@@ -24,7 +22,7 @@ export const LoginForm: React.FC = () => {
   const { login } = useAuth();
   const { showErrorToast, showWarningToast } = useCustomToast();
 
-  const [email, setEmail] = useState<string>(defaultEmail);
+  const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -34,7 +32,7 @@ export const LoginForm: React.FC = () => {
 
   const validateEmail = (val: string): boolean => {
     if (!val.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
-      setEmailError("Enter a valid work email address");
+      setEmailError("Enter a valid email address");
       return false;
     }
     setEmailError(null);
@@ -54,15 +52,13 @@ export const LoginForm: React.FC = () => {
     return true;
   };
 
-  const clearErrors = () => {
+  const clearServerError = () => {
     if (serverError) setServerError(null);
     setIsRateLimited(false);
   };
 
   const handleGoogleSignIn = () => {
-    setServerError(
-      "Google sign-in is ready in the interface and will activate as soon as the Bertcom Neon Auth project is linked."
-    );
+    setServerError("Google sign-in will activate when the Bertcom Neon Auth project is connected.");
     setIsRateLimited(false);
   };
 
@@ -74,7 +70,6 @@ export const LoginForm: React.FC = () => {
     if (!validateEmail(email) || !validatePassword(password)) return;
 
     setIsLoading(true);
-
     try {
       await login(email.trim(), password);
     } catch (err: unknown) {
@@ -93,11 +88,8 @@ export const LoginForm: React.FC = () => {
       setServerError(errorMsg);
       setIsRateLimited(is429);
 
-      if (is429) {
-        showWarningToast(errorMsg, "Rate Limited");
-      } else {
-        showErrorToast(errorMsg, "Authentication Error");
-      }
+      if (is429) showWarningToast(errorMsg, "Rate Limited");
+      else showErrorToast(errorMsg, "Authentication Error");
     } finally {
       setIsLoading(false);
     }
@@ -105,20 +97,19 @@ export const LoginForm: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="mb-8 lg:hidden">
+      <div className="mb-7 lg:hidden">
         <Logo variant="full" className="h-14 w-48" />
       </div>
 
-      <div className="mb-8">
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#022E55]/10 bg-[#022E55]/5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#022E55] dark:border-white/10 dark:bg-white/5 dark:text-white/70">
-          <Building2 className="h-3.5 w-3.5" />
-          Secure Bertcom workspace
-        </div>
-        <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[#07233c] dark:text-white">
+      <div className="mb-7">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#DC1D2D]">
+          Bertcom Africa
+        </p>
+        <h2 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-[#07233c] dark:text-white">
           Welcome back.
         </h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Sign in to access Bertcom opportunities, bids, projects and management intelligence.
+        <p className="mt-2 text-sm text-muted-foreground">
+          Sign in to your workspace.
         </p>
       </div>
 
@@ -140,8 +131,8 @@ export const LoginForm: React.FC = () => {
 
       <div className="my-6 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-          or use your password
+        <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          or
         </span>
         <div className="h-px flex-1 bg-border" />
       </div>
@@ -151,13 +142,13 @@ export const LoginForm: React.FC = () => {
           id="email"
           name="email"
           type="email"
-          label="Work email"
+          label="Email"
           placeholder="name@bertcomafrica.com"
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
             if (emailError) setEmailError(null);
-            clearErrors();
+            clearServerError();
           }}
           onBlur={() => email && validateEmail(email)}
           error={emailError ?? undefined}
@@ -179,9 +170,7 @@ export const LoginForm: React.FC = () => {
             <button
               type="button"
               className="text-xs font-semibold text-[#022E55] transition hover:text-[#DC1D2D] dark:text-white/75 dark:hover:text-white"
-              onClick={() =>
-                setServerError("Password reset will be handled securely through Bertcom Neon Auth.")
-              }
+              onClick={() => setServerError("Password reset will be enabled with Bertcom Neon Auth.")}
             >
               Forgot password?
             </button>
@@ -195,7 +184,7 @@ export const LoginForm: React.FC = () => {
             onChange={(e) => {
               setPassword(e.target.value);
               if (passwordError) setPasswordError(null);
-              clearErrors();
+              clearServerError();
             }}
             onBlur={() => password && validatePassword(password)}
             error={passwordError ?? undefined}
@@ -211,25 +200,13 @@ export const LoginForm: React.FC = () => {
           className="mt-2 h-11 w-full rounded-xl bg-[#022E55] font-semibold shadow-lg shadow-[#022E55]/10 hover:bg-[#063d6e] dark:bg-[#DC1D2D] dark:hover:bg-[#ef3040]"
           loading={isLoading}
         >
-          Sign in to Bertcom OS
+          Sign in
         </Button>
       </form>
 
-      <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#022E55]/10 bg-[#f7f9fc] p-4 dark:border-white/10 dark:bg-white/[0.03]">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#022E55] text-white dark:bg-[#DC1D2D]">
-          <ShieldCheck className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-xs font-semibold text-foreground">Private business workspace</p>
-          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
-            Access is controlled by Bertcom Africa. Your account permissions determine the modules and data you can see.
-          </p>
-        </div>
-      </div>
-
       <div className="mt-7 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
         <Lock className="h-3 w-3" />
-        Secure access · Bertcom Africa Ltd
+        Secure Bertcom access
       </div>
     </div>
   );
