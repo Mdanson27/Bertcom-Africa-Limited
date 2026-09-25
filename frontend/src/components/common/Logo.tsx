@@ -1,5 +1,4 @@
 import React from "react";
-import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -13,44 +12,60 @@ export const Logo: React.FC<LogoProps> = ({
   className,
   asLink = false,
 }) => {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const logoSrc = `${import.meta.env.BASE_URL}assets/images/bertcom-logo.png`;
 
-  const fullLogo = isDark
-    ? "/assets/images/granite-logo-dark.png"
-    : "/assets/images/granite-logo-light.png";
-  const iconLogo = isDark
-    ? "/assets/images/granite-logo.png"
-    : "/assets/images/granite-logo.png";
+  const fullLogo = (
+    <span
+      className={cn(
+        "relative inline-block h-12 w-[166px] overflow-hidden rounded-md bg-white",
+        className
+      )}
+      aria-label="Bertcom Africa"
+    >
+      <img
+        src={logoSrc}
+        alt="Bertcom Africa"
+        className="pointer-events-none absolute max-w-none select-none"
+        style={{ width: 250, left: -38, top: -102 }}
+      />
+    </span>
+  );
+
+  const iconLogo = (
+    <span
+      className={cn(
+        "relative inline-block h-10 w-10 overflow-hidden rounded-md bg-white",
+        className
+      )}
+      aria-label="Bertcom Africa"
+    >
+      <img
+        src={logoSrc}
+        alt="Bertcom Africa"
+        className="pointer-events-none absolute max-w-none select-none"
+        style={{ width: 250, left: -38, top: -109 }}
+      />
+    </span>
+  );
 
   const content =
-    variant === "responsive" ? (
-      <div className="flex items-center">
-        <img
-          src={fullLogo}
-          alt="Granite"
-          className={cn("h-6 w-auto block group-data-[collapsible=icon]:hidden", className)}
-        />
-        <img
-          src={iconLogo}
-          alt="FastAPI"
-          className={cn("size-5 hidden group-data-[collapsible=icon]:block", className)}
-        />
-      </div>
-    ) : (
-      <img
-        src={variant === "full" ? fullLogo : iconLogo}
-        alt="FastAPI"
-        className={cn(variant === "full" ? "h-7 w-auto" : "h-6 w-6", className)}
-      />
-    );
+    variant === "icon"
+      ? iconLogo
+      : variant === "responsive"
+        ? (
+            <>
+              <span className="hidden sm:inline-flex">{fullLogo}</span>
+              <span className="inline-flex sm:hidden">{iconLogo}</span>
+            </>
+          )
+        : fullLogo;
 
   if (!asLink) {
     return <div className="inline-flex items-center">{content}</div>;
   }
 
   return (
-    <a href="/" className="inline-flex items-center">
+    <a href={import.meta.env.BASE_URL} className="inline-flex items-center" aria-label="Bertcom Africa home">
       {content}
     </a>
   );
