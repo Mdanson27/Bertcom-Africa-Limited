@@ -6,13 +6,18 @@ class AppSettings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str = "default_secret_key_override_in_env"
-    APP_NAME: str = "Enterprise Platform"
+    APP_NAME: str = "Bertcom Africa Business OS"
     APP_BASE_URL: str = "http://localhost:8000"
 
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://app_user:secure_dev_password@localhost:5432/app_db"
+    DATABASE_URL_UNPOOLED: str | None = None
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
+
+    # ── Neon Managed Better Auth ─────────────────────────────────────────────
+    NEON_AUTH_BASE_URL: str = ""
+    NEON_AUTH_JWKS_URL: str = ""
 
     # ── Cache (Valkey) ────────────────────────────────────────────────────────
     VALKEY_HOST: str = "localhost"
@@ -32,7 +37,7 @@ class AppSettings(BaseSettings):
     SMTP_PASSWORD: str | None = None
     SMTP_TLS: bool = True
     EMAILS_FROM_ADDRESS: str = "noreply@platform.internal"
-    EMAILS_FROM_NAME: str = "Enterprise Platform"
+    EMAILS_FROM_NAME: str = "Bertcom Africa Business OS"
 
     # ── Initial Superuser Seeding ─────────────────────────────────────────────
     FIRST_SUPERUSER_EMAIL: str = "admin@platform.internal"
