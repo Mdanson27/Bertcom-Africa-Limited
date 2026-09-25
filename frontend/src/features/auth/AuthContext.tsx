@@ -1,96 +1,156 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { client } from "@/client/client.gen";
-import { apiV1AuthLogoutLogout, apiV1UsersMeGetMe } from "@/client/sdk.gen";
-import type { TokenResponse, UserRead } from "@/client/types.gen";
-import "@/lib/api"; // Initialize client config
+import { ApiError } from "@/lib/api";
+import {
+  getAuthCallbackUrl,
+  getNeonAuthClient,
+  isNeonAuthConfigured,
+} from "@/lib/neonAuth";
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+  is_superuser: boolean;
+  role: string;
+  image?: string | null;
+}
 
 interface AuthContextType {
-  user: UserRead | null;
+  user: AuthUser | null;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  authConfigured: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function normalizeRole(role: unknown): string {
+  if (Array.isArray(role)) {
+    return role.map(String).join(",");
+  }
+  return typeof role === "string" && role ? role : "authenticated";
+}
+
+function mapNeonUser(raw: Record<string, unknown>): AuthUser {
+  const role = normalizeRole(raw.role);
+  const roles = role.split(",").map((item) => item.trim().toLowerCase());
+
+  return {
+    id: String(raw.id || ""),
+    email: String(raw.email || ""),
+    full_name: String(raw.name || raw.email || "Bertcom User"),
+    is_active: !Boolean(raw.banned),
+    is_superuser: roles.some((item) => ["admin", "owner", "superadmin"].includes(item)),
+    role,
+    image: typeof raw.image === "string" ? raw.image : null,
+  };
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserRead | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("access_token"));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  const clearSession = useCallback(() => {
+    localStorage.removeItem("access_token");
+    setToken(null);
+    setUser(null);
+  }, []);
+
   const refreshProfile = useCallback(async () => {
-    const currentToken = localStorage.getItem("access_token");
-    if (!currentToken) {
-      setUser(null);
+    if (!isNeonAuthConfigured) {
+      clearSession();
       setIsLoading(false);
       return;
     }
 
     try {
-      const response = await apiV1UsersMeGetMe();
-      if (response.data) {
-        setUser(response.data as UserRead);
+      const authClient = getNeonAuthClient();
+      const sessionResult = await authClient.getSession();
+
+      if (sessionResult.error || !sessionResult.data?.session || !sessionResult.data?.user) {
+        clearSession();
+        return;
+      }
+
+      setUser(mapNeonUser(sessionResult.data.user as unknown as Record<string, unknown>));
+
+      const tokenResult = await authClient.token();
+      const jwt = tokenResult.data?.token || null;
+
+      if (jwt) {
+        localStorage.setItem("access_token", jwt);
+        setToken(jwt);
       } else {
-        // Token invalid / expired
         localStorage.removeItem("access_token");
         setToken(null);
-        setUser(null);
       }
     } catch {
-      localStorage.removeItem("access_token");
-      setToken(null);
-      setUser(null);
+      clearSession();
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [clearSession]);
 
   useEffect(() => {
-    refreshProfile();
+    void refreshProfile();
   }, [refreshProfile]);
 
   const login = async (email: string, password: string) => {
+    if (!isNeonAuthConfigured) {
+      throw new ApiError("Bertcom authentication is not configured yet.");
+    }
+
     setIsLoading(true);
     try {
-      const res = await client.post({
-        url: "/api/v1/auth/login",
-        body: {
-          email,
-          password,
-        },
-      });
+      const result = await getNeonAuthClient().signIn.email({ email, password });
 
-      const data = res.data as TokenResponse | undefined;
-      if (data?.access_token) {
-        const accessToken = data.access_token;
-        localStorage.setItem("access_token", accessToken);
-        setToken(accessToken);
-        await refreshProfile();
-      } else if (res.error) {
-        throw res.error;
-      } else {
-        throw new Error("Incorrect email or password. Please verify your credentials and try again.");
+      if (result.error) {
+        throw new ApiError(result.error.message || "Incorrect email or password.");
       }
+
+      await refreshProfile();
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async () => {
+    if (!isNeonAuthConfigured) {
+      throw new ApiError("Bertcom authentication is not configured yet.");
+    }
+
+    const result = await getNeonAuthClient().signIn.social({
+      provider: "google",
+      callbackURL: getAuthCallbackUrl(),
+    });
+
+    if (result?.error) {
+      throw new ApiError(result.error.message || "Google sign-in could not be started.");
     }
   };
 
   const logout = async () => {
     try {
-      await apiV1AuthLogoutLogout();
-    } catch {
-      // Best effort cleanup
+      if (isNeonAuthConfigured) {
+        await getNeonAuthClient().signOut();
+      }
     } finally {
-      localStorage.removeItem("access_token");
-      setToken(null);
-      setUser(null);
+      clearSession();
     }
   };
+
+  const roleNames = (user?.role || "").split(",").map((item) => item.trim().toLowerCase());
+  const isAdmin = Boolean(
+    user?.is_superuser || roleNames.some((item) => ["admin", "owner", "superadmin"].includes(item)),
+  );
 
   return (
     <AuthContext.Provider
@@ -98,9 +158,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         isLoading,
-        isAuthenticated: !!token && !!user,
-        isAdmin: !!user?.is_superuser,
+        isAuthenticated: !!user,
+        isAdmin,
+        authConfigured: isNeonAuthConfigured,
         login,
+        loginWithGoogle,
         logout,
         refreshProfile,
       }}
