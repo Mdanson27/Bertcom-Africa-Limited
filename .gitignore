@@ -1,5 +1,5 @@
 # ==============================================================================
-# Bertcom Africa Business Os — Git Ignore Rules
+# Bertcom Africa Business OS — Git Ignore Rules
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -26,8 +26,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -148,4 +148,3 @@ PROJECT_IMPLEMENTATION_MANUAL.md
 *project_implemenation*
 project_implementation*
 project_implemenation*
-
