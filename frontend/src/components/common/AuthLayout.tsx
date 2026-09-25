@@ -1,5 +1,6 @@
 import React from "react";
 import { Appearance } from "@/components/common/Appearance";
+import { Logo } from "@/components/common/Logo";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -16,6 +17,12 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
           <div className="pointer-events-none absolute -left-36 top-24 h-80 w-80 rounded-full bg-[#DC1D2D]/16 blur-3xl" />
           <div className="pointer-events-none absolute right-[-120px] bottom-[-40px] h-96 w-96 rounded-full bg-[#2f78b4]/14 blur-3xl" />
 
+          <div className="relative z-10">
+            <div className="inline-flex rounded-[24px] bg-white px-5 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
+              <Logo variant="full" className="h-11 w-44" />
+            </div>
+          </div>
+
           <div className="relative z-10 flex flex-1 items-center">
             <div>
               <div className="bertcom-gradient-word text-[clamp(58px,6vw,86px)] font-semibold leading-none tracking-[-0.055em]">
@@ -29,7 +36,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
 
           <div className="relative z-10 flex items-center justify-between border-t border-white/10 pt-6 text-[11px] text-white/42">
             <span>© {year} Bertcom Africa Ltd</span>
-            <span>Technology by AutoMinds Africa</span>
+            <span>Powered by AutoMinds Africa</span>
           </div>
         </section>
 
@@ -48,7 +55,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
           </div>
 
           <div className="relative z-10 px-6 pb-7 text-center text-[11px] text-muted-foreground lg:hidden">
-            © {year} Bertcom Africa Ltd · AutoMinds Africa
+            © {year} Bertcom Africa Ltd · Powered by AutoMinds Africa
           </div>
         </section>
       </div>
