@@ -1,5 +1,5 @@
 [Unit]
-Description=TimescaleDB PostgreSQL Database - Bertcom Africa Business Os
+Description=TimescaleDB PostgreSQL Database - Bertcom Africa Business OS
 After=network-online.target local-fs.target
 
 [Container]
@@ -8,7 +8,7 @@ Image=docker.io/timescale/timescaledb-ha:pg16
 Network=bertcom-africa-business-os.network
 Volume=bertcom-africa-business-os-postgres.volume:/home/postgres/pgdata/data:Z
 Environment=POSTGRES_USER=bertcom_user
-Environment=POSTGRES_PASSWORD=Zimbarent@2026
+EnvironmentFile=/etc/bertcom-africa-business-os/postgres.env
 Environment=POSTGRES_DB=bertcom_db
 PublishPort=5432:5432
 AutoUpdate=registry
