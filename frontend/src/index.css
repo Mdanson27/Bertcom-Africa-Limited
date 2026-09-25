@@ -95,3 +95,60 @@
     color: hsl(var(--foreground));
   }
 }
+
+
+@keyframes bertcom-ribbon-shift {
+  0% {
+    background-position: 0% 50%;
+    transform: translateX(0) scaleX(1);
+  }
+  50% {
+    background-position: 100% 50%;
+    transform: translateX(8px) scaleX(1.035);
+  }
+  100% {
+    background-position: 0% 50%;
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+@keyframes bertcom-mascot-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1deg);
+  }
+}
+
+@keyframes bertcom-brand-glow {
+  0%,
+  100% {
+    text-shadow: 0 10px 35px rgba(0, 0, 0, 0.16);
+  }
+  50% {
+    text-shadow: 0 14px 42px rgba(220, 29, 45, 0.24);
+  }
+}
+
+.bertcom-brand-word {
+  animation: bertcom-brand-glow 5.5s ease-in-out infinite;
+}
+
+.bertcom-brand-ribbon {
+  background: linear-gradient(
+    90deg,
+    rgba(220, 29, 45, 0.96) 0%,
+    rgba(255, 255, 255, 0.82) 24%,
+    rgba(59, 137, 194, 0.94) 48%,
+    rgba(2, 46, 85, 0.98) 72%,
+    rgba(220, 29, 45, 0.96) 100%
+  );
+  background-size: 230% 100%;
+  animation: bertcom-ribbon-shift 7s ease-in-out infinite;
+}
+
+.bertcom-mascot-float {
+  animation: bertcom-mascot-float 4.4s ease-in-out infinite;
+}
