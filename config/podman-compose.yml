@@ -1,6 +1,6 @@
 # ===========================================================================
 # Development mesh – rootless Podman / Docker Compose
-# Generated dynamically by Copier for Bertcom Africa Business Os
+# Generated dynamically by Copier for Bertcom Africa Business OS
 # ===========================================================================
 
 name: bertcom-africa-business-os
@@ -22,7 +22,7 @@ services:
       - "6432"
     environment:
       - DB_USER=bertcom_user
-      - DB_PASSWORD=Zimbarent@2026
+      - DB_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - DB_HOST=postgres-db
       - DB_PORT=5432
       - DB_NAME=bertcom_db
@@ -117,16 +117,16 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONIOENCODING=utf-8
-      - DATABASE_URL=postgresql+asyncpg://bertcom_user:Zimbarent@2026@postgres-db:5432/bertcom_db
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
       
       - VALKEY_HOST=valkey-cache
       - VALKEY_PORT=6379
       
       - ENVIRONMENT=development
       - APP_BASE_URL=http://localhost:8000
-      - SECRET_KEY=${SECRET_KEY:-f200c54d582f2ed71eebd697958d06bce8689c0c85fe71b789944c5de476b3bc}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - FIRST_SUPERUSER_EMAIL=${FIRST_SUPERUSER_EMAIL:-ddaannson@gmail.com}
-      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD:-Zimbarent@2026}
+      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD:?FIRST_SUPERUSER_PASSWORD is required}
       - FIRST_SUPERUSER_NAME=${FIRST_SUPERUSER_NAME:-AUTOMINDS AFRICA}
       - DOCS_UI=scalar
       - RATE_LIMIT_ENABLED=true
@@ -216,7 +216,6 @@ services:
       - NODE_ENV=development
       - VITE_API_URL=
       - VITE_INITIAL_ADMIN_EMAIL=${FIRST_SUPERUSER_EMAIL:-ddaannson@gmail.com}
-      - VITE_INITIAL_ADMIN_PASSWORD=${FIRST_SUPERUSER_PASSWORD:-Zimbarent@2026}
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
     networks:
       - platform_net
@@ -235,7 +234,7 @@ services:
     environment:
       - PGDATA=/var/lib/postgresql/data
       - POSTGRES_USER=bertcom_user
-      - POSTGRES_PASSWORD=Zimbarent@2026
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       - POSTGRES_DB=bertcom_db
     volumes:
       - postgres_data:/var/lib/postgresql/data:Z
