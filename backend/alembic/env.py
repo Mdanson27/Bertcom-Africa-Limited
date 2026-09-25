@@ -37,7 +37,7 @@ config = context.config
 
 # Override sqlalchemy.url from the DATABASE_URL environment variable.
 # This keeps credentials out of alembic.ini entirely.
-database_url = os.environ.get("DATABASE_URL", "")
+database_url = os.environ.get("DATABASE_URL_UNPOOLED") or os.environ.get("DATABASE_URL", "")
 if database_url:
     # asyncpg driver doesn't work with Alembic's sync engine; swap it out.
     sync_url = database_url.replace(

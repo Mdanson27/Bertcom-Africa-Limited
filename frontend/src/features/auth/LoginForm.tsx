@@ -19,7 +19,7 @@ const GoogleMark = () => (
 );
 
 export const LoginForm: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle, authConfigured } = useAuth();
   const { showErrorToast, showWarningToast } = useCustomToast();
 
   const [email, setEmail] = useState<string>("");
@@ -57,9 +57,20 @@ export const LoginForm: React.FC = () => {
     setIsRateLimited(false);
   };
 
-  const handleGoogleSignIn = () => {
-    setServerError("Google sign-in will activate when the Bertcom Neon Auth project is connected.");
+  const handleGoogleSignIn = async () => {
+    setServerError(null);
     setIsRateLimited(false);
+
+    try {
+      await loginWithGoogle();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "Unable to start Google sign-in. Please try again.";
+      setServerError(message);
+      showErrorToast(message, "Authentication Error");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,6 +134,7 @@ export const LoginForm: React.FC = () => {
         type="button"
         variant="outline"
         onClick={handleGoogleSignIn}
+        disabled={!authConfigured}
         className="h-11 w-full gap-3 rounded-xl border-[#d8e0ea] bg-white text-[#17324a] shadow-sm hover:bg-[#f8fafc] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
       >
         <GoogleMark />
@@ -170,7 +182,7 @@ export const LoginForm: React.FC = () => {
             <button
               type="button"
               className="text-xs font-semibold text-[#022E55] transition hover:text-[#DC1D2D] dark:text-white/75 dark:hover:text-white"
-              onClick={() => setServerError("Password reset will be enabled with Bertcom Neon Auth.")}
+              onClick={() => setServerError("Password reset will be available from Bertcom account support.")}
             >
               Forgot password?
             </button>

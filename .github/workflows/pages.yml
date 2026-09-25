@@ -36,12 +36,13 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Build frontend
         working-directory: frontend
         env:
           VITE_BASE_PATH: /Bertcom-Africa-Limited/
+          VITE_NEON_AUTH_URL: ${{ vars.VITE_NEON_AUTH_URL }}
         run: npm run build
 
       - name: Upload Pages artifact
