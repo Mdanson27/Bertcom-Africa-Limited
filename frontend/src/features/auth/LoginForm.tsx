@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Mail, Lock } from "lucide-react";
+import { Building2, Lock, Mail, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -9,33 +9,32 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { ApiError } from "@/lib/api";
 
-const defaultEmail = import.meta.env.VITE_INITIAL_ADMIN_EMAIL || "admin@platform.internal";
-const defaultPassword = import.meta.env.VITE_INITIAL_ADMIN_PASSWORD || "";
+const defaultEmail = "";
+
+const GoogleMark = () => (
+  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
+    <path fill="#4285F4" d="M21.6 12.227c0-.709-.064-1.391-.182-2.045H12v3.868h5.382a4.6 4.6 0 0 1-1.995 3.018v2.509h3.227c1.89-1.741 2.986-4.305 2.986-7.35Z" />
+    <path fill="#34A853" d="M12 22c2.7 0 4.964-.895 6.614-2.423l-3.227-2.509c-.895.6-2.041.955-3.387.955-2.605 0-4.809-1.759-5.595-4.123H3.07v2.591A9.997 9.997 0 0 0 12 22Z" />
+    <path fill="#FBBC05" d="M6.405 13.9A6.017 6.017 0 0 1 6.09 12c0-.659.114-1.3.315-1.9V7.509H3.07A9.997 9.997 0 0 0 2 12c0 1.614.386 3.141 1.07 4.491L6.405 13.9Z" />
+    <path fill="#EA4335" d="M12 5.977c1.468 0 2.786.504 3.823 1.491l2.864-2.864C16.959 2.995 14.695 2 12 2a9.997 9.997 0 0 0-8.93 5.509L6.405 10.1C7.191 7.736 9.395 5.977 12 5.977Z" />
+  </svg>
+);
 
 export const LoginForm: React.FC = () => {
   const { login } = useAuth();
   const { showErrorToast, showWarningToast } = useCustomToast();
 
   const [email, setEmail] = useState<string>(defaultEmail);
-  const [password, setPassword] = useState<string>(defaultPassword);
-
-  // Field validation errors
+  const [password, setPassword] = useState<string>("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-
-  // Server error banner
   const [serverError, setServerError] = useState<string | null>(null);
   const [isRateLimited, setIsRateLimited] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const validateEmail = (val: string): boolean => {
-    if (!val.trim()) {
-      setEmailError("Invalid email address");
-      return false;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(val.trim())) {
-      setEmailError("Invalid email address");
+    if (!val.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+      setEmailError("Enter a valid work email address");
       return false;
     }
     setEmailError(null);
@@ -55,40 +54,16 @@ export const LoginForm: React.FC = () => {
     return true;
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setEmail(val);
-    if (emailError) {
-      setEmailError(null);
-    }
-    if (serverError) {
-      setServerError(null);
-      setIsRateLimited(false);
-    }
+  const clearErrors = () => {
+    if (serverError) setServerError(null);
+    setIsRateLimited(false);
   };
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPassword(val);
-    if (passwordError) {
-      setPasswordError(null);
-    }
-    if (serverError) {
-      setServerError(null);
-      setIsRateLimited(false);
-    }
-  };
-
-  const handleEmailBlur = () => {
-    if (email) {
-      validateEmail(email);
-    }
-  };
-
-  const handlePasswordBlur = () => {
-    if (password) {
-      validatePassword(password);
-    }
+  const handleGoogleSignIn = () => {
+    setServerError(
+      "Google sign-in is ready in the interface and will activate as soon as the Bertcom Neon Auth project is linked."
+    );
+    setIsRateLimited(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,23 +71,14 @@ export const LoginForm: React.FC = () => {
     setServerError(null);
     setIsRateLimited(false);
 
-    const isEmailValid = validateEmail(email);
-    const isPasswordValid = validatePassword(password);
-
-    if (!isEmailValid || !isPasswordValid) {
-      return;
-    }
+    if (!validateEmail(email) || !validatePassword(password)) return;
 
     setIsLoading(true);
 
     try {
       await login(email.trim(), password);
     } catch (err: unknown) {
-      if (import.meta.env.DEV) {
-        console.debug("[LoginForm] Authentication failed:", err);
-      }
-
-      let errorMsg = "Unable to communicate with the server. Please try again later";
+      let errorMsg = "Unable to sign in. Please try again.";
       let is429 = false;
 
       if (err instanceof ApiError) {
@@ -138,48 +104,68 @@ export const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full">
-      {/* Header Branding */}
-      <div className="flex flex-col items-center gap-2 text-center">
-        <div className="lg:hidden mb-2">
-          <Logo variant="icon" className="h-10 w-10" />
+    <div className="w-full">
+      <div className="mb-8 lg:hidden">
+        <Logo variant="full" className="h-14 w-48" />
+      </div>
+
+      <div className="mb-8">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#022E55]/10 bg-[#022E55]/5 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#022E55] dark:border-white/10 dark:bg-white/5 dark:text-white/70">
+          <Building2 className="h-3.5 w-3.5" />
+          Secure Bertcom workspace
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Login to your account
-        </h1>
-        <p className="text-xs text-muted-foreground">
-          Enter your credentials below to access the platform.
+        <h2 className="text-3xl font-semibold tracking-[-0.035em] text-[#07233c] dark:text-white">
+          Welcome back.
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Sign in to access Bertcom opportunities, bids, projects and management intelligence.
         </p>
       </div>
 
-      {/* Server Level Alert Banner */}
       {serverError && (
-        <Alert variant={isRateLimited ? "warning" : "destructive"}>
+        <Alert variant={isRateLimited ? "warning" : "destructive"} className="mb-5">
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       )}
 
-      {/* Form Fields */}
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        {/* Email Field */}
-        <div>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            label="Email"
-            placeholder="user@example.com"
-            value={email}
-            onChange={handleEmailChange}
-            onBlur={handleEmailBlur}
-            error={emailError ?? undefined}
-            icon={<Mail className="h-4 w-4" />}
-            autoComplete="username"
-            required
-          />
-        </div>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleGoogleSignIn}
+        className="h-11 w-full gap-3 rounded-xl border-[#d8e0ea] bg-white text-[#17324a] shadow-sm hover:bg-[#f8fafc] dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+      >
+        <GoogleMark />
+        Continue with Google
+      </Button>
 
-        {/* Password Field */}
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          or use your password
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          label="Work email"
+          placeholder="name@bertcomafrica.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) setEmailError(null);
+            clearErrors();
+          }}
+          onBlur={() => email && validateEmail(email)}
+          error={emailError ?? undefined}
+          icon={<Mail className="h-4 w-4" />}
+          autoComplete="username"
+          required
+        />
+
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label
@@ -192,22 +178,26 @@ export const LoginForm: React.FC = () => {
             </label>
             <button
               type="button"
+              className="text-xs font-semibold text-[#022E55] transition hover:text-[#DC1D2D] dark:text-white/75 dark:hover:text-white"
               onClick={() =>
-                alert("Password reset instructions dispatched to registered email.")
+                setServerError("Password reset will be handled securely through Bertcom Neon Auth.")
               }
-              className="text-xs font-medium text-primary hover:underline underline-offset-4 transition-colors"
             >
-              Forgot your password?
+              Forgot password?
             </button>
           </div>
 
           <PasswordInput
             id="password"
             name="password"
-            placeholder="•••••••••"
+            placeholder="Enter your password"
             value={password}
-            onChange={handlePasswordChange}
-            onBlur={handlePasswordBlur}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (passwordError) setPasswordError(null);
+              clearErrors();
+            }}
+            onBlur={() => password && validatePassword(password)}
             error={passwordError ?? undefined}
             showLeftLock={true}
             autoComplete="current-password"
@@ -215,30 +205,32 @@ export const LoginForm: React.FC = () => {
           />
         </div>
 
-        {/* Submit Button */}
         <Button
           type="submit"
           variant="primary"
-          className="w-full mt-2 font-medium"
+          className="mt-2 h-11 w-full rounded-xl bg-[#022E55] font-semibold shadow-lg shadow-[#022E55]/10 hover:bg-[#063d6e] dark:bg-[#DC1D2D] dark:hover:bg-[#ef3040]"
           loading={isLoading}
         >
-          Log In
+          Sign in to Bertcom OS
         </Button>
-
-        {/* Signup Microcopy */}
-        <div className="mt-2 text-center text-xs text-muted-foreground">
-          Don't have an account yet?{" "}
-          <button
-            type="button"
-            onClick={() =>
-              alert("Self-registration is managed by platform administrator.")
-            }
-            className="text-primary font-medium hover:underline underline-offset-4 cursor-pointer"
-          >
-            Sign up
-          </button>
-        </div>
       </form>
+
+      <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#022E55]/10 bg-[#f7f9fc] p-4 dark:border-white/10 dark:bg-white/[0.03]">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#022E55] text-white dark:bg-[#DC1D2D]">
+          <ShieldCheck className="h-4 w-4" />
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-foreground">Private business workspace</p>
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            Access is controlled by Bertcom Africa. Your account permissions determine the modules and data you can see.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-7 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <Lock className="h-3 w-3" />
+        Secure access · Bertcom Africa Ltd
+      </div>
     </div>
   );
 };

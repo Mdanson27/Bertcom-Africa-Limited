@@ -17,7 +17,7 @@ export const Logo: React.FC<LogoProps> = ({
   const fullLogo = (
     <span
       className={cn(
-        "relative inline-block h-12 w-[166px] overflow-hidden rounded-md bg-white",
+        "relative inline-flex h-16 w-56 items-center justify-center overflow-hidden",
         className
       )}
       aria-label="Bertcom Africa"
@@ -25,8 +25,7 @@ export const Logo: React.FC<LogoProps> = ({
       <img
         src={logoSrc}
         alt="Bertcom Africa"
-        className="pointer-events-none absolute max-w-none select-none"
-        style={{ width: 250, left: -38, top: -102 }}
+        className="h-full w-full scale-[1.9] object-contain object-center"
       />
     </span>
   );
@@ -34,7 +33,7 @@ export const Logo: React.FC<LogoProps> = ({
   const iconLogo = (
     <span
       className={cn(
-        "relative inline-block h-10 w-10 overflow-hidden rounded-md bg-white",
+        "relative inline-flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm",
         className
       )}
       aria-label="Bertcom Africa"
@@ -42,8 +41,7 @@ export const Logo: React.FC<LogoProps> = ({
       <img
         src={logoSrc}
         alt="Bertcom Africa"
-        className="pointer-events-none absolute max-w-none select-none"
-        style={{ width: 250, left: -38, top: -109 }}
+        className="h-full w-full scale-[2.7] object-contain object-left"
       />
     </span>
   );
@@ -65,7 +63,11 @@ export const Logo: React.FC<LogoProps> = ({
   }
 
   return (
-    <a href={import.meta.env.BASE_URL} className="inline-flex items-center" aria-label="Bertcom Africa home">
+    <a
+      href={import.meta.env.BASE_URL}
+      className="inline-flex items-center"
+      aria-label="Bertcom Africa home"
+    >
       {content}
     </a>
   );
