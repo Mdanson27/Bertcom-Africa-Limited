@@ -15,7 +15,8 @@
     "lucide-react": "^1.33.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "@neondatabase/neon-js": "latest"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.99.0",
