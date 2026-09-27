@@ -22,6 +22,7 @@ class AppSettings(BaseSettings):
     BERTCOM_ADMIN_EMAILS: str = "ddaannson@gmail.com,automindsafrica@gmail.com"
 
     # ── Cache (Valkey) ────────────────────────────────────────────────────────
+    VALKEY_URL: str | None = None
     VALKEY_HOST: str = "localhost"
     VALKEY_PORT: int = 6379
 
@@ -72,6 +73,12 @@ class AppSettings(BaseSettings):
         url = url.replace("sslmode=require", "ssl=require")
         url = url.replace("&channel_binding=require", "").replace("?channel_binding=require&", "?")
         return url
+
+    @property
+    def valkey_url(self) -> str:
+        if self.VALKEY_URL:
+            return self.VALKEY_URL
+        return f"redis://{self.VALKEY_HOST}:{self.VALKEY_PORT}/0"
 
     @property
     def cors_origins(self) -> list[str]:
