@@ -16,7 +16,7 @@ services:
     dockerContext: ./backend
     dockerCommand: sh /app/scripts/start_render.sh
     healthCheckPath: /health/live
-    autoDeployTrigger: commit
+    autoDeployTrigger: checksPass
     envVars:
       - key: ENVIRONMENT
         value: production
