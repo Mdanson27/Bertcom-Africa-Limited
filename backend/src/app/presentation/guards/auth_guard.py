@@ -50,7 +50,7 @@ class JWTAuthGuard:
                 if settings.NEON_AUTH_JWKS_URL
                 else decode_access_token(token)
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise NotAuthorizedException("Invalid or expired session token.") from exc
 
         user_id: str | None = payload.get("sub")
