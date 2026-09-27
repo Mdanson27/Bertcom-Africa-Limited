@@ -69,9 +69,8 @@ class HealthController(Controller):
         try:
             import valkey.asyncio as valkey
 
-            v_client = valkey.Valkey(
-                host=settings.VALKEY_HOST,
-                port=settings.VALKEY_PORT,
+            v_client = valkey.from_url(
+                settings.valkey_url,
                 socket_timeout=1.5,
             )
             pong = await v_client.ping()
