@@ -26,9 +26,9 @@ export const DashboardPage: React.FC = () => {
 
     try {
       const readyRes = await healthReadyGetReadiness();
-      const deps = readyRes.data?.dependencies;
-      setDatabaseHealthy(Boolean(readyRes.response?.ok && deps?.database === "healthy"));
-      setCacheHealthy(Boolean(readyRes.response?.ok && deps?.valkey === "healthy"));
+      const deps = (readyRes.data?.dependencies ?? {}) as Record<string, unknown>;
+      setDatabaseHealthy(Boolean(readyRes.response?.ok && deps.database === "healthy"));
+      setCacheHealthy(Boolean(readyRes.response?.ok && deps.valkey === "healthy"));
     } catch {
       setDatabaseHealthy(false);
       setCacheHealthy(false);
