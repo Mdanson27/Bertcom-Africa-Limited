@@ -1,0 +1,43 @@
+services:
+  - type: keyvalue
+    name: bertcom-valkey
+    plan: free
+    region: ohio
+    ipAllowList: []
+    maxmemoryPolicy: noeviction
+
+  - type: web
+    name: bertcom-api
+    runtime: docker
+    plan: free
+    region: ohio
+    rootDir: backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerCommand: sh /app/scripts/start_render.sh
+    healthCheckPath: /health/live
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://mdanson27.github.io
+      - key: BERTCOM_ADMIN_EMAILS
+        value: ddaannson@gmail.com,automindsafrica@gmail.com
+      - key: NEON_AUTH_BASE_URL
+        value: https://ep-proud-fire-b4ban3g8.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth
+      - key: NEON_AUTH_JWKS_URL
+        value: https://ep-proud-fire-b4ban3g8.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth/.well-known/jwks.json
+      - key: VALKEY_URL
+        fromService:
+          name: bertcom-valkey
+          type: keyvalue
+          property: connectionString
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: SECRET_KEY
+        sync: false

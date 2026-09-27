@@ -5,12 +5,13 @@ class AppSettings(BaseSettings):
     # ── Runtime ───────────────────────────────────────────────────────────────
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    SECRET_KEY: str = "default_secret_key_override_in_env"
+    SECRET_KEY: str = "override-in-environment"
     APP_NAME: str = "Bertcom Africa Business OS"
     APP_BASE_URL: str = "http://localhost:8000"
+    CORS_ALLOWED_ORIGINS: str = "https://mdanson27.github.io,http://localhost:5173"
 
     # ── Database ──────────────────────────────────────────────────────────────
-    DATABASE_URL: str = "postgresql+asyncpg://app_user:secure_dev_password@localhost:5432/app_db"
+    DATABASE_URL: str = "postgresql+asyncpg://app_user:change-me@localhost:5432/app_db"
     DATABASE_URL_UNPOOLED: str | None = None
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
@@ -18,37 +19,37 @@ class AppSettings(BaseSettings):
     # ── Neon Managed Better Auth ─────────────────────────────────────────────
     NEON_AUTH_BASE_URL: str = ""
     NEON_AUTH_JWKS_URL: str = ""
+    BERTCOM_ADMIN_EMAILS: str = "ddaannson@gmail.com,automindsafrica@gmail.com"
 
     # ── Cache (Valkey) ────────────────────────────────────────────────────────
+    VALKEY_URL: str | None = None
     VALKEY_HOST: str = "localhost"
     VALKEY_PORT: int = 6379
 
     # ── Token TTLs ────────────────────────────────────────────────────────────
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     RESET_TOKEN_EXPIRE_MINUTES: int = 60
-    VERIFY_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 h
+    VERIFY_TOKEN_EXPIRE_MINUTES: int = 1440
 
     # ── SMTP / Mail ───────────────────────────────────────────────────────────
-    # All SMTP fields are Optional so the mailer degrades gracefully to
-    # structlog mock mode when not configured.
     SMTP_HOST: str | None = None
     SMTP_PORT: int = 587
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_TLS: bool = True
-    EMAILS_FROM_ADDRESS: str = "noreply@platform.internal"
+    EMAILS_FROM_ADDRESS: str = "noreply@bertcom.local"
     EMAILS_FROM_NAME: str = "Bertcom Africa Business OS"
 
     # ── Initial Superuser Seeding ─────────────────────────────────────────────
-    FIRST_SUPERUSER_EMAIL: str = "admin@platform.internal"
-    FIRST_SUPERUSER_PASSWORD: str = "AdminSecurePassword2026!"
+    FIRST_SUPERUSER_EMAIL: str = "admin@bertcom.local"
+    FIRST_SUPERUSER_PASSWORD: str = ""
     FIRST_SUPERUSER_NAME: str = "Platform Administrator"
 
     # ── Rate Limiting & Gateway ───────────────────────────────────────────────
     RATE_LIMIT_ENABLED: bool = True
 
     # ── API Documentation UI ──────────────────────────────────────────────────
-    DOCS_UI: str = "swagger"  # swagger | scalar | redoc | elements | rapidoc
+    DOCS_UI: str = "swagger"
 
     # ── Observability & Crash Reporting (Sentry) ──────────────────────────────
     SENTRY_DSN: str = ""
@@ -62,6 +63,32 @@ class AppSettings(BaseSettings):
     def smtp_configured(self) -> bool:
         """True only when all required SMTP credentials are present."""
         return bool(self.SMTP_HOST and self.SMTP_USER and self.SMTP_PASSWORD)
+
+    @property
+    def database_url_async(self) -> str:
+        """Normalize a Neon/Postgres URL for SQLAlchemy's asyncpg dialect."""
+        url = self.DATABASE_URL.strip()
+        if url.startswith("postgresql://"):
+            url = "postgresql+asyncpg://" + url[len("postgresql://") :]
+        url = url.replace("sslmode=require", "ssl=require")
+        url = url.replace("&channel_binding=require", "").replace("?channel_binding=require&", "?")
+        return url
+
+    @property
+    def valkey_url(self) -> str:
+        if self.VALKEY_URL:
+            return self.VALKEY_URL
+        return f"redis://{self.VALKEY_HOST}:{self.VALKEY_PORT}/0"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [item.strip() for item in self.CORS_ALLOWED_ORIGINS.split(",") if item.strip()]
+
+    @property
+    def admin_emails(self) -> set[str]:
+        return {
+            item.strip().lower() for item in self.BERTCOM_ADMIN_EMAILS.split(",") if item.strip()
+        }
 
 
 settings = AppSettings()

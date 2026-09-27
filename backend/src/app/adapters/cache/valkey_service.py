@@ -25,7 +25,7 @@ from app.domain.telemetry.schemas import TelemetryRecord
 # Exported store – registered on the Litestar app in app/__init__.py
 # ---------------------------------------------------------------------------
 valkey_store = ValkeyStore.with_client(
-    url=f"valkey://{settings.VALKEY_HOST}:{settings.VALKEY_PORT}",
+    url=settings.valkey_url,
 )
 
 # ---------------------------------------------------------------------------

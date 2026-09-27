@@ -19,7 +19,8 @@ from litestar.connection import ASGIConnection
 from litestar.exceptions import NotAuthorizedException, PermissionDeniedException
 from litestar.types import RouteHandlerType
 
-from app.core.security import decode_access_token, is_token_revoked
+from app.core.security import decode_access_token, decode_neon_access_token, is_token_revoked
+from app.core.settings import settings
 
 
 class JWTAuthGuard:
@@ -42,17 +43,27 @@ class JWTAuthGuard:
 
         token = auth_header[len("Bearer ") :]
 
-        # Decode & validate JWT (signature + expiry)
+        # Decode & validate JWT (Neon JWKS in production, legacy local token as fallback)
         try:
-            payload = decode_access_token(token)
-        except Exception:  # noqa: BLE001
-            raise NotAuthorizedException("Invalid or expired session token.")
+            payload = (
+                decode_neon_access_token(token)
+                if settings.NEON_AUTH_JWKS_URL
+                else decode_access_token(token)
+            )
+        except Exception as exc:
+            raise NotAuthorizedException("Invalid or expired session token.") from exc
 
         user_id: str | None = payload.get("sub")
         jti: str | None = payload.get("jti")
-        is_super: bool = bool(payload.get("is_superuser", False))
+        email = str(payload.get("email") or "").lower()
+        token_role = payload.get("role")
+        role: str = str(token_role or "authenticated")
+        is_super: bool = bool(
+            payload.get("is_superuser", False)
+            or role.lower() in {"admin", "owner", "superadmin"}
+            or email in settings.admin_emails
+        )
         tenant_id: str | None = payload.get("tenant_id") or payload.get("organization_id")
-        role: str = payload.get("role") or ("superadmin" if is_super else "user")
 
         if not user_id:
             raise NotAuthorizedException("Token is missing 'sub' claim.")

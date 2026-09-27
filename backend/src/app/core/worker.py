@@ -32,7 +32,7 @@ cron = CronJob
 # ---------------------------------------------------------------------------
 # Valkey / Redis URL connection
 # ---------------------------------------------------------------------------
-VALKEY_URL = f"redis://{app_settings.VALKEY_HOST}:{app_settings.VALKEY_PORT}/0"
+VALKEY_URL = app_settings.valkey_url
 
 # Main distributed queue
 queue = Queue.from_url(VALKEY_URL, name="default")

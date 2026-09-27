@@ -42,7 +42,7 @@ from app.core.settings import settings
 # ---------------------------------------------------------------------------
 
 db_config = SQLAlchemyAsyncConfig(
-    connection_string=settings.DATABASE_URL,
+    connection_string=settings.database_url_async,
     session_config=AsyncSessionConfig(expire_on_commit=False),
     engine_config=EngineConfig(
         pool_pre_ping=True,

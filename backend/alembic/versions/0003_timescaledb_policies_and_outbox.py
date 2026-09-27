@@ -8,7 +8,9 @@ Create Date: 2026-08-20 00:00:00.000000 UTC
 Changes
 -------
 1. Creates outbox_events and dead_letter_events tables.
-2. Configures TimescaleDB automated compression (7 days) and retention (90 days) policies on telemetry_readings hypertable.
+2. Converts telemetry_readings to a TimescaleDB hypertable when available.
+3. Applies a 90-day retention policy. Compression is intentionally omitted on
+   Neon because only Apache-2 licensed TimescaleDB features are supported there.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -21,9 +23,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # ------------------------------------------------------------------
-    # 1. Outbox and Dead Letter Queue tables
-    # ------------------------------------------------------------------
     op.create_table(
         "outbox_events",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
@@ -49,30 +48,26 @@ def upgrade() -> None:
     )
     op.create_index("ix_dead_letter_events_original_event_id", "dead_letter_events", ["original_event_id"])
 
-    # ------------------------------------------------------------------
-    # 2. TimescaleDB compression and retention policies (safely guarded)
-    # ------------------------------------------------------------------
     op.execute(
         """
         DO $$
         BEGIN
             IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
-                -- Enable compression on hypertable if not already enabled
-                ALTER TABLE telemetry_readings SET (
-                    timescaledb.compress,
-                    timescaledb.compress_segmentby = 'transformer_id',
-                    timescaledb.compress_orderby = 'recorded_at DESC'
+                PERFORM create_hypertable(
+                    'telemetry_readings',
+                    'recorded_at',
+                    if_not_exists => TRUE,
+                    migrate_data => TRUE
                 );
 
-                -- Automated compression policy (> 7 days)
-                PERFORM add_compression_policy('telemetry_readings', INTERVAL '7 days', if_not_exists => true);
-
-                -- Automated data retention policy (> 90 days)
-                PERFORM add_retention_policy('telemetry_readings', INTERVAL '90 days', if_not_exists => true);
+                PERFORM add_retention_policy(
+                    'telemetry_readings',
+                    INTERVAL '90 days',
+                    if_not_exists => TRUE
+                );
             END IF;
         EXCEPTION WHEN OTHERS THEN
-            -- In standard Postgres test environments where hypertable is a regular table, ignore
-            RAISE NOTICE 'TimescaleDB policy application skipped: %', SQLERRM;
+            RAISE NOTICE 'TimescaleDB hypertable/policy setup skipped: %', SQLERRM;
         END $$;
         """
     )
