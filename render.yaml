@@ -2,7 +2,7 @@ services:
   - type: keyvalue
     name: bertcom-valkey
     plan: free
-    region: frankfurt
+    region: ohio
     ipAllowList: []
     maxmemoryPolicy: noeviction
 
@@ -10,7 +10,7 @@ services:
     name: bertcom-api
     runtime: docker
     plan: free
-    region: frankfurt
+    region: ohio
     rootDir: backend
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
