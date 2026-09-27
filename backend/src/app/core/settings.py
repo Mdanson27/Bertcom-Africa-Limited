@@ -8,6 +8,7 @@ class AppSettings(BaseSettings):
     SECRET_KEY: str = "default_secret_key_override_in_env"
     APP_NAME: str = "Bertcom Africa Business OS"
     APP_BASE_URL: str = "http://localhost:8000"
+    CORS_ALLOWED_ORIGINS: str = "https://mdanson27.github.io,http://localhost:5173"
 
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://app_user:secure_dev_password@localhost:5432/app_db"
@@ -18,6 +19,7 @@ class AppSettings(BaseSettings):
     # ── Neon Managed Better Auth ─────────────────────────────────────────────
     NEON_AUTH_BASE_URL: str = ""
     NEON_AUTH_JWKS_URL: str = ""
+    BERTCOM_ADMIN_EMAILS: str = "ddaannson@gmail.com,automindsafrica@gmail.com"
 
     # ── Cache (Valkey) ────────────────────────────────────────────────────────
     VALKEY_HOST: str = "localhost"
@@ -62,6 +64,24 @@ class AppSettings(BaseSettings):
     def smtp_configured(self) -> bool:
         """True only when all required SMTP credentials are present."""
         return bool(self.SMTP_HOST and self.SMTP_USER and self.SMTP_PASSWORD)
+
+    @property
+    def database_url_async(self) -> str:
+        """Normalize a Neon/Postgres URL for SQLAlchemy's asyncpg dialect."""
+        url = self.DATABASE_URL.strip()
+        if url.startswith("postgresql://"):
+            url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+        url = url.replace("sslmode=require", "ssl=require")
+        url = url.replace("&channel_binding=require", "").replace("?channel_binding=require&", "?")
+        return url
+
+    @property
+    def cors_origins(self) -> list[str]:
+        return [item.strip() for item in self.CORS_ALLOWED_ORIGINS.split(",") if item.strip()]
+
+    @property
+    def admin_emails(self) -> set[str]:
+        return {item.strip().lower() for item in self.BERTCOM_ADMIN_EMAILS.split(",") if item.strip()}
 
 
 settings = AppSettings()
