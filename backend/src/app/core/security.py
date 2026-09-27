@@ -51,6 +51,7 @@ __all__ = [
     "create_access_token",
     "create_signed_token",
     "decode_access_token",
+    "decode_neon_access_token",
     "decode_scoped_token",
     "get_password_hash",
     "is_token_revoked",
@@ -182,6 +183,22 @@ def decode_access_token(token: str) -> dict:
     Valkey async call stays in async context.
     """
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+
+
+def decode_neon_access_token(token: str) -> dict:
+    """Validate a Neon Managed Better Auth JWT against the project's JWKS endpoint."""
+    if not settings.NEON_AUTH_JWKS_URL:
+        raise ValueError("NEON_AUTH_JWKS_URL is not configured")
+
+    jwks_client = jwt.PyJWKClient(settings.NEON_AUTH_JWKS_URL, cache_keys=True)
+    signing_key = jwks_client.get_signing_key_from_jwt(token)
+    algorithm = getattr(signing_key, "algorithm_name", None) or "RS256"
+    return jwt.decode(
+        token,
+        signing_key.key,
+        algorithms=[algorithm],
+        options={"verify_aud": False},
+    )
 
 
 def decode_scoped_token(token: str, expected_scope: str) -> dict:
