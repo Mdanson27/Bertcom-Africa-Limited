@@ -1,5 +1,6 @@
 import structlog
 from litestar import Litestar
+from litestar.config.cors import CORSConfig
 
 from app.adapters.cache.valkey_service import valkey_store
 from app.core.database import alchemy_plugin
@@ -48,7 +49,10 @@ init_sentry()
 
 
 async def init_admin_user() -> None:
-    """Ensure initial superuser exists upon platform startup."""
+    """Seed legacy local auth only when Neon Managed Better Auth is not configured."""
+    if settings.NEON_AUTH_JWKS_URL:
+        logger.info("superuser_startup_seed_skipped", reason="Neon Auth enabled")
+        return
     try:
         from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
@@ -66,7 +70,7 @@ async def init_admin_user() -> None:
             )
             return
 
-        engine = create_async_engine(settings.DATABASE_URL)
+        engine = create_async_engine(settings.database_url_async)
         session_factory = async_sessionmaker(engine, expire_on_commit=False)
         async with session_factory() as session:
             repo = PostgresUserRepository(session=session)
@@ -97,6 +101,13 @@ if settings.RATE_LIMIT_ENABLED:
     middleware_list.append(SlidingWindowRateLimitMiddleware)
 
 
+cors_config = CORSConfig(
+    allow_origins=settings.cors_origins,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
+
 app = Litestar(
     route_handlers=[HealthController, metrics_endpoint, api_router],
     plugins=[alchemy_plugin],
@@ -104,5 +115,6 @@ app = Litestar(
     stores={"valkey": valkey_store},
     openapi_config=openapi_config if settings.ENVIRONMENT != "production" else None,
     debug=settings.DEBUG,
+    cors_config=cors_config,
     on_startup=[init_admin_user],
 )
