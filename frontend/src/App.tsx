@@ -8,12 +8,17 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { TelemetryStream } from "@/features/dashboard/TelemetryStream";
+import {
+  SystemHealthProvider,
+  useSystemHealth,
+} from "@/features/dashboard/SystemHealthContext";
 import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ToastProvider } from "@/components/ui/Toast";
 
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated, isLoading, refreshProfile } = useAuth();
+  const { refreshHealth } = useSystemHealth();
   const [currentTab, setCurrentTab] = useState<NavItem>("dashboard");
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -32,7 +37,7 @@ const AuthenticatedApp: React.FC = () => {
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
     try {
-      await refreshProfile();
+      await Promise.allSettled([refreshProfile(), refreshHealth()]);
     } finally {
       setIsRefreshing(false);
     }
@@ -63,15 +68,16 @@ const AuthenticatedApp: React.FC = () => {
   );
 };
 
-
 export default function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <AuthProvider>
-          <ToastProvider>
-            <AuthenticatedApp />
-          </ToastProvider>
+          <SystemHealthProvider>
+            <ToastProvider>
+              <AuthenticatedApp />
+            </ToastProvider>
+          </SystemHealthProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
