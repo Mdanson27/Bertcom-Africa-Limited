@@ -56,7 +56,7 @@ async def async_engine():
     from sqlalchemy.pool import NullPool
 
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        settings.database_url_async,
         poolclass=NullPool,
         echo=False,
     )
@@ -69,17 +69,22 @@ async def ensure_db_schema(async_engine):
     """Ensure all SQLAlchemy declarative tables exist in database before running tests."""
     from sqlalchemy import text
 
+    import app.domain.audit.models
+    import app.domain.business.models
     import app.domain.events.models
     import app.domain.telemetry.models
-    import app.domain.users.models  # noqa: F401
+    import app.domain.users.models
+    import app.domain.workspace.models  # noqa: F401
     from app.domain.base import Base
 
     async with async_engine.begin() as conn:
         await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
         try:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            async with conn.begin_nested():
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
         except Exception:  # noqa: S110, BLE001
+            # Optional extension: SAVEPOINT rollback keeps setup usable when pgvector is unavailable.
             pass
         await conn.run_sync(Base.metadata.create_all)
         try:
