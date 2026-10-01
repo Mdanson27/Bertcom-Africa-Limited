@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, ClassVar
 
@@ -139,7 +139,15 @@ class BusinessController(Controller):
 
     @get(path="/clients")
     async def clients(self, db_session: AsyncSession) -> list[ClientRead]:
-        rows = (await db_session.execute(select(Client).where(Client.is_active.is_(True)).order_by(Client.name))).scalars().all()
+        rows = (
+            (
+                await db_session.execute(
+                    select(Client).where(Client.is_active.is_(True)).order_by(Client.name)
+                )
+            )
+            .scalars()
+            .all()
+        )
         return [_client_read(row) for row in rows]
 
     @post(path="/clients", status_code=HTTP_201_CREATED)
@@ -161,7 +169,15 @@ class BusinessController(Controller):
 
     @get(path="/suppliers")
     async def suppliers(self, db_session: AsyncSession) -> list[SupplierRead]:
-        rows = (await db_session.execute(select(Supplier).where(Supplier.is_active.is_(True)).order_by(Supplier.name))).scalars().all()
+        rows = (
+            (
+                await db_session.execute(
+                    select(Supplier).where(Supplier.is_active.is_(True)).order_by(Supplier.name)
+                )
+            )
+            .scalars()
+            .all()
+        )
         return [_supplier_read(row) for row in rows]
 
     @post(path="/suppliers", status_code=HTTP_201_CREATED)
@@ -183,11 +199,17 @@ class BusinessController(Controller):
 
     @get(path="/quotations")
     async def quotations(self, db_session: AsyncSession) -> list[QuotationRead]:
-        rows = (await db_session.execute(select(Quotation).order_by(Quotation.created_at.desc()))).scalars().all()
+        rows = (
+            (await db_session.execute(select(Quotation).order_by(Quotation.created_at.desc())))
+            .scalars()
+            .all()
+        )
         return [_quotation_read(row) for row in rows]
 
     @post(path="/quotations", status_code=HTTP_201_CREATED)
-    async def create_quotation(self, request: Request, data: QuotationCreate, db_session: AsyncSession) -> QuotationRead:
+    async def create_quotation(
+        self, request: Request, data: QuotationCreate, db_session: AsyncSession
+    ) -> QuotationRead:
         item = Quotation(
             quotation_number=data.quotation_number.strip(),
             client_id=data.client_id,
@@ -207,15 +229,21 @@ class BusinessController(Controller):
 
     @get(path="/invoices")
     async def invoices(self, db_session: AsyncSession) -> list[InvoiceRead]:
-        rows = (await db_session.execute(select(Invoice).order_by(Invoice.created_at.desc()))).scalars().all()
+        rows = (
+            (await db_session.execute(select(Invoice).order_by(Invoice.created_at.desc())))
+            .scalars()
+            .all()
+        )
         return [_invoice_read(row) for row in rows]
 
     @post(path="/invoices", status_code=HTTP_201_CREATED)
-    async def create_invoice(self, request: Request, data: InvoiceCreate, db_session: AsyncSession) -> InvoiceRead:
+    async def create_invoice(
+        self, request: Request, data: InvoiceCreate, db_session: AsyncSession
+    ) -> InvoiceRead:
         paid = max(0, data.paid_amount_ugx)
         amount = max(0, data.amount_ugx)
         status = data.status
-        if paid >= amount and amount > 0:
+        if paid >= amount > 0:
             status = "paid"
         elif paid > 0 and status == "draft":
             status = "partial"
@@ -239,11 +267,21 @@ class BusinessController(Controller):
 
     @get(path="/purchase-orders")
     async def purchase_orders(self, db_session: AsyncSession) -> list[PurchaseOrderRead]:
-        rows = (await db_session.execute(select(PurchaseOrder).order_by(PurchaseOrder.created_at.desc()))).scalars().all()
+        rows = (
+            (
+                await db_session.execute(
+                    select(PurchaseOrder).order_by(PurchaseOrder.created_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
         return [_po_read(row) for row in rows]
 
     @post(path="/purchase-orders", status_code=HTTP_201_CREATED)
-    async def create_purchase_order(self, request: Request, data: PurchaseOrderCreate, db_session: AsyncSession) -> PurchaseOrderRead:
+    async def create_purchase_order(
+        self, request: Request, data: PurchaseOrderCreate, db_session: AsyncSession
+    ) -> PurchaseOrderRead:
         item = PurchaseOrder(
             po_number=data.po_number.strip(),
             supplier_id=data.supplier_id,
@@ -263,11 +301,21 @@ class BusinessController(Controller):
 
     @get(path="/expenses")
     async def expenses(self, db_session: AsyncSession) -> list[ExpenseRead]:
-        rows = (await db_session.execute(select(Expense).order_by(Expense.expense_date.desc(), Expense.created_at.desc()))).scalars().all()
+        rows = (
+            (
+                await db_session.execute(
+                    select(Expense).order_by(Expense.expense_date.desc(), Expense.created_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
         return [_expense_read(row) for row in rows]
 
     @post(path="/expenses", status_code=HTTP_201_CREATED)
-    async def create_expense(self, request: Request, data: ExpenseCreate, db_session: AsyncSession) -> ExpenseRead:
+    async def create_expense(
+        self, request: Request, data: ExpenseCreate, db_session: AsyncSession
+    ) -> ExpenseRead:
         item = Expense(
             project_id=data.project_id,
             supplier_id=data.supplier_id,
@@ -285,11 +333,42 @@ class BusinessController(Controller):
 
     @get(path="/summary")
     async def summary(self, db_session: AsyncSession) -> BusinessSummary:
-        client_count = int((await db_session.scalar(select(func.count()).select_from(Client).where(Client.is_active.is_(True)))) or 0)
-        supplier_count = int((await db_session.scalar(select(func.count()).select_from(Supplier).where(Supplier.is_active.is_(True)))) or 0)
-        open_quotes = int((await db_session.scalar(select(func.count()).select_from(Quotation).where(Quotation.status.in_(["draft", "sent"])))) or 0)
-        outstanding = await db_session.scalar(select(func.coalesce(func.sum(Invoice.amount_ugx - Invoice.paid_amount_ugx), 0)).where(Invoice.status != "cancelled"))
-        expenses = await db_session.scalar(select(func.coalesce(func.sum(Expense.amount_ugx), 0)).where(Expense.expense_date <= date.today()))
+        client_count = int(
+            (
+                await db_session.scalar(
+                    select(func.count()).select_from(Client).where(Client.is_active.is_(True))
+                )
+            )
+            or 0
+        )
+        supplier_count = int(
+            (
+                await db_session.scalar(
+                    select(func.count()).select_from(Supplier).where(Supplier.is_active.is_(True))
+                )
+            )
+            or 0
+        )
+        open_quotes = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Quotation)
+                    .where(Quotation.status.in_(["draft", "sent"]))
+                )
+            )
+            or 0
+        )
+        outstanding = await db_session.scalar(
+            select(func.coalesce(func.sum(Invoice.amount_ugx - Invoice.paid_amount_ugx), 0)).where(
+                Invoice.status != "cancelled"
+            )
+        )
+        expenses = await db_session.scalar(
+            select(func.coalesce(func.sum(Expense.amount_ugx), 0)).where(
+                Expense.expense_date <= datetime.now(UTC).date()
+            )
+        )
         return BusinessSummary(
             clients=client_count,
             suppliers=supplier_count,
