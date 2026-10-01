@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, ClassVar
 
+import structlog
+from botocore.exceptions import ClientError
 from litestar import Controller, Request, delete, get, patch, post
 from litestar.exceptions import ClientException, NotFoundException
-from litestar.status_codes import HTTP_201_CREATED
+from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,6 +32,9 @@ from app.domain.workspace.schemas import (
     WorkspaceSummary,
 )
 from app.presentation.guards.auth_guard import JWTAuthGuard
+
+
+logger = structlog.get_logger("app.workspace")
 
 
 def _email(request: Request) -> str:
@@ -182,7 +187,7 @@ class ProjectsController(Controller):
         await db_session.refresh(item)
         return _project_read(item)
 
-    @delete(path="/{project_id:uuid}")
+    @delete(path="/{project_id:uuid}", status_code=HTTP_200_OK)
     async def archive_project(self, project_id: uuid.UUID, db_session: AsyncSession) -> dict:
         item = await db_session.get(Project, project_id)
         if item is None:
@@ -352,7 +357,7 @@ class DocumentsController(Controller):
             raise NotFoundException(detail="Document not found.")
         return DownloadResponse(url=presign_download(item.storage_key))
 
-    @delete(path="/{document_id:uuid}")
+    @delete(path="/{document_id:uuid}", status_code=HTTP_200_OK)
     async def delete_document(self, document_id: uuid.UUID, db_session: AsyncSession) -> dict:
         item = await db_session.get(Document, document_id)
         if item is None:
@@ -362,8 +367,12 @@ class DocumentsController(Controller):
         await db_session.commit()
         try:
             delete_object(key)
-        except Exception:
-            pass
+        except ClientError as exc:
+            logger.warning(
+                "document.storage_delete_failed",
+                storage_key=key,
+                error=str(exc),
+            )
         return {"message": "Document deleted."}
 
 
@@ -373,7 +382,7 @@ class WorkspaceController(Controller):
 
     @get(path="/summary")
     async def summary(self, db_session: AsyncSession) -> WorkspaceSummary:
-        today = date.today()
+        today = datetime.now(UTC).date()
         active_projects = int(
             (await db_session.scalar(
                 select(func.count()).select_from(Project).where(
