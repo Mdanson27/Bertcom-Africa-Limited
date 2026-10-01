@@ -40,11 +40,13 @@ config = context.config
 database_url = os.environ.get("DATABASE_URL_UNPOOLED") or os.environ.get("DATABASE_URL", "")
 if database_url:
     # asyncpg driver doesn't work with Alembic's sync engine; swap it out.
-    sync_url = database_url.replace(
-        "postgresql+asyncpg://", "postgresql+psycopg2://"
-    ).replace(
-        "postgresql+asyncpg+ssl://", "postgresql+psycopg2://"
+    sync_url = (
+        database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+        .replace("postgresql+asyncpg+ssl://", "postgresql+psycopg2://")
+        .replace("postgresql+psycopg://", "postgresql+psycopg2://")
     )
+    if sync_url.startswith("postgresql://"):
+        sync_url = "postgresql+psycopg2://" + sync_url[len("postgresql://") :]
     config.set_main_option("sqlalchemy.url", sync_url)
 
 if config.config_file_name is not None:
