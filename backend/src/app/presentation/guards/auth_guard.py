@@ -84,15 +84,14 @@ jwt_auth_guard = JWTAuthGuard()
 
 def superuser_guard(connection: ASGIConnection, _: RouteHandlerType) -> None:
     """
-    Asserts that the current authenticated user has is_superuser=True or role='superadmin'.
+    Asserts that the current authenticated user is the configured platform administrator.
     """
     user_id = connection.scope.get("user_id")
     if not user_id:
         raise NotAuthorizedException("Authentication required.")
-    is_super = connection.scope.get("is_superuser", False)
-    role = connection.scope.get("role", "")
-    if not (is_super or role == "superadmin"):
-        raise PermissionDeniedException("Superadmin privileges required to perform this action.")
+    is_super = bool(connection.scope.get("is_superuser", False))
+    if not is_super:
+        raise PermissionDeniedException("Platform administrator privileges required.")
 
 
 class SuperuserGuard:
