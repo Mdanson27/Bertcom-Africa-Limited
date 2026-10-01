@@ -40,7 +40,7 @@ services:
       DEBUG: "false"
       APP_BASE_URL: http://localhost:8000
       CORS_ALLOWED_ORIGINS: https://mdanson27.github.io
-      BERTCOM_ADMIN_EMAILS: ddaannson@gmail.com,automindsafrica@gmail.com
+      PLATFORM_ADMIN_EMAIL: automindsafrica@gmail.com
       VALKEY_URL: redis://172.28.250.10:6379/0
     ports:
       - "127.0.0.1:8000:8000"
@@ -74,7 +74,7 @@ services:
       DEBUG: "false"
       APP_BASE_URL: http://localhost:8000
       CORS_ALLOWED_ORIGINS: https://mdanson27.github.io
-      BERTCOM_ADMIN_EMAILS: ddaannson@gmail.com,automindsafrica@gmail.com
+      PLATFORM_ADMIN_EMAIL: automindsafrica@gmail.com
       VALKEY_URL: redis://172.28.250.10:6379/0
     networks:
       - bertcom_testing
