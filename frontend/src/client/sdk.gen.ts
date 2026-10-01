@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApiV1AuthLoginLoginData, ApiV1AuthLoginLoginResponses, ApiV1AuthLogoutLogoutData, ApiV1AuthLogoutLogoutResponses, ApiV1AuthTokenTokenData, ApiV1AuthTokenTokenResponses, ApiV1TelemetryIngestIngestData, ApiV1TelemetryIngestIngestErrors, ApiV1TelemetryIngestIngestResponses, ApiV1UsersCreateUserAdminData, ApiV1UsersCreateUserAdminErrors, ApiV1UsersCreateUserAdminResponses, ApiV1UsersListUsersData, ApiV1UsersListUsersErrors, ApiV1UsersListUsersResponses, ApiV1UsersMeDeleteMeData, ApiV1UsersMeDeleteMeResponses, ApiV1UsersMeGetMeData, ApiV1UsersMeGetMeResponses, ApiV1UsersMePasswordUpdatePasswordMeData, ApiV1UsersMePasswordUpdatePasswordMeErrors, ApiV1UsersMePasswordUpdatePasswordMeResponses, ApiV1UsersMeUpdateMeData, ApiV1UsersMeUpdateMeErrors, ApiV1UsersMeUpdateMeResponses, ApiV1UsersRegisterRegisterData, ApiV1UsersRegisterRegisterErrors, ApiV1UsersRegisterRegisterResponses, ApiV1UsersSignupSignupData, ApiV1UsersSignupSignupErrors, ApiV1UsersSignupSignupResponses, ApiV1UsersUserIdDeleteUserData, ApiV1UsersUserIdDeleteUserErrors, ApiV1UsersUserIdDeleteUserResponses, ApiV1UsersUserIdGetUserByIdData, ApiV1UsersUserIdGetUserByIdErrors, ApiV1UsersUserIdGetUserByIdResponses, ApiV1UsersUserIdRoleUpdateUserRoleAdminData, ApiV1UsersUserIdRoleUpdateUserRoleAdminErrors, ApiV1UsersUserIdRoleUpdateUserRoleAdminResponses, ApiV1UsersUserIdUpdateUserAdminData, ApiV1UsersUserIdUpdateUserAdminErrors, ApiV1UsersUserIdUpdateUserAdminResponses, ApiV1UtilsHealthCheckHealthCheckData, ApiV1UtilsHealthCheckHealthCheckResponses, ApiV1UtilsTestEmailTestEmailData, ApiV1UtilsTestEmailTestEmailErrors, ApiV1UtilsTestEmailTestEmailResponses, HealthGetHealthData, HealthGetHealthResponses, HealthLiveGetLivenessData, HealthLiveGetLivenessResponses, HealthReadyGetReadinessData, HealthReadyGetReadinessResponses, HealthStartupGetStartupData, HealthStartupGetStartupResponses, MetricsMetricsEndpointData, MetricsMetricsEndpointResponses } from './types.gen';
+import type { ApiV1AuthLoginLoginData, ApiV1AuthLoginLoginResponses, ApiV1AuthLogoutLogoutData, ApiV1AuthLogoutLogoutResponses, ApiV1AuthTokenTokenData, ApiV1AuthTokenTokenResponses, ApiV1DocumentsCreateDocumentData, ApiV1DocumentsCreateDocumentErrors, ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentData, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdUpdateDocumentData, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsListDocumentsData, ApiV1DocumentsListDocumentsErrors, ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsPresignCreateUploadUrlData, ApiV1DocumentsPresignCreateUploadUrlErrors, ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1ProjectsCreateProjectData, ApiV1ProjectsCreateProjectErrors, ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsListProjectsData, ApiV1ProjectsListProjectsErrors, ApiV1ProjectsListProjectsResponses, ApiV1ProjectsProjectIdArchiveProjectData, ApiV1ProjectsProjectIdArchiveProjectErrors, ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdGetProjectData, ApiV1ProjectsProjectIdGetProjectErrors, ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdUpdateProjectData, ApiV1ProjectsProjectIdUpdateProjectErrors, ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1TasksCreateTaskData, ApiV1TasksCreateTaskErrors, ApiV1TasksCreateTaskResponses, ApiV1TasksListTasksData, ApiV1TasksListTasksErrors, ApiV1TasksListTasksResponses, ApiV1TasksTaskIdUpdateTaskData, ApiV1TasksTaskIdUpdateTaskErrors, ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TelemetryIngestIngestData, ApiV1TelemetryIngestIngestErrors, ApiV1TelemetryIngestIngestResponses, ApiV1UsersCreateUserAdminData, ApiV1UsersCreateUserAdminErrors, ApiV1UsersCreateUserAdminResponses, ApiV1UsersListUsersData, ApiV1UsersListUsersErrors, ApiV1UsersListUsersResponses, ApiV1UsersMeDeleteMeData, ApiV1UsersMeDeleteMeResponses, ApiV1UsersMeGetMeData, ApiV1UsersMeGetMeResponses, ApiV1UsersMePasswordUpdatePasswordMeData, ApiV1UsersMePasswordUpdatePasswordMeErrors, ApiV1UsersMePasswordUpdatePasswordMeResponses, ApiV1UsersMeUpdateMeData, ApiV1UsersMeUpdateMeErrors, ApiV1UsersMeUpdateMeResponses, ApiV1UsersRegisterRegisterData, ApiV1UsersRegisterRegisterErrors, ApiV1UsersRegisterRegisterResponses, ApiV1UsersSignupSignupData, ApiV1UsersSignupSignupErrors, ApiV1UsersSignupSignupResponses, ApiV1UsersUserIdDeleteUserData, ApiV1UsersUserIdDeleteUserErrors, ApiV1UsersUserIdDeleteUserResponses, ApiV1UsersUserIdGetUserByIdData, ApiV1UsersUserIdGetUserByIdErrors, ApiV1UsersUserIdGetUserByIdResponses, ApiV1UsersUserIdRoleUpdateUserRoleAdminData, ApiV1UsersUserIdRoleUpdateUserRoleAdminErrors, ApiV1UsersUserIdRoleUpdateUserRoleAdminResponses, ApiV1UsersUserIdUpdateUserAdminData, ApiV1UsersUserIdUpdateUserAdminErrors, ApiV1UsersUserIdUpdateUserAdminResponses, ApiV1UtilsHealthCheckHealthCheckData, ApiV1UtilsHealthCheckHealthCheckResponses, ApiV1UtilsTestEmailTestEmailData, ApiV1UtilsTestEmailTestEmailErrors, ApiV1UtilsTestEmailTestEmailResponses, ApiV1WorkspaceSummarySummaryData, ApiV1WorkspaceSummarySummaryResponses, HealthGetHealthData, HealthGetHealthResponses, HealthLiveGetLivenessData, HealthLiveGetLivenessResponses, HealthReadyGetReadinessData, HealthReadyGetReadinessResponses, HealthStartupGetStartupData, HealthStartupGetStartupResponses, MetricsMetricsEndpointData, MetricsMetricsEndpointResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -73,6 +73,272 @@ export const apiV1AuthTokenToken = <ThrowOnError extends boolean = false>(option
         }],
     url: '/api/v1/auth/token',
     ...options
+});
+
+/**
+ * ListDocuments
+ */
+export const apiV1DocumentsListDocuments = <ThrowOnError extends boolean = false>(options?: Options<ApiV1DocumentsListDocumentsData, ThrowOnError>): RequestResult<ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsListDocumentsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsListDocumentsErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/documents',
+    ...options
+});
+
+/**
+ * CreateDocument
+ */
+export const apiV1DocumentsCreateDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1DocumentsCreateDocumentData, ThrowOnError>): RequestResult<ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsCreateDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsCreateDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/documents',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * CreateUploadUrl
+ */
+export const apiV1DocumentsPresignCreateUploadUrl = <ThrowOnError extends boolean = false>(options: Options<ApiV1DocumentsPresignCreateUploadUrlData, ThrowOnError>): RequestResult<ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1DocumentsPresignCreateUploadUrlErrors, ThrowOnError> => (options.client ?? client).post<ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1DocumentsPresignCreateUploadUrlErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/documents/presign',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * DeleteDocument
+ */
+export const apiV1DocumentsDocumentIdDeleteDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1DocumentsDocumentIdDeleteDocumentData, ThrowOnError>): RequestResult<ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ThrowOnError> => (options.client ?? client).delete<ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/documents/{document_id}',
+    ...options
+});
+
+/**
+ * UpdateDocument
+ */
+export const apiV1DocumentsDocumentIdUpdateDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1DocumentsDocumentIdUpdateDocumentData, ThrowOnError>): RequestResult<ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/documents/{document_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * GetDownloadUrl
+ */
+export const apiV1DocumentsDocumentIdDownloadGetDownloadUrl = <ThrowOnError extends boolean = false>(options: Options<ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData, ThrowOnError>): RequestResult<ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ThrowOnError> => (options.client ?? client).get<ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/documents/{document_id}/download',
+    ...options
+});
+
+/**
+ * ListProjects
+ */
+export const apiV1ProjectsListProjects = <ThrowOnError extends boolean = false>(options?: Options<ApiV1ProjectsListProjectsData, ThrowOnError>): RequestResult<ApiV1ProjectsListProjectsResponses, ApiV1ProjectsListProjectsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1ProjectsListProjectsResponses, ApiV1ProjectsListProjectsErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/projects',
+    ...options
+});
+
+/**
+ * CreateProject
+ */
+export const apiV1ProjectsCreateProject = <ThrowOnError extends boolean = false>(options: Options<ApiV1ProjectsCreateProjectData, ThrowOnError>): RequestResult<ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsCreateProjectErrors, ThrowOnError> => (options.client ?? client).post<ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsCreateProjectErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/projects',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * ArchiveProject
+ */
+export const apiV1ProjectsProjectIdArchiveProject = <ThrowOnError extends boolean = false>(options: Options<ApiV1ProjectsProjectIdArchiveProjectData, ThrowOnError>): RequestResult<ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdArchiveProjectErrors, ThrowOnError> => (options.client ?? client).delete<ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdArchiveProjectErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/projects/{project_id}',
+    ...options
+});
+
+/**
+ * GetProject
+ */
+export const apiV1ProjectsProjectIdGetProject = <ThrowOnError extends boolean = false>(options: Options<ApiV1ProjectsProjectIdGetProjectData, ThrowOnError>): RequestResult<ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdGetProjectErrors, ThrowOnError> => (options.client ?? client).get<ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdGetProjectErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/projects/{project_id}',
+    ...options
+});
+
+/**
+ * UpdateProject
+ */
+export const apiV1ProjectsProjectIdUpdateProject = <ThrowOnError extends boolean = false>(options: Options<ApiV1ProjectsProjectIdUpdateProjectData, ThrowOnError>): RequestResult<ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1ProjectsProjectIdUpdateProjectErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1ProjectsProjectIdUpdateProjectErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/projects/{project_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * ListTasks
+ */
+export const apiV1TasksListTasks = <ThrowOnError extends boolean = false>(options?: Options<ApiV1TasksListTasksData, ThrowOnError>): RequestResult<ApiV1TasksListTasksResponses, ApiV1TasksListTasksErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1TasksListTasksResponses, ApiV1TasksListTasksErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/tasks',
+    ...options
+});
+
+/**
+ * CreateTask
+ */
+export const apiV1TasksCreateTask = <ThrowOnError extends boolean = false>(options: Options<ApiV1TasksCreateTaskData, ThrowOnError>): RequestResult<ApiV1TasksCreateTaskResponses, ApiV1TasksCreateTaskErrors, ThrowOnError> => (options.client ?? client).post<ApiV1TasksCreateTaskResponses, ApiV1TasksCreateTaskErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/tasks',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * UpdateTask
+ */
+export const apiV1TasksTaskIdUpdateTask = <ThrowOnError extends boolean = false>(options: Options<ApiV1TasksTaskIdUpdateTaskData, ThrowOnError>): RequestResult<ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TasksTaskIdUpdateTaskErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TasksTaskIdUpdateTaskErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/tasks/{task_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**
@@ -394,6 +660,23 @@ export const apiV1UtilsTestEmailTestEmail = <ThrowOnError extends boolean = fals
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * Summary
+ */
+export const apiV1WorkspaceSummarySummary = <ThrowOnError extends boolean = false>(options?: Options<ApiV1WorkspaceSummarySummaryData, ThrowOnError>): RequestResult<ApiV1WorkspaceSummarySummaryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1WorkspaceSummarySummaryResponses, unknown, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/workspace/summary',
+    ...options
 });
 
 /**

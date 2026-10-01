@@ -16,12 +16,15 @@ export interface AuthUser {
   image?: string | null;
 }
 
+const PLATFORM_ADMIN_EMAIL = "automindsafrica@gmail.com";
+
 interface AuthContextType {
   user: AuthUser | null;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isPlatformAdmin: boolean;
   authConfigured: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
@@ -40,14 +43,14 @@ function normalizeRole(role: unknown): string {
 
 function mapNeonUser(raw: Record<string, unknown>): AuthUser {
   const role = normalizeRole(raw.role);
-  const roles = role.split(",").map((item) => item.trim().toLowerCase());
+  const email = String(raw.email || "").trim().toLowerCase();
 
   return {
     id: String(raw.id || ""),
-    email: String(raw.email || ""),
+    email,
     full_name: String(raw.name || raw.email || "Bertcom User"),
     is_active: !Boolean(raw.banned),
-    is_superuser: roles.some((item) => ["admin", "owner", "superadmin"].includes(item)),
+    is_superuser: email === PLATFORM_ADMIN_EMAIL,
     role,
     image: typeof raw.image === "string" ? raw.image : null,
   };
@@ -147,10 +150,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const roleNames = (user?.role || "").split(",").map((item) => item.trim().toLowerCase());
-  const isAdmin = Boolean(
-    user?.is_superuser || roleNames.some((item) => ["admin", "owner", "superadmin"].includes(item)),
+  const isPlatformAdmin = Boolean(
+    user?.email && user.email.trim().toLowerCase() === PLATFORM_ADMIN_EMAIL,
   );
+  const isAdmin = isPlatformAdmin;
 
   return (
     <AuthContext.Provider
@@ -160,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isAuthenticated: !!user,
         isAdmin,
+        isPlatformAdmin,
         authConfigured: isNeonAuthConfigured,
         login,
         loginWithGoogle,

@@ -19,12 +19,20 @@ class AppSettings(BaseSettings):
     # ── Neon Managed Better Auth ─────────────────────────────────────────────
     NEON_AUTH_BASE_URL: str = ""
     NEON_AUTH_JWKS_URL: str = ""
-    BERTCOM_ADMIN_EMAILS: str = "ddaannson@gmail.com,automindsafrica@gmail.com"
+    PLATFORM_ADMIN_EMAIL: str = "automindsafrica@gmail.com"
+    BERTCOM_ADMIN_EMAILS: str = "automindsafrica@gmail.com"
 
     # ── Cache (Valkey) ────────────────────────────────────────────────────────
     VALKEY_URL: str | None = None
     VALKEY_HOST: str = "localhost"
     VALKEY_PORT: int = 6379
+
+    # ── Neon Object Storage ─────────────────────────────────────────────────
+    AWS_ENDPOINT_URL_S3: str = ""
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_REGION: str = "us-east-2"
+    DOCUMENTS_BUCKET: str = "bertcom-documents"
 
     # ── Token TTLs ────────────────────────────────────────────────────────────
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
@@ -86,9 +94,11 @@ class AppSettings(BaseSettings):
 
     @property
     def admin_emails(self) -> set[str]:
-        return {
-            item.strip().lower() for item in self.BERTCOM_ADMIN_EMAILS.split(",") if item.strip()
-        }
+        return {self.PLATFORM_ADMIN_EMAIL.strip().lower()}
+
+    @property
+    def platform_admin_email(self) -> str:
+        return self.PLATFORM_ADMIN_EMAIL.strip().lower()
 
 
 settings = AppSettings()

@@ -11,12 +11,13 @@
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.3.4",
+    "@neondatabase/neon-js": "latest",
     "clsx": "^2.1.1",
     "lucide-react": "^1.33.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^3.6.0",
-    "@neondatabase/neon-js": "latest"
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.99.0",

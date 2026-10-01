@@ -58,10 +58,13 @@ class JWTAuthGuard:
         email = str(payload.get("email") or "").lower()
         token_role = payload.get("role")
         role: str = str(token_role or "authenticated")
-        is_super: bool = bool(
-            payload.get("is_superuser", False)
-            or role.lower() in {"admin", "owner", "superadmin"}
-            or email in settings.admin_emails
+        # Managed Neon Auth is intentionally email-locked to the configured
+        # AutoMinds platform administrator. Legacy local JWTs continue to honor
+        # the explicit is_superuser claim only when Neon Auth is not configured.
+        is_super: bool = (
+            bool(email and email == settings.platform_admin_email)
+            if settings.NEON_AUTH_JWKS_URL
+            else bool(payload.get("is_superuser", False))
         )
         tenant_id: str | None = payload.get("tenant_id") or payload.get("organization_id")
 
@@ -77,7 +80,8 @@ class JWTAuthGuard:
         connection.scope["token_jti"] = jti or ""
         connection.scope["is_superuser"] = is_super
         connection.scope["tenant_id"] = tenant_id or ""
-        connection.scope["role"] = role
+        connection.scope["role"] = "superadmin" if is_super else role
+        connection.scope["email"] = email
 
 
 jwt_auth_guard = JWTAuthGuard()
@@ -85,15 +89,14 @@ jwt_auth_guard = JWTAuthGuard()
 
 def superuser_guard(connection: ASGIConnection, _: RouteHandlerType) -> None:
     """
-    Asserts that the current authenticated user has is_superuser=True or role='superadmin'.
+    Asserts that the current authenticated user is the configured platform administrator.
     """
     user_id = connection.scope.get("user_id")
     if not user_id:
         raise NotAuthorizedException("Authentication required.")
-    is_super = connection.scope.get("is_superuser", False)
-    role = connection.scope.get("role", "")
-    if not (is_super or role == "superadmin"):
-        raise PermissionDeniedException("Superadmin privileges required to perform this action.")
+    is_super = bool(connection.scope.get("is_superuser", False))
+    if not is_super:
+        raise PermissionDeniedException("Platform administrator privileges required.")
 
 
 class SuperuserGuard:
