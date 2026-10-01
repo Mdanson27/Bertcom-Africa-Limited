@@ -5,10 +5,185 @@ export type ClientOptions = {
 };
 
 /**
+ * DocumentCreate
+ */
+export type DocumentCreate = {
+    category: string;
+    content_type: string;
+    extracted_fields?: {
+        [key: string]: unknown;
+    };
+    ocr_status?: string;
+    ocr_text?: string | null;
+    original_filename: string;
+    project_id?: string | null;
+    size_bytes: number;
+    storage_key: string;
+    title: string;
+};
+
+/**
+ * DocumentPresignRequest
+ */
+export type DocumentPresignRequest = {
+    content_type: string;
+    filename: string;
+    project_id?: string | null;
+};
+
+/**
+ * DocumentPresignResponse
+ */
+export type DocumentPresignResponse = {
+    method?: string;
+    storage_key: string;
+    upload_url: string;
+};
+
+/**
+ * DocumentRead
+ */
+export type DocumentRead = {
+    category: string;
+    content_type: string;
+    created_at: string;
+    extracted_fields: {
+        [key: string]: unknown;
+    };
+    id: string;
+    ocr_status: string;
+    ocr_text: string | null;
+    original_filename: string;
+    project_id: string | null;
+    size_bytes: number;
+    storage_key: string;
+    title: string;
+    updated_at: string;
+    uploaded_by_email: string;
+};
+
+/**
+ * DocumentUpdate
+ */
+export type DocumentUpdate = {
+    category?: string | null;
+    extracted_fields?: {
+        [key: string]: unknown;
+    } | null;
+    ocr_status?: string | null;
+    ocr_text?: string | null;
+    project_id?: string | null;
+    title?: string | null;
+};
+
+/**
+ * DownloadResponse
+ */
+export type DownloadResponse = {
+    url: string;
+};
+
+/**
  * Message
  */
 export type Message = {
     message: string;
+};
+
+/**
+ * ProjectCreate
+ */
+export type ProjectCreate = {
+    amount_paid_ugx?: number;
+    client_name: string;
+    description?: string | null;
+    due_date?: string | null;
+    name: string;
+    progress?: number;
+    project_manager_email?: string | null;
+    start_date?: string | null;
+    status?: string;
+    value_ugx?: number;
+};
+
+/**
+ * ProjectRead
+ */
+export type ProjectRead = {
+    amount_paid_ugx: number;
+    client_name: string;
+    created_at: string;
+    created_by_email: string;
+    description: string | null;
+    due_date: string | null;
+    id: string;
+    is_archived: boolean;
+    name: string;
+    progress: number;
+    project_manager_email: string | null;
+    start_date: string | null;
+    status: string;
+    updated_at: string;
+    value_ugx: number;
+};
+
+/**
+ * ProjectUpdate
+ */
+export type ProjectUpdate = {
+    amount_paid_ugx?: number | null;
+    client_name?: string | null;
+    description?: string | null;
+    due_date?: string | null;
+    is_archived?: boolean | null;
+    name?: string | null;
+    progress?: number | null;
+    project_manager_email?: string | null;
+    start_date?: string | null;
+    status?: string | null;
+    value_ugx?: number | null;
+};
+
+/**
+ * TaskCreate
+ */
+export type TaskCreate = {
+    assignee_email?: string | null;
+    description?: string | null;
+    due_date?: string | null;
+    priority?: string;
+    project_id: string;
+    status?: string;
+    title: string;
+};
+
+/**
+ * TaskRead
+ */
+export type TaskRead = {
+    assignee_email: string | null;
+    completed_at: string | null;
+    created_at: string;
+    description: string | null;
+    due_date: string | null;
+    id: string;
+    priority: string;
+    project_id: string;
+    status: string;
+    title: string;
+    updated_at: string;
+};
+
+/**
+ * TaskUpdate
+ */
+export type TaskUpdate = {
+    assignee_email?: string | null;
+    description?: string | null;
+    due_date?: string | null;
+    priority?: string | null;
+    status?: string | null;
+    title?: string | null;
 };
 
 /**
@@ -99,6 +274,17 @@ export type UsersPublic = {
     data: Array<UserRead>;
 };
 
+/**
+ * WorkspaceSummary
+ */
+export type WorkspaceSummary = {
+    active_projects: number;
+    documents: number;
+    due_tasks: number;
+    outstanding_ugx: number;
+    pending_tasks: number;
+};
+
 export type ApiV1AuthLoginLoginData = {
     body?: never;
     path?: never;
@@ -148,6 +334,467 @@ export type ApiV1AuthTokenTokenResponses = {
 };
 
 export type ApiV1AuthTokenTokenResponse = ApiV1AuthTokenTokenResponses[keyof ApiV1AuthTokenTokenResponses];
+
+export type ApiV1DocumentsListDocumentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        project_id?: string | null;
+        q?: string | null;
+    };
+    url: '/api/v1/documents';
+};
+
+export type ApiV1DocumentsListDocumentsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1DocumentsListDocumentsError = ApiV1DocumentsListDocumentsErrors[keyof ApiV1DocumentsListDocumentsErrors];
+
+export type ApiV1DocumentsListDocumentsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<DocumentRead>;
+};
+
+export type ApiV1DocumentsListDocumentsResponse = ApiV1DocumentsListDocumentsResponses[keyof ApiV1DocumentsListDocumentsResponses];
+
+export type ApiV1DocumentsCreateDocumentData = {
+    body: DocumentCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents';
+};
+
+export type ApiV1DocumentsCreateDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1DocumentsCreateDocumentError = ApiV1DocumentsCreateDocumentErrors[keyof ApiV1DocumentsCreateDocumentErrors];
+
+export type ApiV1DocumentsCreateDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: DocumentRead;
+};
+
+export type ApiV1DocumentsCreateDocumentResponse = ApiV1DocumentsCreateDocumentResponses[keyof ApiV1DocumentsCreateDocumentResponses];
+
+export type ApiV1DocumentsPresignCreateUploadUrlData = {
+    body: DocumentPresignRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents/presign';
+};
+
+export type ApiV1DocumentsPresignCreateUploadUrlErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1DocumentsPresignCreateUploadUrlError = ApiV1DocumentsPresignCreateUploadUrlErrors[keyof ApiV1DocumentsPresignCreateUploadUrlErrors];
+
+export type ApiV1DocumentsPresignCreateUploadUrlResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: DocumentPresignResponse;
+};
+
+export type ApiV1DocumentsPresignCreateUploadUrlResponse = ApiV1DocumentsPresignCreateUploadUrlResponses[keyof ApiV1DocumentsPresignCreateUploadUrlResponses];
+
+export type ApiV1DocumentsDocumentIdDeleteDocumentData = {
+    body?: never;
+    path: {
+        document_id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{document_id}';
+};
+
+export type ApiV1DocumentsDocumentIdDeleteDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1DocumentsDocumentIdDeleteDocumentError = ApiV1DocumentsDocumentIdDeleteDocumentErrors[keyof ApiV1DocumentsDocumentIdDeleteDocumentErrors];
+
+export type ApiV1DocumentsDocumentIdDeleteDocumentResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ApiV1DocumentsDocumentIdDeleteDocumentResponse = ApiV1DocumentsDocumentIdDeleteDocumentResponses[keyof ApiV1DocumentsDocumentIdDeleteDocumentResponses];
+
+export type ApiV1DocumentsDocumentIdUpdateDocumentData = {
+    body: DocumentUpdate;
+    path: {
+        document_id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{document_id}';
+};
+
+export type ApiV1DocumentsDocumentIdUpdateDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1DocumentsDocumentIdUpdateDocumentError = ApiV1DocumentsDocumentIdUpdateDocumentErrors[keyof ApiV1DocumentsDocumentIdUpdateDocumentErrors];
+
+export type ApiV1DocumentsDocumentIdUpdateDocumentResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: DocumentRead;
+};
+
+export type ApiV1DocumentsDocumentIdUpdateDocumentResponse = ApiV1DocumentsDocumentIdUpdateDocumentResponses[keyof ApiV1DocumentsDocumentIdUpdateDocumentResponses];
+
+export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData = {
+    body?: never;
+    path: {
+        document_id: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{document_id}/download';
+};
+
+export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlError = ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors[keyof ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors];
+
+export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: DownloadResponse;
+};
+
+export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponse = ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses[keyof ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses];
+
+export type ApiV1ProjectsListProjectsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        q?: string | null;
+        include_archived?: boolean;
+    };
+    url: '/api/v1/projects';
+};
+
+export type ApiV1ProjectsListProjectsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsListProjectsError = ApiV1ProjectsListProjectsErrors[keyof ApiV1ProjectsListProjectsErrors];
+
+export type ApiV1ProjectsListProjectsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<ProjectRead>;
+};
+
+export type ApiV1ProjectsListProjectsResponse = ApiV1ProjectsListProjectsResponses[keyof ApiV1ProjectsListProjectsResponses];
+
+export type ApiV1ProjectsCreateProjectData = {
+    body: ProjectCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/projects';
+};
+
+export type ApiV1ProjectsCreateProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsCreateProjectError = ApiV1ProjectsCreateProjectErrors[keyof ApiV1ProjectsCreateProjectErrors];
+
+export type ApiV1ProjectsCreateProjectResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: ProjectRead;
+};
+
+export type ApiV1ProjectsCreateProjectResponse = ApiV1ProjectsCreateProjectResponses[keyof ApiV1ProjectsCreateProjectResponses];
+
+export type ApiV1ProjectsProjectIdArchiveProjectData = {
+    body?: never;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}';
+};
+
+export type ApiV1ProjectsProjectIdArchiveProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsProjectIdArchiveProjectError = ApiV1ProjectsProjectIdArchiveProjectErrors[keyof ApiV1ProjectsProjectIdArchiveProjectErrors];
+
+export type ApiV1ProjectsProjectIdArchiveProjectResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ApiV1ProjectsProjectIdArchiveProjectResponse = ApiV1ProjectsProjectIdArchiveProjectResponses[keyof ApiV1ProjectsProjectIdArchiveProjectResponses];
+
+export type ApiV1ProjectsProjectIdGetProjectData = {
+    body?: never;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}';
+};
+
+export type ApiV1ProjectsProjectIdGetProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsProjectIdGetProjectError = ApiV1ProjectsProjectIdGetProjectErrors[keyof ApiV1ProjectsProjectIdGetProjectErrors];
+
+export type ApiV1ProjectsProjectIdGetProjectResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ProjectRead;
+};
+
+export type ApiV1ProjectsProjectIdGetProjectResponse = ApiV1ProjectsProjectIdGetProjectResponses[keyof ApiV1ProjectsProjectIdGetProjectResponses];
+
+export type ApiV1ProjectsProjectIdUpdateProjectData = {
+    body: ProjectUpdate;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}';
+};
+
+export type ApiV1ProjectsProjectIdUpdateProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsProjectIdUpdateProjectError = ApiV1ProjectsProjectIdUpdateProjectErrors[keyof ApiV1ProjectsProjectIdUpdateProjectErrors];
+
+export type ApiV1ProjectsProjectIdUpdateProjectResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ProjectRead;
+};
+
+export type ApiV1ProjectsProjectIdUpdateProjectResponse = ApiV1ProjectsProjectIdUpdateProjectResponses[keyof ApiV1ProjectsProjectIdUpdateProjectResponses];
+
+export type ApiV1TasksListTasksData = {
+    body?: never;
+    path?: never;
+    query?: {
+        project_id?: string | null;
+        status?: string | null;
+    };
+    url: '/api/v1/tasks';
+};
+
+export type ApiV1TasksListTasksErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1TasksListTasksError = ApiV1TasksListTasksErrors[keyof ApiV1TasksListTasksErrors];
+
+export type ApiV1TasksListTasksResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<TaskRead>;
+};
+
+export type ApiV1TasksListTasksResponse = ApiV1TasksListTasksResponses[keyof ApiV1TasksListTasksResponses];
+
+export type ApiV1TasksCreateTaskData = {
+    body: TaskCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tasks';
+};
+
+export type ApiV1TasksCreateTaskErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1TasksCreateTaskError = ApiV1TasksCreateTaskErrors[keyof ApiV1TasksCreateTaskErrors];
+
+export type ApiV1TasksCreateTaskResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: TaskRead;
+};
+
+export type ApiV1TasksCreateTaskResponse = ApiV1TasksCreateTaskResponses[keyof ApiV1TasksCreateTaskResponses];
+
+export type ApiV1TasksTaskIdUpdateTaskData = {
+    body: TaskUpdate;
+    path: {
+        task_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tasks/{task_id}';
+};
+
+export type ApiV1TasksTaskIdUpdateTaskErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1TasksTaskIdUpdateTaskError = ApiV1TasksTaskIdUpdateTaskErrors[keyof ApiV1TasksTaskIdUpdateTaskErrors];
+
+export type ApiV1TasksTaskIdUpdateTaskResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: TaskRead;
+};
+
+export type ApiV1TasksTaskIdUpdateTaskResponse = ApiV1TasksTaskIdUpdateTaskResponses[keyof ApiV1TasksTaskIdUpdateTaskResponses];
 
 export type ApiV1TelemetryIngestIngestData = {
     body: Array<TelemetryRecord>;
@@ -585,6 +1232,22 @@ export type ApiV1UtilsTestEmailTestEmailResponses = {
 };
 
 export type ApiV1UtilsTestEmailTestEmailResponse = ApiV1UtilsTestEmailTestEmailResponses[keyof ApiV1UtilsTestEmailTestEmailResponses];
+
+export type ApiV1WorkspaceSummarySummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/workspace/summary';
+};
+
+export type ApiV1WorkspaceSummarySummaryResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: WorkspaceSummary;
+};
+
+export type ApiV1WorkspaceSummarySummaryResponse = ApiV1WorkspaceSummarySummaryResponses[keyof ApiV1WorkspaceSummarySummaryResponses];
 
 export type HealthGetHealthData = {
     body?: never;
