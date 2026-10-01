@@ -134,10 +134,10 @@ class IdempotencyMiddleware(AbstractMiddleware):
         try:
             import valkey.asyncio as valkey
 
-            return valkey.Valkey(
-                host=settings.VALKEY_HOST,
-                port=settings.VALKEY_PORT,
+            return valkey.from_url(
+                settings.valkey_url,
                 decode_responses=True,
+                socket_connect_timeout=2.0,
                 socket_timeout=2.0,
             )
         except Exception:  # noqa: BLE001
