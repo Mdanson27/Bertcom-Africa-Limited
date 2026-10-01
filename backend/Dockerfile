@@ -19,6 +19,7 @@ COPY src /app/src
 COPY alembic /app/alembic
 COPY alembic.ini /app/alembic.ini
 COPY scripts /app/scripts
+RUN find /app/scripts -type f -name '*.sh' -exec sed -i 's/\r$//' {} +
 COPY tests /app/tests
 COPY pyproject.toml /app/pyproject.toml
 
