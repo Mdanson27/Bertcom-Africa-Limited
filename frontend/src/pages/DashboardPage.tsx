@@ -1,50 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { MetricsOverviewCards } from "@/features/dashboard/MetricsOverviewCards";
 import { SystemHealthCard } from "@/features/dashboard/SystemHealthCard";
 import { TelemetryStream } from "@/features/dashboard/TelemetryStream";
-import {
-  healthGetHealth,
-  healthReadyGetReadiness,
-  healthStartupGetStartup,
-} from "@/client/sdk.gen";
+import { useSystemHealth } from "@/features/dashboard/SystemHealthContext";
 import { useAuth } from "@/hooks/useAuth";
 
 export const DashboardPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
-  const [apiStatus, setApiStatus] = useState<string>("CHECKING");
-  const [databaseHealthy, setDatabaseHealthy] = useState<boolean | null>(null);
-  const [cacheHealthy, setCacheHealthy] = useState<boolean | null>(null);
-  const [migrationsHealthy, setMigrationsHealthy] = useState<boolean | null>(null);
+  const { api, database, valkey, migrations } = useSystemHealth();
 
-  const loadDashboardData = async () => {
-    try {
-      const healthRes = await healthGetHealth();
-      setApiStatus(healthRes.response?.ok ? "ONLINE" : "DEGRADED");
-    } catch {
-      setApiStatus("OFFLINE");
-    }
+  const apiStatus =
+    api.status === "healthy" ? "ONLINE" : api.status === "loading" ? "CHECKING" : "OFFLINE";
 
-    try {
-      const readyRes = await healthReadyGetReadiness();
-      const deps = (readyRes.data?.dependencies ?? {}) as Record<string, unknown>;
-      setDatabaseHealthy(Boolean(readyRes.response?.ok && deps.database === "healthy"));
-      setCacheHealthy(Boolean(readyRes.response?.ok && deps.valkey === "healthy"));
-    } catch {
-      setDatabaseHealthy(false);
-      setCacheHealthy(false);
-    }
-
-    try {
-      const startupRes = await healthStartupGetStartup();
-      setMigrationsHealthy(Boolean(startupRes.response?.ok));
-    } catch {
-      setMigrationsHealthy(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadDashboardData();
-  }, []);
+  const databaseHealthy =
+    database.status === "loading" ? null : database.status === "healthy";
+  const cacheHealthy =
+    valkey.status === "loading" ? null : valkey.status === "healthy";
+  const migrationsHealthy =
+    migrations.status === "loading" ? null : migrations.status === "healthy";
 
   return (
     <div className="space-y-6">

@@ -22,6 +22,11 @@ function tone(healthy: boolean | null): string {
     : "text-destructive bg-destructive/10 border-destructive/20";
 }
 
+function iconTone(healthy: boolean | null): string {
+  if (healthy === null) return "text-muted-foreground";
+  return healthy ? "text-emerald-500" : "text-destructive";
+}
+
 export const MetricsOverviewCards: React.FC<MetricsProps> = ({
   apiStatus,
   authHealthy,
@@ -29,22 +34,22 @@ export const MetricsOverviewCards: React.FC<MetricsProps> = ({
   cacheHealthy,
   migrationsHealthy,
 }) => {
-  const apiHealthy = apiStatus === "ONLINE";
+  const apiHealthy = apiStatus === "ONLINE" ? true : apiStatus === "CHECKING" ? null : false;
 
   const cards = [
     {
       title: "Backend API",
       value: apiStatus,
       subtitle: "Litestar / Granian",
-      icon: <Activity className={`h-5 w-5 ${apiHealthy ? "text-emerald-500" : "text-destructive"}`} />,
-      badge: apiHealthy ? "Healthy" : "Needs attention",
+      icon: <Activity className={`h-5 w-5 ${iconTone(apiHealthy)}`} />,
+      badge: label(apiHealthy, "Healthy", "Needs attention"),
       badgeColor: tone(apiHealthy),
     },
     {
       title: "Database",
       value: label(databaseHealthy, "Connected", "Unavailable"),
       subtitle: migrationsHealthy ? "Neon Postgres · schema current" : "Neon Postgres · schema check",
-      icon: <Database className={`h-5 w-5 ${databaseHealthy ? "text-emerald-500" : "text-destructive"}`} />,
+      icon: <Database className={`h-5 w-5 ${iconTone(databaseHealthy)}`} />,
       badge: label(databaseHealthy, "Healthy", "Needs attention"),
       badgeColor: tone(databaseHealthy),
     },
@@ -60,7 +65,7 @@ export const MetricsOverviewCards: React.FC<MetricsProps> = ({
       title: "Task Queue",
       value: label(cacheHealthy, "Connected", "Unavailable"),
       subtitle: "SAQ + Valkey",
-      icon: <ServerCog className={`h-5 w-5 ${cacheHealthy ? "text-emerald-500" : "text-destructive"}`} />,
+      icon: <ServerCog className={`h-5 w-5 ${iconTone(cacheHealthy)}`} />,
       badge: label(cacheHealthy, "Healthy", "Needs attention"),
       badgeColor: tone(cacheHealthy),
     },
