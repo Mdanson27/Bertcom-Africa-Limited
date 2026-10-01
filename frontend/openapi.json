@@ -1,6 +1,182 @@
 {
   "components": {
     "schemas": {
+      "BusinessSummary": {
+        "properties": {
+          "clients": {
+            "type": "integer"
+          },
+          "expenses_ugx": {
+            "type": "number"
+          },
+          "invoice_outstanding_ugx": {
+            "type": "number"
+          },
+          "quotations_open": {
+            "type": "integer"
+          },
+          "suppliers": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "clients",
+          "expenses_ugx",
+          "invoice_outstanding_ugx",
+          "quotations_open",
+          "suppliers"
+        ],
+        "title": "BusinessSummary",
+        "type": "object"
+      },
+      "ClientCreate": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_person": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ClientCreate",
+        "type": "object"
+      },
+      "ClientRead": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_person": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "contact_person",
+          "created_at",
+          "email",
+          "id",
+          "is_active",
+          "name",
+          "notes",
+          "phone",
+          "updated_at"
+        ],
+        "title": "ClientRead",
+        "type": "object"
+      },
       "DocumentCreate": {
         "properties": {
           "category": {
@@ -271,6 +447,309 @@
           "url"
         ],
         "title": "DownloadResponse",
+        "type": "object"
+      },
+      "ExpenseCreate": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "category": {
+            "default": "general",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expense_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "description",
+          "expense_date"
+        ],
+        "title": "ExpenseCreate",
+        "type": "object"
+      },
+      "ExpenseRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expense_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "category",
+          "created_at",
+          "description",
+          "expense_date",
+          "id",
+          "project_id",
+          "reference",
+          "supplier_id",
+          "updated_at"
+        ],
+        "title": "ExpenseRead",
+        "type": "object"
+      },
+      "InvoiceCreate": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invoice_number": {
+            "type": "string"
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paid_amount_ugx": {
+            "default": 0,
+            "type": "number"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "default": "draft",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "client_name",
+          "invoice_number",
+          "issue_date"
+        ],
+        "title": "InvoiceCreate",
+        "type": "object"
+      },
+      "InvoiceRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invoice_number": {
+            "type": "string"
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paid_amount_ugx": {
+            "type": "number"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "client_id",
+          "client_name",
+          "created_at",
+          "due_date",
+          "id",
+          "invoice_number",
+          "issue_date",
+          "notes",
+          "paid_amount_ugx",
+          "project_id",
+          "status",
+          "updated_at"
+        ],
+        "title": "InvoiceRead",
         "type": "object"
       },
       "Message": {
@@ -577,6 +1056,480 @@
         },
         "required": [],
         "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "PurchaseOrderCreate": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "expected_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "order_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "po_number": {
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "default": "draft",
+            "type": "string"
+          },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "order_date",
+          "po_number",
+          "supplier_name"
+        ],
+        "title": "PurchaseOrderCreate",
+        "type": "object"
+      },
+      "PurchaseOrderRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "expected_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "order_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "po_number": {
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_name": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "created_at",
+          "expected_date",
+          "id",
+          "notes",
+          "order_date",
+          "po_number",
+          "project_id",
+          "status",
+          "supplier_id",
+          "supplier_name",
+          "updated_at"
+        ],
+        "title": "PurchaseOrderRead",
+        "type": "object"
+      },
+      "QuotationCreate": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quotation_number": {
+            "type": "string"
+          },
+          "status": {
+            "default": "draft",
+            "type": "string"
+          },
+          "valid_until": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "client_name",
+          "issue_date",
+          "quotation_number"
+        ],
+        "title": "QuotationCreate",
+        "type": "object"
+      },
+      "QuotationRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quotation_number": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "valid_until": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "client_id",
+          "client_name",
+          "created_at",
+          "id",
+          "issue_date",
+          "notes",
+          "project_id",
+          "quotation_number",
+          "status",
+          "updated_at",
+          "valid_until"
+        ],
+        "title": "QuotationRead",
+        "type": "object"
+      },
+      "SupplierCreate": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_person": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "SupplierCreate",
+        "type": "object"
+      },
+      "SupplierRead": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_person": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "address",
+          "contact_person",
+          "created_at",
+          "email",
+          "id",
+          "is_active",
+          "name",
+          "notes",
+          "phone",
+          "updated_at"
+        ],
+        "title": "SupplierRead",
         "type": "object"
       },
       "TaskCreate": {
@@ -1166,6 +2119,560 @@
           }
         },
         "summary": "OAuth2 Token Endpoint"
+      }
+    },
+    "/api/v1/business/clients": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsClients",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Clients"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsCreateClient",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreateClient"
+      }
+    },
+    "/api/v1/business/expenses": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessExpensesExpenses",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExpenseRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Expenses"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessExpensesCreateExpense",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreateExpense"
+      }
+    },
+    "/api/v1/business/invoices": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessInvoicesInvoices",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Invoices"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessInvoicesCreateInvoice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreateInvoice"
+      }
+    },
+    "/api/v1/business/purchase-orders": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPurchaseOrdersPurchaseOrders",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PurchaseOrderRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "PurchaseOrders"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPurchaseOrdersCreatePurchaseOrder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreatePurchaseOrder"
+      }
+    },
+    "/api/v1/business/quotations": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessQuotationsQuotations",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/QuotationRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Quotations"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessQuotationsCreateQuotation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuotationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuotationRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreateQuotation"
+      }
+    },
+    "/api/v1/business/summary": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSummarySummary",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessSummary"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Summary"
+      }
+    },
+    "/api/v1/business/suppliers": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSuppliersSuppliers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SupplierRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Suppliers"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSuppliersCreateSupplier",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreateSupplier"
       }
     },
     "/api/v1/documents": {

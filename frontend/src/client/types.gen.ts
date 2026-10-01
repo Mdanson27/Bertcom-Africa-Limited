@@ -5,6 +5,45 @@ export type ClientOptions = {
 };
 
 /**
+ * BusinessSummary
+ */
+export type BusinessSummary = {
+    clients: number;
+    expenses_ugx: number;
+    invoice_outstanding_ugx: number;
+    quotations_open: number;
+    suppliers: number;
+};
+
+/**
+ * ClientCreate
+ */
+export type ClientCreate = {
+    address?: string | null;
+    contact_person?: string | null;
+    email?: string | null;
+    name: string;
+    notes?: string | null;
+    phone?: string | null;
+};
+
+/**
+ * ClientRead
+ */
+export type ClientRead = {
+    address: string | null;
+    contact_person: string | null;
+    created_at: string;
+    email: string | null;
+    id: string;
+    is_active: boolean;
+    name: string;
+    notes: string | null;
+    phone: string | null;
+    updated_at: string;
+};
+
+/**
  * DocumentCreate
  */
 export type DocumentCreate = {
@@ -84,6 +123,70 @@ export type DownloadResponse = {
 };
 
 /**
+ * ExpenseCreate
+ */
+export type ExpenseCreate = {
+    amount_ugx: number;
+    category?: string;
+    description: string;
+    expense_date: string;
+    project_id?: string | null;
+    reference?: string | null;
+    supplier_id?: string | null;
+};
+
+/**
+ * ExpenseRead
+ */
+export type ExpenseRead = {
+    amount_ugx: number;
+    category: string;
+    created_at: string;
+    description: string;
+    expense_date: string;
+    id: string;
+    project_id: string | null;
+    reference: string | null;
+    supplier_id: string | null;
+    updated_at: string;
+};
+
+/**
+ * InvoiceCreate
+ */
+export type InvoiceCreate = {
+    amount_ugx: number;
+    client_id?: string | null;
+    client_name: string;
+    due_date?: string | null;
+    invoice_number: string;
+    issue_date: string;
+    notes?: string | null;
+    paid_amount_ugx?: number;
+    project_id?: string | null;
+    status?: string;
+};
+
+/**
+ * InvoiceRead
+ */
+export type InvoiceRead = {
+    amount_ugx: number;
+    client_id: string | null;
+    client_name: string;
+    created_at: string;
+    due_date: string | null;
+    id: string;
+    invoice_number: string;
+    issue_date: string;
+    notes: string | null;
+    paid_amount_ugx: number;
+    project_id: string | null;
+    status: string;
+    updated_at: string;
+};
+
+/**
  * Message
  */
 export type Message = {
@@ -142,6 +245,100 @@ export type ProjectUpdate = {
     start_date?: string | null;
     status?: string | null;
     value_ugx?: number | null;
+};
+
+/**
+ * PurchaseOrderCreate
+ */
+export type PurchaseOrderCreate = {
+    amount_ugx: number;
+    expected_date?: string | null;
+    notes?: string | null;
+    order_date: string;
+    po_number: string;
+    project_id?: string | null;
+    status?: string;
+    supplier_id?: string | null;
+    supplier_name: string;
+};
+
+/**
+ * PurchaseOrderRead
+ */
+export type PurchaseOrderRead = {
+    amount_ugx: number;
+    created_at: string;
+    expected_date: string | null;
+    id: string;
+    notes: string | null;
+    order_date: string;
+    po_number: string;
+    project_id: string | null;
+    status: string;
+    supplier_id: string | null;
+    supplier_name: string;
+    updated_at: string;
+};
+
+/**
+ * QuotationCreate
+ */
+export type QuotationCreate = {
+    amount_ugx: number;
+    client_id?: string | null;
+    client_name: string;
+    issue_date: string;
+    notes?: string | null;
+    project_id?: string | null;
+    quotation_number: string;
+    status?: string;
+    valid_until?: string | null;
+};
+
+/**
+ * QuotationRead
+ */
+export type QuotationRead = {
+    amount_ugx: number;
+    client_id: string | null;
+    client_name: string;
+    created_at: string;
+    id: string;
+    issue_date: string;
+    notes: string | null;
+    project_id: string | null;
+    quotation_number: string;
+    status: string;
+    updated_at: string;
+    valid_until: string | null;
+};
+
+/**
+ * SupplierCreate
+ */
+export type SupplierCreate = {
+    address?: string | null;
+    contact_person?: string | null;
+    email?: string | null;
+    name: string;
+    notes?: string | null;
+    phone?: string | null;
+};
+
+/**
+ * SupplierRead
+ */
+export type SupplierRead = {
+    address: string | null;
+    contact_person: string | null;
+    created_at: string;
+    email: string | null;
+    id: string;
+    is_active: boolean;
+    name: string;
+    notes: string | null;
+    phone: string | null;
+    updated_at: string;
 };
 
 /**
@@ -334,6 +531,304 @@ export type ApiV1AuthTokenTokenResponses = {
 };
 
 export type ApiV1AuthTokenTokenResponse = ApiV1AuthTokenTokenResponses[keyof ApiV1AuthTokenTokenResponses];
+
+export type ApiV1BusinessClientsClientsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/clients';
+};
+
+export type ApiV1BusinessClientsClientsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<ClientRead>;
+};
+
+export type ApiV1BusinessClientsClientsResponse = ApiV1BusinessClientsClientsResponses[keyof ApiV1BusinessClientsClientsResponses];
+
+export type ApiV1BusinessClientsCreateClientData = {
+    body: ClientCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/clients';
+};
+
+export type ApiV1BusinessClientsCreateClientErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsCreateClientError = ApiV1BusinessClientsCreateClientErrors[keyof ApiV1BusinessClientsCreateClientErrors];
+
+export type ApiV1BusinessClientsCreateClientResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: ClientRead;
+};
+
+export type ApiV1BusinessClientsCreateClientResponse = ApiV1BusinessClientsCreateClientResponses[keyof ApiV1BusinessClientsCreateClientResponses];
+
+export type ApiV1BusinessExpensesExpensesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/expenses';
+};
+
+export type ApiV1BusinessExpensesExpensesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<ExpenseRead>;
+};
+
+export type ApiV1BusinessExpensesExpensesResponse = ApiV1BusinessExpensesExpensesResponses[keyof ApiV1BusinessExpensesExpensesResponses];
+
+export type ApiV1BusinessExpensesCreateExpenseData = {
+    body: ExpenseCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/expenses';
+};
+
+export type ApiV1BusinessExpensesCreateExpenseErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessExpensesCreateExpenseError = ApiV1BusinessExpensesCreateExpenseErrors[keyof ApiV1BusinessExpensesCreateExpenseErrors];
+
+export type ApiV1BusinessExpensesCreateExpenseResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: ExpenseRead;
+};
+
+export type ApiV1BusinessExpensesCreateExpenseResponse = ApiV1BusinessExpensesCreateExpenseResponses[keyof ApiV1BusinessExpensesCreateExpenseResponses];
+
+export type ApiV1BusinessInvoicesInvoicesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/invoices';
+};
+
+export type ApiV1BusinessInvoicesInvoicesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<InvoiceRead>;
+};
+
+export type ApiV1BusinessInvoicesInvoicesResponse = ApiV1BusinessInvoicesInvoicesResponses[keyof ApiV1BusinessInvoicesInvoicesResponses];
+
+export type ApiV1BusinessInvoicesCreateInvoiceData = {
+    body: InvoiceCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/invoices';
+};
+
+export type ApiV1BusinessInvoicesCreateInvoiceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessInvoicesCreateInvoiceError = ApiV1BusinessInvoicesCreateInvoiceErrors[keyof ApiV1BusinessInvoicesCreateInvoiceErrors];
+
+export type ApiV1BusinessInvoicesCreateInvoiceResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: InvoiceRead;
+};
+
+export type ApiV1BusinessInvoicesCreateInvoiceResponse = ApiV1BusinessInvoicesCreateInvoiceResponses[keyof ApiV1BusinessInvoicesCreateInvoiceResponses];
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrdersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/purchase-orders';
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<PurchaseOrderRead>;
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrdersResponse = ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses[keyof ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses];
+
+export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderData = {
+    body: PurchaseOrderCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/purchase-orders';
+};
+
+export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderError = ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors[keyof ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors];
+
+export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: PurchaseOrderRead;
+};
+
+export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponse = ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses[keyof ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses];
+
+export type ApiV1BusinessQuotationsQuotationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/quotations';
+};
+
+export type ApiV1BusinessQuotationsQuotationsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<QuotationRead>;
+};
+
+export type ApiV1BusinessQuotationsQuotationsResponse = ApiV1BusinessQuotationsQuotationsResponses[keyof ApiV1BusinessQuotationsQuotationsResponses];
+
+export type ApiV1BusinessQuotationsCreateQuotationData = {
+    body: QuotationCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/quotations';
+};
+
+export type ApiV1BusinessQuotationsCreateQuotationErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessQuotationsCreateQuotationError = ApiV1BusinessQuotationsCreateQuotationErrors[keyof ApiV1BusinessQuotationsCreateQuotationErrors];
+
+export type ApiV1BusinessQuotationsCreateQuotationResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: QuotationRead;
+};
+
+export type ApiV1BusinessQuotationsCreateQuotationResponse = ApiV1BusinessQuotationsCreateQuotationResponses[keyof ApiV1BusinessQuotationsCreateQuotationResponses];
+
+export type ApiV1BusinessSummarySummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/summary';
+};
+
+export type ApiV1BusinessSummarySummaryResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BusinessSummary;
+};
+
+export type ApiV1BusinessSummarySummaryResponse = ApiV1BusinessSummarySummaryResponses[keyof ApiV1BusinessSummarySummaryResponses];
+
+export type ApiV1BusinessSuppliersSuppliersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/suppliers';
+};
+
+export type ApiV1BusinessSuppliersSuppliersResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<SupplierRead>;
+};
+
+export type ApiV1BusinessSuppliersSuppliersResponse = ApiV1BusinessSuppliersSuppliersResponses[keyof ApiV1BusinessSuppliersSuppliersResponses];
+
+export type ApiV1BusinessSuppliersCreateSupplierData = {
+    body: SupplierCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/suppliers';
+};
+
+export type ApiV1BusinessSuppliersCreateSupplierErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessSuppliersCreateSupplierError = ApiV1BusinessSuppliersCreateSupplierErrors[keyof ApiV1BusinessSuppliersCreateSupplierErrors];
+
+export type ApiV1BusinessSuppliersCreateSupplierResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: SupplierRead;
+};
+
+export type ApiV1BusinessSuppliersCreateSupplierResponse = ApiV1BusinessSuppliersCreateSupplierResponses[keyof ApiV1BusinessSuppliersCreateSupplierResponses];
 
 export type ApiV1DocumentsListDocumentsData = {
     body?: never;
