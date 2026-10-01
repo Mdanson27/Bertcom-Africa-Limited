@@ -58,11 +58,9 @@ class JWTAuthGuard:
         email = str(payload.get("email") or "").lower()
         token_role = payload.get("role")
         role: str = str(token_role or "authenticated")
-        is_super: bool = bool(
-            payload.get("is_superuser", False)
-            or role.lower() in {"admin", "owner", "superadmin"}
-            or email in settings.admin_emails
-        )
+        # Platform administration is intentionally email-locked. Neon roles do
+        # not grant access to the infrastructure/admin console.
+        is_super: bool = bool(email and email == settings.platform_admin_email)
         tenant_id: str | None = payload.get("tenant_id") or payload.get("organization_id")
 
         if not user_id:
@@ -77,7 +75,8 @@ class JWTAuthGuard:
         connection.scope["token_jti"] = jti or ""
         connection.scope["is_superuser"] = is_super
         connection.scope["tenant_id"] = tenant_id or ""
-        connection.scope["role"] = role
+        connection.scope["role"] = "superadmin" if is_super else role
+        connection.scope["email"] = email
 
 
 jwt_auth_guard = JWTAuthGuard()
