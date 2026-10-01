@@ -139,9 +139,9 @@ class OutboxRelay:
     async def publish_event(self, event: OutboxEvent) -> None:
         import valkey.asyncio as valkey
 
-        v_client = valkey.Valkey(
-            host=settings.VALKEY_HOST,
-            port=settings.VALKEY_PORT,
+        v_client = valkey.from_url(
+            settings.valkey_url,
+            socket_connect_timeout=2.0,
             socket_timeout=2.0,
         )
         try:
