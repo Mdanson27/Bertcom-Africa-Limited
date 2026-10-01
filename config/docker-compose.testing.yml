@@ -16,6 +16,9 @@ services:
     restart: unless-stopped
     volumes:
       - bertcom_testing_valkey:/data
+    networks:
+      bertcom_testing:
+        ipv4_address: 172.28.250.10
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
@@ -38,9 +41,11 @@ services:
       APP_BASE_URL: http://localhost:8000
       CORS_ALLOWED_ORIGINS: https://mdanson27.github.io
       BERTCOM_ADMIN_EMAILS: ddaannson@gmail.com,automindsafrica@gmail.com
-      VALKEY_URL: redis://valkey:6379/0
+      VALKEY_URL: redis://172.28.250.10:6379/0
     ports:
       - "127.0.0.1:8000:8000"
+    networks:
+      - bertcom_testing
     depends_on:
       valkey:
         condition: service_healthy
@@ -70,10 +75,20 @@ services:
       APP_BASE_URL: http://localhost:8000
       CORS_ALLOWED_ORIGINS: https://mdanson27.github.io
       BERTCOM_ADMIN_EMAILS: ddaannson@gmail.com,automindsafrica@gmail.com
-      VALKEY_URL: redis://valkey:6379/0
+      VALKEY_URL: redis://172.28.250.10:6379/0
+    networks:
+      - bertcom_testing
     depends_on:
       api:
         condition: service_healthy
 
 volumes:
   bertcom_testing_valkey:
+
+
+networks:
+  bertcom_testing:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.250.0/24

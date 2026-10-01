@@ -65,6 +65,15 @@ class SlidingWindowRateLimitMiddleware(AbstractMiddleware):
             return
 
         path = scope.get("path", "")
+
+        # Health probes must measure dependencies directly. Running the
+        # readiness endpoint through the Valkey-backed rate limiter creates
+        # a circular dependency and can turn a cache lookup delay into a
+        # false health failure.
+        if path == "/health" or path.startswith("/health/"):
+            await self.app(scope, receive, send)
+            return
+
         # Determine quota policy
         if "/api/v1/auth/login" in path:
             limit = 5
