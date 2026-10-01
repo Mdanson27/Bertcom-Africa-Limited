@@ -175,14 +175,14 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONIOENCODING=utf-8
-      - DATABASE_URL=postgresql+asyncpg://bertcom_user:Zimbarent@2026@postgres-db:5432/bertcom_db
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL is required}
       
       - VALKEY_HOST=valkey-cache
       - VALKEY_PORT=6379
       
       - ENVIRONMENT=development
       - APP_BASE_URL=http://localhost:8000
-      - SECRET_KEY=${SECRET_KEY:-f200c54d582f2ed71eebd697958d06bce8689c0c85fe71b789944c5de476b3bc}
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY is required}
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
