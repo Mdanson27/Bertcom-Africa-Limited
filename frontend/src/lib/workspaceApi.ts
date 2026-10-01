@@ -84,6 +84,88 @@ export interface WorkspaceSummary {
   outstanding_ugx: number;
 }
 
+export interface ClientRecord {
+  id: string;
+  name: string;
+  contact_person: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupplierRecord extends ClientRecord {}
+
+export interface QuotationRecord {
+  id: string;
+  quotation_number: string;
+  client_id: string | null;
+  project_id: string | null;
+  client_name: string;
+  amount_ugx: number;
+  status: string;
+  issue_date: string;
+  valid_until: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceRecord {
+  id: string;
+  invoice_number: string;
+  client_id: string | null;
+  project_id: string | null;
+  client_name: string;
+  amount_ugx: number;
+  paid_amount_ugx: number;
+  status: string;
+  issue_date: string;
+  due_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseOrderRecord {
+  id: string;
+  po_number: string;
+  supplier_id: string | null;
+  project_id: string | null;
+  supplier_name: string;
+  amount_ugx: number;
+  status: string;
+  order_date: string;
+  expected_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpenseRecord {
+  id: string;
+  project_id: string | null;
+  supplier_id: string | null;
+  category: string;
+  description: string;
+  amount_ugx: number;
+  expense_date: string;
+  reference: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BusinessSummary {
+  clients: number;
+  suppliers: number;
+  quotations_open: number;
+  invoice_outstanding_ugx: number;
+  expenses_ugx: number;
+}
+
 export const workspaceApi = {
   summary: () => request<WorkspaceSummary>("/workspace/summary"),
   projects: () => request<Project[]>("/projects"),
@@ -110,6 +192,26 @@ export const workspaceApi = {
   createDocument: (body: Record<string, unknown>) =>
     request<DocumentRecord>("/documents", { method: "POST", body: JSON.stringify(body) }),
   downloadDocument: (id: string) => request<{ url: string }>(`/documents/${id}/download`),
+
+  businessSummary: () => request<BusinessSummary>("/business/summary"),
+  clients: () => request<ClientRecord[]>("/business/clients"),
+  createClient: (body: Record<string, unknown>) =>
+    request<ClientRecord>("/business/clients", { method: "POST", body: JSON.stringify(body) }),
+  suppliers: () => request<SupplierRecord[]>("/business/suppliers"),
+  createSupplier: (body: Record<string, unknown>) =>
+    request<SupplierRecord>("/business/suppliers", { method: "POST", body: JSON.stringify(body) }),
+  quotations: () => request<QuotationRecord[]>("/business/quotations"),
+  createQuotation: (body: Record<string, unknown>) =>
+    request<QuotationRecord>("/business/quotations", { method: "POST", body: JSON.stringify(body) }),
+  invoices: () => request<InvoiceRecord[]>("/business/invoices"),
+  createInvoice: (body: Record<string, unknown>) =>
+    request<InvoiceRecord>("/business/invoices", { method: "POST", body: JSON.stringify(body) }),
+  purchaseOrders: () => request<PurchaseOrderRecord[]>("/business/purchase-orders"),
+  createPurchaseOrder: (body: Record<string, unknown>) =>
+    request<PurchaseOrderRecord>("/business/purchase-orders", { method: "POST", body: JSON.stringify(body) }),
+  expenses: () => request<ExpenseRecord[]>("/business/expenses"),
+  createExpense: (body: Record<string, unknown>) =>
+    request<ExpenseRecord>("/business/expenses", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export async function uploadToPresignedUrl(url: string, file: File): Promise<void> {
