@@ -59,7 +59,7 @@ export const DocumentsPage: React.FC = () => {
         const tesseractUrl = "https://cdn.jsdelivr.net/npm/tesseract.js@7/dist/tesseract.esm.min.js";
         const { recognize } = await import(/* @vite-ignore */ tesseractUrl);
         const result = await recognize(file, "eng", {
-          logger: (message) => {
+          logger: (message: { progress?: number }) => {
             if (typeof message.progress === "number") {
               setProgress(`Reading document... ${Math.round(message.progress * 100)}%`);
             }
