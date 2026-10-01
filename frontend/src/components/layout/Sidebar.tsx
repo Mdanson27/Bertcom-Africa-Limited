@@ -1,19 +1,35 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  Home,
-  Users,
-  Radio,
-  Settings,
-  LogOut,
+  Activity,
+  BarChart3,
+  BriefcaseBusiness,
   ChevronsUpDown,
   FileCode2,
+  Files,
+  FolderKanban,
+  Home,
+  ListTodo,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Logo } from "@/components/common/Logo";
 import { SidebarAppearance } from "@/components/common/Appearance";
 
-export type NavItem = "dashboard" | "users" | "telemetry" | "settings";
+export type NavItem =
+  | "dashboard"
+  | "users"
+  | "telemetry"
+  | "home"
+  | "projects"
+  | "documents"
+  | "business"
+  | "tasks"
+  | "reports"
+  | "settings";
 
 interface SidebarProps {
   currentTab: NavItem;
@@ -22,190 +38,95 @@ interface SidebarProps {
   onToggle: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  currentTab,
-  onSelectTab,
-  isOpen,
-}) => {
-  const { user, isAdmin, logout } = useAuth();
-  const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpen }) => {
+  const { user, isPlatformAdmin, logout } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
+    const close = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) setUserMenuOpen(false);
     };
-    if (userMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [userMenuOpen]);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
 
-  const navItems: { id: NavItem; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
-    { id: "dashboard", label: "Dashboard", icon: <Home className="h-4 w-4" /> },
-    { id: "telemetry", label: "Items & Telemetry", icon: <Radio className="h-4 w-4" /> },
-    { id: "users", label: "Admin", icon: <Users className="h-4 w-4" />, adminOnly: true },
-    { id: "settings", label: "User Settings", icon: <Settings className="h-4 w-4" /> },
+  const workspace = [
+    { id: "home" as NavItem, label: "Home", icon: Home },
+    { id: "projects" as NavItem, label: "Projects", icon: FolderKanban },
+    { id: "documents" as NavItem, label: "Documents", icon: Files },
+    { id: "business" as NavItem, label: "Business", icon: BriefcaseBusiness },
+    { id: "tasks" as NavItem, label: "Tasks", icon: ListTodo },
+    { id: "reports" as NavItem, label: "Reports", icon: BarChart3 },
+    { id: "settings" as NavItem, label: "Settings", icon: Settings },
   ];
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase();
-  };
+  const admin = [
+    { id: "dashboard" as NavItem, label: "Admin Console", icon: ShieldCheck },
+    { id: "users" as NavItem, label: "Users & Access", icon: Users },
+    { id: "telemetry" as NavItem, label: "System Telemetry", icon: Activity },
+  ];
+
+  const initials = (user?.full_name || user?.email || "U")
+    .split(" ").slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+
+  const renderItem = ({ id, label, icon: Icon }: (typeof workspace)[number]) => (
+    <button key={id} onClick={() => onSelectTab(id)}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+        currentTab === id ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+        !isOpen && "justify-center px-0",
+      )}>
+      <Icon className={cn("h-4 w-4 shrink-0", currentTab === id && "text-primary")} />
+      {isOpen && <span>{label}</span>}
+    </button>
+  );
 
   return (
-    <aside
-      className={cn(
-        "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200",
-        isOpen ? "w-64" : "w-20"
-      )}
-    >
-      {/* Brand Header */}
-      <div className="flex h-16 items-center justify-between px-6 border-b border-sidebar-border">
+    <aside className={cn(
+      "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200",
+      isOpen ? "w-64" : "w-20",
+    )}>
+      <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
         <Logo variant={isOpen ? "full" : "icon"} className="h-6 w-auto" />
       </div>
 
-      {/* Navigation Menu */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems.map((item) => {
-          if (item.adminOnly && !isAdmin) return null;
-          const isActive = currentTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onSelectTab(item.id)}
-              className={cn(
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
-                !isOpen && "justify-center px-0"
-              )}
-              title={item.label}
-            >
-              <span className={cn(isActive ? "text-primary" : "text-muted-foreground")}>
-                {item.icon}
-              </span>
-              {isOpen && <span>{item.label}</span>}
-            </button>
-          );
-        })}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        {isPlatformAdmin && (
+          <>
+            {isOpen && <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Platform admin</p>}
+            <div className="space-y-1">{admin.map(renderItem)}</div>
+            <div className="my-4 border-t border-sidebar-border" />
+            {isOpen && <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Bertcom OS</p>}
+          </>
+        )}
+        <div className="space-y-1">{workspace.map(renderItem)}</div>
 
-        {/* OpenAPI Link */}
-        <div className="pt-4 mt-4 border-t border-sidebar-border">
-          <a
-            href="/docs"
-            target="_blank"
-            rel="noreferrer"
-            className={cn(
-              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors",
-              !isOpen && "justify-center px-0"
-            )}
-            title="OpenAPI Docs (/docs)"
-          >
-            <FileCode2 className="h-4 w-4 shrink-0" />
-            {isOpen && <span>OpenAPI Docs (/docs)</span>}
-          </a>
-        </div>
+        {isPlatformAdmin && (
+          <div className="pt-4 mt-4 border-t border-sidebar-border">
+            <a href="/docs" target="_blank" rel="noreferrer"
+              className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent", !isOpen && "justify-center px-0")}>
+              <FileCode2 className="h-4 w-4" />{isOpen && <span>OpenAPI Docs</span>}
+            </a>
+          </div>
+        )}
       </div>
 
-      {/* Sidebar Footer */}
       <div className="border-t border-sidebar-border p-3 space-y-2">
-        {/* Appearance Toggle */}
         <SidebarAppearance isOpen={isOpen} />
-
-        {/* User Account Menu with Side Dropoff */}
-        <div className="relative w-full" ref={userMenuRef}>
-          <button
-            type="button"
-            onClick={() => setUserMenuOpen((prev) => !prev)}
-            className={cn(
-              "flex w-full items-center justify-between rounded-lg p-2 hover:bg-sidebar-accent text-sidebar-foreground transition-colors text-left",
-              !isOpen && "justify-center p-1.5"
-            )}
-            title={user?.full_name || user?.email || "User account"}
-            aria-label="User account menu"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-semibold">
-                {getInitials(user?.full_name || user?.email || "User")}
-              </div>
-              {isOpen && (
-                <div className="flex flex-col truncate min-w-0">
-                  <span className="text-xs font-medium truncate text-foreground">
-                    {user?.full_name || "User"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground truncate font-mono">
-                    {user?.email}
-                  </span>
-                </div>
-              )}
+        <div className="relative" ref={menuRef}>
+          <button onClick={() => setUserMenuOpen((value) => !value)}
+            className={cn("flex w-full items-center justify-between rounded-xl p-2 hover:bg-sidebar-accent", !isOpen && "justify-center")}>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-semibold text-primary">{initials}</div>
+              {isOpen && <div className="min-w-0 text-left"><p className="truncate text-xs font-medium">{user?.full_name || "User"}</p><p className="truncate text-[10px] text-muted-foreground">{user?.email}</p></div>}
             </div>
-            {isOpen && <ChevronsUpDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+            {isOpen && <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />}
           </button>
-
-          {/* User Popover with Clean Opacity & Side Dropoff */}
           {userMenuOpen && (
-            <div
-              className={cn(
-                "absolute z-50 min-w-56 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-2xl backdrop-blur-sm animate-in fade-in-0 zoom-in-95 duration-100",
-                isOpen
-                  ? "bottom-full left-0 mb-2 w-full"
-                  : "left-full bottom-0 ml-2 w-56"
-              )}
-            >
-              {/* User Summary Header */}
-              <div className="flex items-center gap-2.5 p-2 rounded-md bg-muted/40">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary text-xs font-semibold">
-                  {getInitials(user?.full_name || user?.email || "User")}
-                </div>
-                <div className="flex flex-col truncate min-w-0">
-                  <span className="text-xs font-medium truncate text-foreground">
-                    {user?.full_name || "User"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground truncate font-mono">
-                    {user?.email}
-                  </span>
-                </div>
-              </div>
-
-              <div className="my-1 border-t border-border" />
-
-              {/* Navigation to User Settings */}
-              <button
-                type="button"
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  onSelectTab("settings");
-                }}
-                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-xs text-foreground hover:bg-accent transition-colors text-left font-medium"
-              >
-                <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-                User Settings
-              </button>
-
-              <div className="my-1 border-t border-border" />
-
-              {/* Log Out Action */}
-              <button
-                type="button"
-                onClick={() => {
-                  setUserMenuOpen(false);
-                  logout();
-                }}
-                className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-xs text-destructive hover:bg-destructive/10 transition-colors text-left font-medium"
-              >
-                <LogOut className="h-3.5 w-3.5 text-destructive" />
-                Log Out
-              </button>
+            <div className={cn("absolute z-50 rounded-xl border border-border bg-popover p-2 shadow-2xl", isOpen ? "bottom-full left-0 mb-2 w-full" : "left-full bottom-0 ml-2 w-56")}>
+              <button onClick={() => { setUserMenuOpen(false); onSelectTab("settings"); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs hover:bg-accent"><Settings className="h-4 w-4" /> Settings</button>
+              <button onClick={() => void logout()} className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-destructive hover:bg-destructive/10"><LogOut className="h-4 w-4" /> Log out</button>
             </div>
           )}
         </div>
