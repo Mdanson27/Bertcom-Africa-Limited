@@ -58,9 +58,14 @@ class JWTAuthGuard:
         email = str(payload.get("email") or "").lower()
         token_role = payload.get("role")
         role: str = str(token_role or "authenticated")
-        # Platform administration is intentionally email-locked. Neon roles do
-        # not grant access to the infrastructure/admin console.
-        is_super: bool = bool(email and email == settings.platform_admin_email)
+        # Managed Neon Auth is intentionally email-locked to the configured
+        # AutoMinds platform administrator. Legacy local JWTs continue to honor
+        # the explicit is_superuser claim only when Neon Auth is not configured.
+        is_super: bool = (
+            bool(email and email == settings.platform_admin_email)
+            if settings.NEON_AUTH_JWKS_URL
+            else bool(payload.get("is_superuser", False))
+        )
         tenant_id: str | None = payload.get("tenant_id") or payload.get("organization_id")
 
         if not user_id:
