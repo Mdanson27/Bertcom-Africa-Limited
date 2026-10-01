@@ -10,6 +10,7 @@ Routes:
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, ClassVar
 
 from litestar import Controller, get
@@ -55,7 +56,8 @@ class HealthController(Controller):
 
         # 1. PostgreSQL check
         try:
-            res = await db_session.execute(text("SELECT 1"))
+            async with asyncio.timeout(5):
+                res = await db_session.execute(text("SELECT 1"))
             if res.scalar() == 1:
                 results["database"] = "healthy"
             else:
@@ -67,11 +69,12 @@ class HealthController(Controller):
 
         # 2. Valkey check
         try:
-            import valkey.asyncio as valkey
+            import redis.asyncio as redis
 
-            v_client = valkey.from_url(
+            v_client = redis.from_url(
                 settings.valkey_url,
-                socket_timeout=1.5,
+                socket_connect_timeout=3.0,
+                socket_timeout=3.0,
             )
             pong = await v_client.ping()
             await v_client.aclose()
@@ -87,7 +90,7 @@ class HealthController(Controller):
             if settings.ENVIRONMENT == "production":
                 all_ready = False
 
-        if not all_ready and results.get("database") != "healthy":
+        if not all_ready:
             raise HTTPException(
                 status_code=HTTP_503_SERVICE_UNAVAILABLE,
                 detail={"status": "not_ready", "dependencies": results},
