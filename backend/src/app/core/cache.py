@@ -19,19 +19,19 @@ def get_valkey_pool() -> Any:
         try:
             import valkey.asyncio as valkey
 
-            _valkey_pool = valkey.Valkey(
-                host=settings.VALKEY_HOST,
-                port=settings.VALKEY_PORT,
+            _valkey_pool = valkey.from_url(
+                settings.valkey_url,
                 decode_responses=False,
                 socket_connect_timeout=2,
+                socket_timeout=2,
             )
         except ImportError:
             import redis.asyncio as redis
 
-            _valkey_pool = redis.Redis(
-                host=settings.VALKEY_HOST,
-                port=settings.VALKEY_PORT,
+            _valkey_pool = redis.from_url(
+                settings.valkey_url,
                 decode_responses=False,
                 socket_connect_timeout=2,
+                socket_timeout=2,
             )
     return _valkey_pool
