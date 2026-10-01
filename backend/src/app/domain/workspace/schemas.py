@@ -107,7 +107,7 @@ class DocumentCreate(msgspec.Struct, frozen=True):
     project_id: uuid.UUID | None = None
     ocr_status: str = "not_requested"
     ocr_text: str | None = None
-    extracted_fields: dict[str, Any] = {}
+    extracted_fields: dict[str, Any] = msgspec.field(default_factory=dict)
 
 
 class DocumentUpdate(msgspec.Struct, frozen=True):
