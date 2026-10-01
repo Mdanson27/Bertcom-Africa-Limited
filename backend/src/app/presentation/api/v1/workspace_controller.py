@@ -33,7 +33,6 @@ from app.domain.workspace.schemas import (
 )
 from app.presentation.guards.auth_guard import JWTAuthGuard
 
-
 logger = structlog.get_logger("app.workspace")
 
 
@@ -208,7 +207,9 @@ class TasksController(Controller):
         project_id: uuid.UUID | None = None,
         status: str | None = None,
     ) -> list[TaskRead]:
-        stmt = select(ProjectTask).order_by(ProjectTask.due_date.asc().nullslast(), ProjectTask.created_at.desc())
+        stmt = select(ProjectTask).order_by(
+            ProjectTask.due_date.asc().nullslast(), ProjectTask.created_at.desc()
+        )
         if project_id:
             stmt = stmt.where(ProjectTask.project_id == project_id)
         if status:
@@ -338,7 +339,14 @@ class DocumentsController(Controller):
         item = await db_session.get(Document, document_id)
         if item is None:
             raise NotFoundException(detail="Document not found.")
-        for field in ("title", "category", "project_id", "ocr_status", "ocr_text", "extracted_fields"):
+        for field in (
+            "title",
+            "category",
+            "project_id",
+            "ocr_status",
+            "ocr_text",
+            "extracted_fields",
+        ):
             value = getattr(data, field)
             if value is not None:
                 setattr(item, field, value)
@@ -384,29 +392,42 @@ class WorkspaceController(Controller):
     async def summary(self, db_session: AsyncSession) -> WorkspaceSummary:
         today = datetime.now(UTC).date()
         active_projects = int(
-            (await db_session.scalar(
-                select(func.count()).select_from(Project).where(
-                    Project.is_archived.is_(False),
-                    Project.status.notin_(["completed", "cancelled"]),
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Project)
+                    .where(
+                        Project.is_archived.is_(False),
+                        Project.status.notin_(["completed", "cancelled"]),
+                    )
                 )
-            ))
+            )
             or 0
         )
         due_tasks = int(
-            (await db_session.scalar(
-                select(func.count()).select_from(ProjectTask).where(
-                    Project.status.notin_(["completed", "cancelled"]),
-                    ProjectTask.status != "completed",
-                    ProjectTask.due_date.is_not(None),
-                    ProjectTask.due_date <= today,
-                ).join(Project, Project.id == ProjectTask.project_id)
-            ))
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(ProjectTask)
+                    .where(
+                        Project.status.notin_(["completed", "cancelled"]),
+                        ProjectTask.status != "completed",
+                        ProjectTask.due_date.is_not(None),
+                        ProjectTask.due_date <= today,
+                    )
+                    .join(Project, Project.id == ProjectTask.project_id)
+                )
+            )
             or 0
         )
         pending_tasks = int(
-            (await db_session.scalar(
-                select(func.count()).select_from(ProjectTask).where(ProjectTask.status != "completed")
-            ))
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(ProjectTask)
+                    .where(ProjectTask.status != "completed")
+                )
+            )
             or 0
         )
         documents = int((await db_session.scalar(select(func.count()).select_from(Document))) or 0)
