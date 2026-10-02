@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity, Banknote, CheckCircle2, Circle, Download, FileText, FolderKanban,
   ListTodo, Plus, Search, UploadCloud, WalletCards,
@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { PageError, PageLoading } from "@/components/common/RequestState";
+import { useCustomToast } from "@/hooks/useCustomToast";
+import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { getErrorMessage } from "@/lib/api";
 import {
   uploadToPresignedUrl,
   workspaceApi,
@@ -32,6 +36,7 @@ const activityLabel = (table: string) => ({
 }[table] || table.replaceAll("_", " "));
 
 export const ProjectsPage: React.FC = () => {
+  const { showSuccessToast, showErrorToast, showWarningToast } = useCustomToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [workspace, setWorkspace] = useState<ProjectWorkspace | null>(null);
@@ -45,21 +50,56 @@ export const ProjectsPage: React.FC = () => {
   const [form, setForm] = useState({
     name: "", client_name: "", value_ugx: "", due_date: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [createSaving, setCreateSaving] = useState(false);
+  const [taskBusyId, setTaskBusyId] = useState<string | null>(null);
+  const [financeSaving, setFinanceSaving] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const loadProjects = async () => {
-    const rows = await workspaceApi.projects();
-    setProjects(rows);
-    if (!selectedId && rows.length) setSelectedId(rows[0].id);
-  };
+  const createDirty = createOpen && Object.values(form).some((value) => value.trim() !== "");
+  const financeDirty = Boolean(financeKind) && Object.values(financeForm).some((value) => value.trim() !== "");
+  useUnsavedChanges(createDirty || financeDirty);
 
-  const loadWorkspace = async (id = selectedId) => {
-    if (!id) { setWorkspace(null); return; }
-    setWorkspace(await workspaceApi.projectWorkspace(id));
-  };
+  const loadProjects = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    setLoadError(null);
+    try {
+      const rows = await workspaceApi.projects();
+      setProjects(rows);
+      setSelectedId((current) => current || rows[0]?.id || "");
+    } catch (error) {
+      setLoadError(getErrorMessage(error, "Projects could not be loaded."));
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { void loadProjects(); }, []);
-  useEffect(() => { if (selectedId) void loadWorkspace(selectedId); }, [selectedId]);
+  const loadWorkspace = useCallback(async (id: string) => {
+    if (!id) {
+      setWorkspace(null);
+      return;
+    }
+    setWorkspaceLoading(true);
+    setLoadError(null);
+    try {
+      setWorkspace(await workspaceApi.projectWorkspace(id));
+    } catch (error) {
+      setLoadError(getErrorMessage(error, "The project workspace could not be loaded."));
+    } finally {
+      setWorkspaceLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProjects();
+  }, [loadProjects]);
+
+  useEffect(() => {
+    if (selectedId) void loadWorkspace(selectedId);
+    else setWorkspace(null);
+  }, [loadWorkspace, selectedId]);
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -69,44 +109,90 @@ export const ProjectsPage: React.FC = () => {
       : projects;
   }, [projects, query]);
 
+  const closeCreate = () => {
+    if (createSaving) return;
+    if (!confirmDiscardChanges(createDirty, "Discard this new project?")) return;
+    setCreateOpen(false);
+    setForm({ name: "", client_name: "", value_ugx: "", due_date: "" });
+  };
+
   const createProject = async (event: React.FormEvent) => {
     event.preventDefault();
-    const project = await workspaceApi.createProject({
-      name: form.name.trim(),
-      client_name: form.client_name.trim(),
-      value_ugx: Number(form.value_ugx || 0),
-      due_date: form.due_date || null,
-      status: "planning",
-      progress: 0,
-    });
-    setForm({ name: "", client_name: "", value_ugx: "", due_date: "" });
-    setCreateOpen(false);
-    await loadProjects();
-    setSelectedId(project.id);
-    setTab("overview");
+    if (createSaving) return;
+
+    const name = form.name.trim();
+    const clientName = form.client_name.trim();
+    const value = Number(form.value_ugx || 0);
+
+    if (!name || !clientName) {
+      showWarningToast("Project name and client are required.", "Check project details");
+      return;
+    }
+    if (!Number.isFinite(value) || value < 0) {
+      showWarningToast("Project value must be zero or a positive amount.", "Check project value");
+      return;
+    }
+
+    setCreateSaving(true);
+    try {
+      const project = await workspaceApi.createProject({
+        name,
+        client_name: clientName,
+        value_ugx: value,
+        due_date: form.due_date || null,
+        status: "planning",
+        progress: 0,
+      });
+      setForm({ name: "", client_name: "", value_ugx: "", due_date: "" });
+      setCreateOpen(false);
+      await loadProjects(false);
+      setSelectedId(project.id);
+      setTab("overview");
+      showSuccessToast(`${project.name} was created successfully.`, "Project created");
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The project could not be created."), "Project not saved");
+    } finally {
+      setCreateSaving(false);
+    }
   };
 
   const addTask = async () => {
-    if (!workspace || !taskTitle.trim()) return;
-    await workspaceApi.createTask({
-      project_id: workspace.project.id,
-      title: taskTitle.trim(),
-      status: "pending",
-      priority: "normal",
-    });
-    setTaskTitle("");
-    await loadWorkspace();
+    if (!workspace || !taskTitle.trim() || taskBusyId) return;
+    setTaskBusyId("new");
+    try {
+      await workspaceApi.createTask({
+        project_id: workspace.project.id,
+        title: taskTitle.trim(),
+        status: "pending",
+        priority: "normal",
+      });
+      setTaskTitle("");
+      await loadWorkspace(workspace.project.id);
+      showSuccessToast("Task added to the project.", "Task created");
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The task could not be created."), "Task not saved");
+    } finally {
+      setTaskBusyId(null);
+    }
   };
 
   const toggleTask = async (task: ProjectTask) => {
-    await workspaceApi.updateTask(task.id, {
-      status: task.status === "completed" ? "pending" : "completed",
-    });
-    await loadWorkspace();
+    if (taskBusyId) return;
+    setTaskBusyId(task.id);
+    try {
+      await workspaceApi.updateTask(task.id, {
+        status: task.status === "completed" ? "pending" : "completed",
+      });
+      if (workspace) await loadWorkspace(workspace.project.id);
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The task could not be updated."), "Task not updated");
+    } finally {
+      setTaskBusyId(null);
+    }
   };
 
   const uploadDocument = async (file: File) => {
-    if (!workspace) return;
+    if (!workspace || docBusy) return;
     setDocBusy(true);
     try {
       const signed = await workspaceApi.createUploadUrl({
@@ -127,15 +213,22 @@ export const ProjectsPage: React.FC = () => {
         ocr_text: null,
         extracted_fields: {},
       });
-      await loadWorkspace();
+      await loadWorkspace(workspace.project.id);
+      showSuccessToast(`${file.name} was attached to the project.`, "Document uploaded");
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The document could not be uploaded."), "Upload failed");
     } finally {
       setDocBusy(false);
     }
   };
 
   const openDocument = async (document: DocumentRecord) => {
-    const result = await workspaceApi.downloadDocument(document.id);
-    window.open(result.url, "_blank", "noopener,noreferrer");
+    try {
+      const result = await workspaceApi.downloadDocument(document.id);
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The document could not be opened."), "Open failed");
+    }
   };
 
   const openFinance = (kind: FinanceKind) => {
@@ -144,53 +237,97 @@ export const ProjectsPage: React.FC = () => {
     setFinanceKind(kind);
   };
 
-  const saveFinance = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!financeKind || !workspace) return;
-    const project = workspace.project;
-    const common = { project_id: project.id };
-    if (financeKind === "quotation") {
-      await workspaceApi.createQuotation({
-        ...common,
-        quotation_number: financeForm.number || "",
-        client_name: financeForm.party || project.client_name,
-        amount_ugx: Number(financeForm.amount || 0),
-        issue_date: financeForm.issue_date || today(),
-        status: "draft",
-      });
-    } else if (financeKind === "invoice") {
-      await workspaceApi.createInvoice({
-        ...common,
-        invoice_number: financeForm.number || "",
-        client_name: financeForm.party || project.client_name,
-        amount_ugx: Number(financeForm.amount || 0),
-        paid_amount_ugx: Number(financeForm.paid || 0),
-        issue_date: financeForm.issue_date || today(),
-        due_date: financeForm.due_date || null,
-        status: "draft",
-      });
-    } else if (financeKind === "purchase") {
-      await workspaceApi.createPurchaseOrder({
-        ...common,
-        po_number: financeForm.number || "",
-        supplier_name: financeForm.party || "",
-        amount_ugx: Number(financeForm.amount || 0),
-        order_date: financeForm.order_date || today(),
-        status: "draft",
-      });
-    } else {
-      await workspaceApi.createExpense({
-        ...common,
-        description: financeForm.description || "",
-        amount_ugx: Number(financeForm.amount || 0),
-        expense_date: financeForm.expense_date || today(),
-        category: financeForm.category || "general",
-        reference: financeForm.reference || null,
-      });
-    }
+  const closeFinance = () => {
+    if (financeSaving) return;
+    if (!confirmDiscardChanges(financeDirty, "Discard this unsaved financial record?")) return;
     setFinanceKind(null);
     setFinanceForm({});
-    await loadWorkspace();
+  };
+
+  const saveFinance = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!financeKind || !workspace || financeSaving) return;
+
+    const amount = Number(financeForm.amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showWarningToast("Enter an amount greater than zero.", "Check amount");
+      return;
+    }
+
+    if (
+      financeKind !== "expense" &&
+      (!financeForm.number?.trim() || !(financeForm.party || workspace.project.client_name).trim())
+    ) {
+      showWarningToast("Number and client/supplier are required.", "Check details");
+      return;
+    }
+
+    if (financeKind === "expense" && !financeForm.description?.trim()) {
+      showWarningToast("Add a short expense description.", "Check details");
+      return;
+    }
+
+    setFinanceSaving(true);
+    const project = workspace.project;
+    const common = { project_id: project.id };
+
+    try {
+      if (financeKind === "quotation") {
+        await workspaceApi.createQuotation({
+          ...common,
+          quotation_number: financeForm.number.trim(),
+          client_name: (financeForm.party || project.client_name).trim(),
+          amount_ugx: amount,
+          issue_date: financeForm.issue_date || today(),
+          status: "draft",
+        });
+      } else if (financeKind === "invoice") {
+        await workspaceApi.createInvoice({
+          ...common,
+          invoice_number: financeForm.number.trim(),
+          client_name: (financeForm.party || project.client_name).trim(),
+          amount_ugx: amount,
+          paid_amount_ugx: Number(financeForm.paid || 0),
+          issue_date: financeForm.issue_date || today(),
+          due_date: financeForm.due_date || null,
+          status: "draft",
+        });
+      } else if (financeKind === "purchase") {
+        await workspaceApi.createPurchaseOrder({
+          ...common,
+          po_number: financeForm.number.trim(),
+          supplier_name: (financeForm.party || "").trim(),
+          amount_ugx: amount,
+          order_date: financeForm.order_date || today(),
+          status: "draft",
+        });
+      } else {
+        await workspaceApi.createExpense({
+          ...common,
+          description: financeForm.description.trim(),
+          amount_ugx: amount,
+          expense_date: financeForm.expense_date || today(),
+          category: financeForm.category || "general",
+          reference: financeForm.reference || null,
+        });
+      }
+
+      const savedKind = financeKind;
+      setFinanceKind(null);
+      setFinanceForm({});
+      await loadWorkspace(project.id);
+      showSuccessToast(
+        savedKind === "expense" ? "Expense added to the project." : "Financial record saved.",
+        "Saved",
+      );
+    } catch (error) {
+      showErrorToast(
+        getErrorMessage(error, "The financial record could not be saved."),
+        "Not saved",
+      );
+    } finally {
+      setFinanceSaving(false);
+    }
   };
 
   const tabs = [
@@ -202,6 +339,23 @@ export const ProjectsPage: React.FC = () => {
   ];
 
   const doneTasks = workspace?.tasks.filter((task) => task.status === "completed").length ?? 0;
+
+  if (isLoading) {
+    return <PageLoading label="Loading projects..." />;
+  }
+
+  if (loadError) {
+    return (
+      <PageError
+        message={loadError}
+        onRetry={async () => {
+          await loadProjects();
+          if (selectedId) await loadWorkspace(selectedId);
+        }}
+        title="Projects are temporarily unavailable"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -257,7 +411,9 @@ export const ProjectsPage: React.FC = () => {
           </div>
         </div>
 
-        {!workspace ? (
+        {workspaceLoading ? (
+          <PageLoading label="Opening project workspace..." />
+        ) : !workspace ? (
           <Card className="flex min-h-[520px] items-center justify-center text-center">
             <div>
               <FolderKanban className="mx-auto h-10 w-10 text-muted-foreground" />
@@ -325,13 +481,14 @@ export const ProjectsPage: React.FC = () => {
                   <div className="flex min-w-[280px] flex-1 gap-2 sm:max-w-md">
                     <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Add a task..."
                       className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm" />
-                    <Button size="sm" onClick={() => void addTask()}>Add</Button>
+                    <Button size="sm" isLoading={taskBusyId === "new"} onClick={() => void addTask()}>Add</Button>
                   </div>
                 </div>
                 <div className="mt-4 space-y-2">
                   {workspace.tasks.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No tasks yet.</p> : workspace.tasks.map((task) => (
                     <button key={task.id} onClick={() => void toggleTask(task)}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left hover:bg-accent/30">
+                      disabled={Boolean(taskBusyId)}
+                      className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left hover:bg-accent/30 disabled:cursor-wait disabled:opacity-60">
                       {task.status === "completed" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
                       <div className="min-w-0 flex-1">
                         <p className={task.status === "completed" ? "text-sm line-through text-muted-foreground" : "text-sm font-medium"}>{task.title}</p>
@@ -417,7 +574,7 @@ export const ProjectsPage: React.FC = () => {
         )}
       </div>
 
-      <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="New project" description="Create the project folder with the essentials.">
+      <Modal isOpen={createOpen} onClose={closeCreate} title="New project" description="Create the project folder with the essentials.">
         <form onSubmit={createProject} className="space-y-4">
           <Input id="project-name" label="Project name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required />
           <Input id="project-client" label="Client" value={form.client_name} onChange={(e) => setForm((p) => ({ ...p, client_name: e.target.value }))} required />
@@ -425,11 +582,11 @@ export const ProjectsPage: React.FC = () => {
             <Input id="project-value" label="Value (UGX)" type="number" value={form.value_ugx} onChange={(e) => setForm((p) => ({ ...p, value_ugx: e.target.value }))} />
             <Input id="project-due" label="Deadline" type="date" value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} />
           </div>
-          <div className="flex justify-end gap-2 pt-3"><Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button><Button type="submit">Create project</Button></div>
+          <div className="flex justify-end gap-2 pt-3"><Button type="button" variant="outline" onClick={closeCreate} disabled={createSaving}>Cancel</Button><Button type="submit" isLoading={createSaving}>Create project</Button></div>
         </form>
       </Modal>
 
-      <Modal isOpen={Boolean(financeKind)} onClose={() => setFinanceKind(null)}
+      <Modal isOpen={Boolean(financeKind)} onClose={closeFinance}
         title={financeKind === "quotation" ? "New project quotation" : financeKind === "invoice" ? "New project invoice" : financeKind === "purchase" ? "New project purchase order" : "Add project expense"}
         description="This record will be linked directly to the selected project.">
         <form onSubmit={saveFinance} className="space-y-4">
@@ -450,8 +607,8 @@ export const ProjectsPage: React.FC = () => {
               setFinanceForm((p) => ({ ...p, [key]: e.target.value }));
             }} />
           <div className="flex justify-end gap-2 border-t border-border pt-4">
-            <Button type="button" variant="outline" onClick={() => setFinanceKind(null)}>Cancel</Button>
-            <Button type="submit"><Banknote className="mr-2 h-4 w-4" /> Save</Button>
+            <Button type="button" variant="outline" onClick={closeFinance} disabled={financeSaving}>Cancel</Button>
+            <Button type="submit" isLoading={financeSaving}><Banknote className="mr-2 h-4 w-4" /> Save</Button>
           </div>
         </form>
       </Modal>

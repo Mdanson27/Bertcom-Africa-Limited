@@ -196,6 +196,12 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit
 
+      - name: Frontend auth/API regression tests
+        working-directory: frontend
+        run: |
+          npm install --no-save --package-lock=false --legacy-peer-deps vitest@4.1.11
+          ./node_modules/.bin/vitest run
+
       - name: Frontend build
         working-directory: frontend
         run: npm run build --if-present

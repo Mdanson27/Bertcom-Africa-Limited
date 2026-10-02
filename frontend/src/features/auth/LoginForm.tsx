@@ -9,6 +9,7 @@ import LoginMascot, { type MascotMode } from "@/components/auth/LoginMascot";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { ApiError } from "@/lib/api";
+import { consumeAuthNotice } from "@/lib/authSession";
 
 const GoogleMark = () => (
   <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" aria-hidden="true">
@@ -28,7 +29,7 @@ export const LoginForm: React.FC = () => {
   const [activeField, setActiveField] = useState<MascotMode>("idle");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(() => consumeAuthNotice());
   const [isRateLimited, setIsRateLimited] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 

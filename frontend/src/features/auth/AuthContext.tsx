@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { ApiError } from "@/lib/api";
 import {
+  AUTH_SESSION_EXPIRED_EVENT,
+  clearCachedAccessToken,
+  getAccessToken,
+  getCachedAccessToken,
+} from "@/lib/authSession";
+import {
   getAuthCallbackUrl,
   getNeonAuthClient,
   isNeonAuthConfigured,
@@ -58,11 +64,11 @@ function mapNeonUser(raw: Record<string, unknown>): AuthUser {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("access_token"));
+  const [token, setToken] = useState<string | null>(() => getCachedAccessToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem("access_token");
+    clearCachedAccessToken();
     setToken(null);
     setUser(null);
   }, []);
@@ -83,18 +89,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      setUser(mapNeonUser(sessionResult.data.user as unknown as Record<string, unknown>));
-
-      const tokenResult = await authClient.token();
-      const jwt = tokenResult.data?.token || null;
-
-      if (jwt) {
-        localStorage.setItem("access_token", jwt);
-        setToken(jwt);
-      } else {
-        localStorage.removeItem("access_token");
-        setToken(null);
+      const jwt = await getAccessToken(true);
+      if (!jwt) {
+        clearSession();
+        return;
       }
+
+      setToken(jwt);
+      setUser(mapNeonUser(sessionResult.data.user as unknown as Record<string, unknown>));
     } catch {
       clearSession();
     } finally {
@@ -105,6 +107,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     void refreshProfile();
   }, [refreshProfile]);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      clearSession();
+      setIsLoading(false);
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleExpiredSession);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleExpiredSession);
+  }, [clearSession]);
 
   const login = async (email: string, password: string) => {
     if (!isNeonAuthConfigured) {

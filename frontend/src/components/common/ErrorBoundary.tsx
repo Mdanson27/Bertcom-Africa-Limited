@@ -32,9 +32,9 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-4">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <h2 className="text-lg font-semibold text-card-foreground">Application Runtime Exception</h2>
+            <h2 className="text-lg font-semibold text-card-foreground">Bertcom hit a temporary problem</h2>
             <p className="mt-2 text-xs text-muted-foreground">
-              {this.state.error?.message || "An unexpected rendering error occurred."}
+              Please reload the workspace. If the problem continues, contact your Bertcom administrator.
             </p>
             <div className="mt-6 flex justify-center">
               <Button
@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 className="gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Reload Application
+                Reload Bertcom
               </Button>
             </div>
           </div>

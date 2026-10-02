@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Building2,
   FileText,
@@ -11,6 +11,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { PageError, PageLoading } from "@/components/common/RequestState";
+import { useCustomToast } from "@/hooks/useCustomToast";
+import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { getErrorMessage } from "@/lib/api";
 import {
   workspaceApi,
   type BusinessSummary,
@@ -35,6 +39,7 @@ const money = (value: number) =>
 const today = () => new Date().toISOString().slice(0, 10);
 
 export const BusinessPage: React.FC = () => {
+  const { showSuccessToast, showErrorToast, showWarningToast } = useCustomToast();
   const [tab, setTab] = useState<BusinessTab>("clients");
   const [summary, setSummary] = useState<BusinessSummary | null>(null);
   const [clients, setClients] = useState<ClientRecord[]>([]);
@@ -46,29 +51,42 @@ export const BusinessPage: React.FC = () => {
   const [createKind, setCreateKind] = useState<CreateKind | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const load = async () => {
-    const [s, c, sp, q, i, po, e] = await Promise.all([
-      workspaceApi.businessSummary(),
-      workspaceApi.clients(),
-      workspaceApi.suppliers(),
-      workspaceApi.quotations(),
-      workspaceApi.invoices(),
-      workspaceApi.purchaseOrders(),
-      workspaceApi.expenses(),
-    ]);
-    setSummary(s);
-    setClients(c);
-    setSuppliers(sp);
-    setQuotes(q);
-    setInvoices(i);
-    setPurchaseOrders(po);
-    setExpenses(e);
-  };
+  const formDirty = Boolean(createKind) && Object.values(form).some((value) => value.trim() !== "");
+  useUnsavedChanges(formDirty);
+
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true);
+    setLoadError(null);
+    try {
+      const [s, c, sp, q, i, po, e] = await Promise.all([
+        workspaceApi.businessSummary(),
+        workspaceApi.clients(),
+        workspaceApi.suppliers(),
+        workspaceApi.quotations(),
+        workspaceApi.invoices(),
+        workspaceApi.purchaseOrders(),
+        workspaceApi.expenses(),
+      ]);
+      setSummary(s);
+      setClients(c);
+      setSuppliers(sp);
+      setQuotes(q);
+      setInvoices(i);
+      setPurchaseOrders(po);
+      setExpenses(e);
+    } catch (error) {
+      setLoadError(getErrorMessage(error, "Business records could not be loaded."));
+    } finally {
+      if (showLoading) setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   const openCreate = (kind: CreateKind) => {
     const defaults: Record<string, string> = {};
@@ -81,6 +99,8 @@ export const BusinessPage: React.FC = () => {
   };
 
   const closeCreate = () => {
+    if (saving) return;
+    if (!confirmDiscardChanges(formDirty, "Discard this unsaved business record?")) return;
     setCreateKind(null);
     setForm({});
   };
@@ -90,37 +110,73 @@ export const BusinessPage: React.FC = () => {
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!createKind) return;
+    if (!createKind || saving) return;
+
+    const amount = Number(form.amount || 0);
+    if (
+      ["quotation", "invoice", "purchases", "expenses"].includes(createKind) &&
+      (!Number.isFinite(amount) || amount <= 0)
+    ) {
+      showWarningToast("Enter an amount greater than zero.", "Check amount");
+      return;
+    }
+
+    if ((createKind === "clients" || createKind === "suppliers") && !form.name?.trim()) {
+      showWarningToast("Name is required.", "Check details");
+      return;
+    }
+
+    if (
+      (createKind === "quotation" || createKind === "invoice") &&
+      (!form.number?.trim() || !form.client_name?.trim())
+    ) {
+      showWarningToast("Document number and client are required.", "Check details");
+      return;
+    }
+
+    if (
+      createKind === "purchases" &&
+      (!form.number?.trim() || !form.supplier_name?.trim())
+    ) {
+      showWarningToast("Purchase order number and supplier are required.", "Check details");
+      return;
+    }
+
+    if (createKind === "expenses" && !form.description?.trim()) {
+      showWarningToast("Add a short expense description.", "Check details");
+      return;
+    }
+
     setSaving(true);
     try {
       if (createKind === "clients") {
         await workspaceApi.createClient({
-          name: form.name || "",
-          contact_person: form.contact_person || null,
-          phone: form.phone || null,
-          email: form.email || null,
+          name: form.name.trim(),
+          contact_person: form.contact_person?.trim() || null,
+          phone: form.phone?.trim() || null,
+          email: form.email?.trim() || null,
         });
       } else if (createKind === "suppliers") {
         await workspaceApi.createSupplier({
-          name: form.name || "",
-          contact_person: form.contact_person || null,
-          phone: form.phone || null,
-          email: form.email || null,
+          name: form.name.trim(),
+          contact_person: form.contact_person?.trim() || null,
+          phone: form.phone?.trim() || null,
+          email: form.email?.trim() || null,
         });
       } else if (createKind === "quotation") {
         await workspaceApi.createQuotation({
-          quotation_number: form.number || "",
-          client_name: form.client_name || "",
-          amount_ugx: Number(form.amount || 0),
+          quotation_number: form.number.trim(),
+          client_name: form.client_name.trim(),
+          amount_ugx: amount,
           issue_date: form.issue_date || today(),
           valid_until: form.valid_until || null,
           status: "draft",
         });
       } else if (createKind === "invoice") {
         await workspaceApi.createInvoice({
-          invoice_number: form.number || "",
-          client_name: form.client_name || "",
-          amount_ugx: Number(form.amount || 0),
+          invoice_number: form.number.trim(),
+          client_name: form.client_name.trim(),
+          amount_ugx: amount,
           paid_amount_ugx: Number(form.paid_amount || 0),
           issue_date: form.issue_date || today(),
           due_date: form.due_date || null,
@@ -128,24 +184,36 @@ export const BusinessPage: React.FC = () => {
         });
       } else if (createKind === "purchases") {
         await workspaceApi.createPurchaseOrder({
-          po_number: form.number || "",
-          supplier_name: form.supplier_name || "",
-          amount_ugx: Number(form.amount || 0),
+          po_number: form.number.trim(),
+          supplier_name: form.supplier_name.trim(),
+          amount_ugx: amount,
           order_date: form.order_date || today(),
           expected_date: form.expected_date || null,
           status: "draft",
         });
       } else if (createKind === "expenses") {
         await workspaceApi.createExpense({
-          description: form.description || "",
-          amount_ugx: Number(form.amount || 0),
+          description: form.description.trim(),
+          amount_ugx: amount,
           expense_date: form.expense_date || today(),
-          category: form.category || "general",
-          reference: form.reference || null,
+          category: form.category?.trim() || "general",
+          reference: form.reference?.trim() || null,
         });
       }
-      closeCreate();
-      await load();
+
+      const savedKind = createKind;
+      setCreateKind(null);
+      setForm({});
+      await load(false);
+      showSuccessToast(
+        savedKind === "expenses" ? "Expense recorded successfully." : "Business record saved successfully.",
+        "Saved",
+      );
+    } catch (error) {
+      showErrorToast(
+        getErrorMessage(error, "The business record could not be saved."),
+        "Not saved",
+      );
     } finally {
       setSaving(false);
     }
@@ -183,6 +251,20 @@ export const BusinessPage: React.FC = () => {
             note: item.contact_person || item.email || item.phone || "Supplier",
           }))
         : [];
+
+  if (isLoading) {
+    return <PageLoading label="Loading business records..." />;
+  }
+
+  if (loadError) {
+    return (
+      <PageError
+        message={loadError}
+        onRetry={() => load()}
+        title="Business is temporarily unavailable"
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -359,7 +441,7 @@ export const BusinessPage: React.FC = () => {
           )}
 
           <div className="flex justify-end gap-2 border-t border-border pt-4">
-            <Button type="button" variant="outline" onClick={closeCreate}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={closeCreate} disabled={saving}>Cancel</Button>
             <Button type="submit" isLoading={saving}>Save</Button>
           </div>
         </form>
