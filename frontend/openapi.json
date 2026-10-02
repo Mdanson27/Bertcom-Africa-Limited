@@ -764,6 +764,52 @@
         "title": "Message",
         "type": "object"
       },
+      "ProjectActivityItem": {
+        "properties": {
+          "changed_by": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "record_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "table_name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "changed_by",
+          "created_at",
+          "id",
+          "operation",
+          "record_id",
+          "table_name",
+          "title"
+        ],
+        "title": "ProjectActivityItem",
+        "type": "object"
+      },
       "ProjectCreate": {
         "properties": {
           "amount_paid_ugx": {
@@ -836,6 +882,229 @@
           "name"
         ],
         "title": "ProjectCreate",
+        "type": "object"
+      },
+      "ProjectExpenseItem": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "expense_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "category",
+          "description",
+          "expense_date",
+          "id",
+          "reference"
+        ],
+        "title": "ProjectExpenseItem",
+        "type": "object"
+      },
+      "ProjectFinanceRead": {
+        "properties": {
+          "amount_paid_ugx": {
+            "type": "number"
+          },
+          "expenses": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectExpenseItem"
+            },
+            "type": "array"
+          },
+          "expenses_ugx": {
+            "type": "number"
+          },
+          "invoice_outstanding_ugx": {
+            "type": "number"
+          },
+          "invoice_paid_ugx": {
+            "type": "number"
+          },
+          "invoice_total_ugx": {
+            "type": "number"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectInvoiceItem"
+            },
+            "type": "array"
+          },
+          "project_outstanding_ugx": {
+            "type": "number"
+          },
+          "project_value_ugx": {
+            "type": "number"
+          },
+          "purchase_orders": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPurchaseOrderItem"
+            },
+            "type": "array"
+          },
+          "purchase_orders_ugx": {
+            "type": "number"
+          },
+          "quotation_total_ugx": {
+            "type": "number"
+          },
+          "quotations": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectQuotationItem"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "amount_paid_ugx",
+          "expenses",
+          "expenses_ugx",
+          "invoice_outstanding_ugx",
+          "invoice_paid_ugx",
+          "invoice_total_ugx",
+          "invoices",
+          "project_outstanding_ugx",
+          "project_value_ugx",
+          "purchase_orders",
+          "purchase_orders_ugx",
+          "quotation_total_ugx",
+          "quotations"
+        ],
+        "title": "ProjectFinanceRead",
+        "type": "object"
+      },
+      "ProjectInvoiceItem": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invoice_number": {
+            "type": "string"
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "paid_amount_ugx": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "due_date",
+          "id",
+          "invoice_number",
+          "issue_date",
+          "paid_amount_ugx",
+          "status"
+        ],
+        "title": "ProjectInvoiceItem",
+        "type": "object"
+      },
+      "ProjectPurchaseOrderItem": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "order_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "po_number": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "supplier_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "id",
+          "order_date",
+          "po_number",
+          "status",
+          "supplier_name"
+        ],
+        "title": "ProjectPurchaseOrderItem",
+        "type": "object"
+      },
+      "ProjectQuotationItem": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "quotation_number": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "id",
+          "issue_date",
+          "quotation_number",
+          "status"
+        ],
+        "title": "ProjectQuotationItem",
         "type": "object"
       },
       "ProjectRead": {
@@ -1056,6 +1325,43 @@
         },
         "required": [],
         "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "ProjectWorkspaceRead": {
+        "properties": {
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectActivityItem"
+            },
+            "type": "array"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentRead"
+            },
+            "type": "array"
+          },
+          "finance": {
+            "$ref": "#/components/schemas/ProjectFinanceRead"
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectRead"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskRead"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "activity",
+          "documents",
+          "finance",
+          "project",
+          "tasks"
+        ],
+        "title": "ProjectWorkspaceRead",
         "type": "object"
       },
       "PurchaseOrderCreate": {
@@ -3500,6 +3806,76 @@
           }
         },
         "summary": "UpdateProject"
+      }
+    },
+    "/api/v1/projects/{project_id}/workspace": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspace",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectWorkspaceRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GetProjectWorkspace"
       }
     },
     "/api/v1/tasks": {

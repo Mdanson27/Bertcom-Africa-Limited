@@ -59,6 +59,32 @@ export interface ProjectTask {
   updated_at: string;
 }
 
+export interface ProjectFinance {
+  project_value_ugx: number;
+  amount_paid_ugx: number;
+  project_outstanding_ugx: number;
+  quotation_total_ugx: number;
+  invoice_total_ugx: number;
+  invoice_paid_ugx: number;
+  invoice_outstanding_ugx: number;
+  purchase_orders_ugx: number;
+  expenses_ugx: number;
+  quotations: Array<{ id: string; quotation_number: string; amount_ugx: number; status: string; issue_date: string }>;
+  invoices: Array<{ id: string; invoice_number: string; amount_ugx: number; paid_amount_ugx: number; status: string; issue_date: string; due_date: string | null }>;
+  purchase_orders: Array<{ id: string; po_number: string; supplier_name: string; amount_ugx: number; status: string; order_date: string }>;
+  expenses: Array<{ id: string; description: string; category: string; amount_ugx: number; expense_date: string; reference: string | null }>;
+}
+
+export interface ProjectActivity {
+  id: string;
+  table_name: string;
+  operation: string;
+  record_id: string;
+  title: string;
+  changed_by: string | null;
+  created_at: string;
+}
+
 export interface DocumentRecord {
   id: string;
   project_id: string | null;
@@ -74,6 +100,14 @@ export interface DocumentRecord {
   extracted_fields: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProjectWorkspace {
+  project: Project;
+  tasks: ProjectTask[];
+  documents: DocumentRecord[];
+  finance: ProjectFinance;
+  activity: ProjectActivity[];
 }
 
 export interface WorkspaceSummary {
@@ -170,6 +204,7 @@ export const workspaceApi = {
   summary: () => request<WorkspaceSummary>("/workspace/summary"),
   projects: () => request<Project[]>("/projects"),
   project: (id: string) => request<Project>(`/projects/${id}`),
+  projectWorkspace: (id: string) => request<ProjectWorkspace>(`/projects/${id}/workspace`),
   createProject: (body: Record<string, unknown>) =>
     request<Project>("/projects", { method: "POST", body: JSON.stringify(body) }),
   updateProject: (id: string, body: Record<string, unknown>) =>

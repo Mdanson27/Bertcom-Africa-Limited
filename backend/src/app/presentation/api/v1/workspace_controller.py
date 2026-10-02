@@ -11,10 +11,12 @@ from botocore.exceptions import ClientError
 from litestar import Controller, Request, delete, get, patch, post
 from litestar.exceptions import ClientException, NotFoundException
 from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.storage import delete_object, presign_download, presign_upload, storage_configured
+from app.domain.audit.models import AuditLog
+from app.domain.business.models import Expense, Invoice, PurchaseOrder, Quotation
 from app.domain.workspace.models import Document, Project, ProjectTask
 from app.domain.workspace.schemas import (
     DocumentCreate,
@@ -23,9 +25,16 @@ from app.domain.workspace.schemas import (
     DocumentRead,
     DocumentUpdate,
     DownloadResponse,
+    ProjectActivityItem,
     ProjectCreate,
+    ProjectExpenseItem,
+    ProjectFinanceRead,
+    ProjectInvoiceItem,
+    ProjectPurchaseOrderItem,
+    ProjectQuotationItem,
     ProjectRead,
     ProjectUpdate,
+    ProjectWorkspaceRead,
     TaskCreate,
     TaskRead,
     TaskUpdate,
@@ -98,6 +107,22 @@ def _document_read(item: Document) -> DocumentRead:
     )
 
 
+def _activity_title(item: AuditLog) -> str:
+    payload = dict(item.new_data or item.old_data or {})
+    key_by_table = {
+        "projects": "name",
+        "project_tasks": "title",
+        "documents": "title",
+        "quotations": "quotation_number",
+        "invoices": "invoice_number",
+        "purchase_orders": "po_number",
+        "expenses": "description",
+    }
+    field = key_by_table.get(item.table_name)
+    value = str(payload.get(field) or "").strip() if field else ""
+    return value or item.table_name.replace("_", " ").title()
+
+
 class ProjectsController(Controller):
     path = "/projects"
     guards: ClassVar[list[Any]] = [JWTAuthGuard()]
@@ -152,6 +177,203 @@ class ProjectsController(Controller):
         if item is None:
             raise NotFoundException(detail="Project not found.")
         return _project_read(item)
+
+    @get(path="/{project_id:uuid}/workspace")
+    async def get_project_workspace(
+        self,
+        project_id: uuid.UUID,
+        db_session: AsyncSession,
+    ) -> ProjectWorkspaceRead:
+        project = await db_session.get(Project, project_id)
+        if project is None:
+            raise NotFoundException(detail="Project not found.")
+
+        tasks = (
+            (
+                await db_session.execute(
+                    select(ProjectTask)
+                    .where(ProjectTask.project_id == project_id)
+                    .order_by(ProjectTask.due_date.asc().nullslast(), ProjectTask.created_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        documents = (
+            (
+                await db_session.execute(
+                    select(Document)
+                    .where(Document.project_id == project_id)
+                    .order_by(Document.created_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        quotations = (
+            (
+                await db_session.execute(
+                    select(Quotation)
+                    .where(Quotation.project_id == project_id)
+                    .order_by(Quotation.issue_date.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        invoices = (
+            (
+                await db_session.execute(
+                    select(Invoice)
+                    .where(Invoice.project_id == project_id)
+                    .order_by(Invoice.issue_date.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        purchase_orders = (
+            (
+                await db_session.execute(
+                    select(PurchaseOrder)
+                    .where(PurchaseOrder.project_id == project_id)
+                    .order_by(PurchaseOrder.order_date.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+        expenses = (
+            (
+                await db_session.execute(
+                    select(Expense)
+                    .where(Expense.project_id == project_id)
+                    .order_by(Expense.expense_date.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        project_key = str(project_id)
+
+        def linked_project(table: str):
+            return and_(
+                AuditLog.table_name == table,
+                or_(
+                    AuditLog.new_data["project_id"].astext == project_key,
+                    AuditLog.old_data["project_id"].astext == project_key,
+                ),
+            )
+
+        activity_rows = (
+            (
+                await db_session.execute(
+                    select(AuditLog)
+                    .where(
+                        or_(
+                            and_(
+                                AuditLog.table_name == "projects",
+                                AuditLog.record_id == project_id,
+                            ),
+                            linked_project("project_tasks"),
+                            linked_project("documents"),
+                            linked_project("quotations"),
+                            linked_project("invoices"),
+                            linked_project("purchase_orders"),
+                            linked_project("expenses"),
+                        )
+                    )
+                    .order_by(AuditLog.created_at.desc())
+                    .limit(60)
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        quotation_total = sum((row.amount_ugx or Decimal(0)) for row in quotations)
+        invoice_total = sum((row.amount_ugx or Decimal(0)) for row in invoices)
+        invoice_paid = sum((row.paid_amount_ugx or Decimal(0)) for row in invoices)
+        purchase_total = sum((row.amount_ugx or Decimal(0)) for row in purchase_orders)
+        expense_total = sum((row.amount_ugx or Decimal(0)) for row in expenses)
+
+        finance = ProjectFinanceRead(
+            project_value_ugx=float(project.value_ugx or 0),
+            amount_paid_ugx=float(project.amount_paid_ugx or 0),
+            project_outstanding_ugx=float(
+                max(Decimal(0), (project.value_ugx or 0) - (project.amount_paid_ugx or 0))
+            ),
+            quotation_total_ugx=float(quotation_total),
+            invoice_total_ugx=float(invoice_total),
+            invoice_paid_ugx=float(invoice_paid),
+            invoice_outstanding_ugx=float(max(Decimal(0), invoice_total - invoice_paid)),
+            purchase_orders_ugx=float(purchase_total),
+            expenses_ugx=float(expense_total),
+            quotations=[
+                ProjectQuotationItem(
+                    id=row.id,
+                    quotation_number=row.quotation_number,
+                    amount_ugx=float(row.amount_ugx or 0),
+                    status=row.status,
+                    issue_date=row.issue_date,
+                )
+                for row in quotations
+            ],
+            invoices=[
+                ProjectInvoiceItem(
+                    id=row.id,
+                    invoice_number=row.invoice_number,
+                    amount_ugx=float(row.amount_ugx or 0),
+                    paid_amount_ugx=float(row.paid_amount_ugx or 0),
+                    status=row.status,
+                    issue_date=row.issue_date,
+                    due_date=row.due_date,
+                )
+                for row in invoices
+            ],
+            purchase_orders=[
+                ProjectPurchaseOrderItem(
+                    id=row.id,
+                    po_number=row.po_number,
+                    supplier_name=row.supplier_name,
+                    amount_ugx=float(row.amount_ugx or 0),
+                    status=row.status,
+                    order_date=row.order_date,
+                )
+                for row in purchase_orders
+            ],
+            expenses=[
+                ProjectExpenseItem(
+                    id=row.id,
+                    description=row.description,
+                    category=row.category,
+                    amount_ugx=float(row.amount_ugx or 0),
+                    expense_date=row.expense_date,
+                    reference=row.reference,
+                )
+                for row in expenses
+            ],
+        )
+
+        return ProjectWorkspaceRead(
+            project=_project_read(project),
+            tasks=[_task_read(row) for row in tasks],
+            documents=[_document_read(row) for row in documents],
+            finance=finance,
+            activity=[
+                ProjectActivityItem(
+                    id=row.id,
+                    table_name=row.table_name,
+                    operation=row.operation,
+                    record_id=row.record_id,
+                    title=_activity_title(row),
+                    changed_by=row.changed_by,
+                    created_at=row.created_at,
+                )
+                for row in activity_rows
+            ],
+        )
 
     @patch(path="/{project_id:uuid}")
     async def update_project(

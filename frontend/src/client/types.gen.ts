@@ -194,6 +194,19 @@ export type Message = {
 };
 
 /**
+ * ProjectActivityItem
+ */
+export type ProjectActivityItem = {
+    changed_by: string | null;
+    created_at: string;
+    id: string;
+    operation: string;
+    record_id: string;
+    table_name: string;
+    title: string;
+};
+
+/**
  * ProjectCreate
  */
 export type ProjectCreate = {
@@ -207,6 +220,73 @@ export type ProjectCreate = {
     start_date?: string | null;
     status?: string;
     value_ugx?: number;
+};
+
+/**
+ * ProjectExpenseItem
+ */
+export type ProjectExpenseItem = {
+    amount_ugx: number;
+    category: string;
+    description: string;
+    expense_date: string;
+    id: string;
+    reference: string | null;
+};
+
+/**
+ * ProjectFinanceRead
+ */
+export type ProjectFinanceRead = {
+    amount_paid_ugx: number;
+    expenses: Array<ProjectExpenseItem>;
+    expenses_ugx: number;
+    invoice_outstanding_ugx: number;
+    invoice_paid_ugx: number;
+    invoice_total_ugx: number;
+    invoices: Array<ProjectInvoiceItem>;
+    project_outstanding_ugx: number;
+    project_value_ugx: number;
+    purchase_orders: Array<ProjectPurchaseOrderItem>;
+    purchase_orders_ugx: number;
+    quotation_total_ugx: number;
+    quotations: Array<ProjectQuotationItem>;
+};
+
+/**
+ * ProjectInvoiceItem
+ */
+export type ProjectInvoiceItem = {
+    amount_ugx: number;
+    due_date: string | null;
+    id: string;
+    invoice_number: string;
+    issue_date: string;
+    paid_amount_ugx: number;
+    status: string;
+};
+
+/**
+ * ProjectPurchaseOrderItem
+ */
+export type ProjectPurchaseOrderItem = {
+    amount_ugx: number;
+    id: string;
+    order_date: string;
+    po_number: string;
+    status: string;
+    supplier_name: string;
+};
+
+/**
+ * ProjectQuotationItem
+ */
+export type ProjectQuotationItem = {
+    amount_ugx: number;
+    id: string;
+    issue_date: string;
+    quotation_number: string;
+    status: string;
 };
 
 /**
@@ -245,6 +325,17 @@ export type ProjectUpdate = {
     start_date?: string | null;
     status?: string | null;
     value_ugx?: number | null;
+};
+
+/**
+ * ProjectWorkspaceRead
+ */
+export type ProjectWorkspaceRead = {
+    activity: Array<ProjectActivityItem>;
+    documents: Array<DocumentRead>;
+    finance: ProjectFinanceRead;
+    project: ProjectRead;
+    tasks: Array<TaskRead>;
 };
 
 /**
@@ -1192,6 +1283,39 @@ export type ApiV1ProjectsProjectIdUpdateProjectResponses = {
 };
 
 export type ApiV1ProjectsProjectIdUpdateProjectResponse = ApiV1ProjectsProjectIdUpdateProjectResponses[keyof ApiV1ProjectsProjectIdUpdateProjectResponses];
+
+export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceData = {
+    body?: never;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/workspace';
+};
+
+export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceError = ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors[keyof ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors];
+
+export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ProjectWorkspaceRead;
+};
+
+export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponse = ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses[keyof ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses];
 
 export type ApiV1TasksListTasksData = {
     body?: never;
