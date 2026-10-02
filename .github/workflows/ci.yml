@@ -198,7 +198,9 @@ jobs:
 
       - name: Frontend auth/API regression tests
         working-directory: frontend
-        run: npx --yes vitest@4.1.11 run
+        run: |
+          npm install --no-save --package-lock=false --legacy-peer-deps vitest@4.1.11
+          ./node_modules/.bin/vitest run
 
       - name: Frontend build
         working-directory: frontend
