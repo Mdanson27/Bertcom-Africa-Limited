@@ -140,6 +140,76 @@ class DownloadResponse(msgspec.Struct, frozen=True):
     url: str
 
 
+class ProjectQuotationItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    quotation_number: str
+    amount_ugx: float
+    status: str
+    issue_date: date
+
+
+class ProjectInvoiceItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    invoice_number: str
+    amount_ugx: float
+    paid_amount_ugx: float
+    status: str
+    issue_date: date
+    due_date: date | None
+
+
+class ProjectPurchaseOrderItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    po_number: str
+    supplier_name: str
+    amount_ugx: float
+    status: str
+    order_date: date
+
+
+class ProjectExpenseItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    description: str
+    category: str
+    amount_ugx: float
+    expense_date: date
+    reference: str | None
+
+
+class ProjectFinanceRead(msgspec.Struct, frozen=True):
+    project_value_ugx: float
+    amount_paid_ugx: float
+    project_outstanding_ugx: float
+    quotation_total_ugx: float
+    invoice_total_ugx: float
+    invoice_paid_ugx: float
+    invoice_outstanding_ugx: float
+    purchase_orders_ugx: float
+    expenses_ugx: float
+    quotations: list[ProjectQuotationItem]
+    invoices: list[ProjectInvoiceItem]
+    purchase_orders: list[ProjectPurchaseOrderItem]
+    expenses: list[ProjectExpenseItem]
+
+
+class ProjectActivityItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    table_name: str
+    operation: str
+    record_id: uuid.UUID
+    title: str
+    changed_by: str | None
+    created_at: datetime
+
+
+class ProjectWorkspaceRead(msgspec.Struct, frozen=True):
+    project: ProjectRead
+    tasks: list[TaskRead]
+    documents: list[DocumentRead]
+    finance: ProjectFinanceRead
+    activity: list[ProjectActivityItem]
+
+
 class WorkspaceSummary(msgspec.Struct, frozen=True):
     active_projects: int
     due_tasks: int
