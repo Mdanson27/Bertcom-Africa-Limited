@@ -1,31 +1,6 @@
-const rawUrl = (import.meta.env.VITE_API_URL || "").trim();
-const baseUrl = rawUrl ? rawUrl.replace(/\/$/, "") : "";
+import { ApiError, apiRequest } from "@/lib/api";
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem("access_token");
-  const response = await fetch(`${baseUrl}/api/v1${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      message = body?.detail || body?.message || message;
-    } catch {
-      // keep default
-    }
-    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
-  }
-
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
-}
+const request = apiRequest;
 
 export interface Project {
   id: string;
@@ -255,5 +230,10 @@ export async function uploadToPresignedUrl(url: string, file: File): Promise<voi
     headers: { "Content-Type": file.type || "application/octet-stream" },
     body: file,
   });
-  if (!response.ok) throw new Error("Document upload failed.");
+  if (!response.ok) {
+    throw new ApiError(
+      "The document could not be uploaded. Please try again.",
+      response.status,
+    );
+  }
 }

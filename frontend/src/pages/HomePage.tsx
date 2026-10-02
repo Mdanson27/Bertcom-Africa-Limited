@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   BriefcaseBusiness,
   CheckSquare2,
@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { PageError, PageLoading } from "@/components/common/RequestState";
 import { useAuth } from "@/hooks/useAuth";
+import { getErrorMessage } from "@/lib/api";
 import {
   workspaceApi,
   type DocumentRecord,
@@ -35,40 +37,61 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void Promise.all([
-      workspaceApi.summary(),
-      workspaceApi.projects(),
-      workspaceApi.documents(),
-    ]).then(([nextSummary, nextProjects, nextDocuments]) => {
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const [nextSummary, nextProjects, nextDocuments] = await Promise.all([
+        workspaceApi.summary(),
+        workspaceApi.projects(),
+        workspaceApi.documents(),
+      ]);
       setSummary(nextSummary);
       setProjects(nextProjects.slice(0, 4));
       setDocuments(nextDocuments.slice(0, 5));
-    });
+    } catch (error) {
+      setLoadError(getErrorMessage(error, "The home dashboard could not be loaded."));
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   const firstName = (user?.full_name || user?.email || "there").split(" ")[0];
+
+  if (isLoading) {
+    return <PageLoading label="Loading your Bertcom workspace..." />;
+  }
+
+  if (loadError) {
+    return <PageError message={loadError} onRetry={load} title="Home is temporarily unavailable" />;
+  }
 
   const stats = [
     {
       label: "Active projects",
-      value: summary?.active_projects ?? "—",
+      value: summary?.active_projects ?? 0,
       icon: <FolderKanban className="h-5 w-5" />,
     },
     {
       label: "Open tasks",
-      value: summary?.pending_tasks ?? "—",
+      value: summary?.pending_tasks ?? 0,
       icon: <CheckSquare2 className="h-5 w-5" />,
     },
     {
       label: "Documents",
-      value: summary?.documents ?? "—",
+      value: summary?.documents ?? 0,
       icon: <FileText className="h-5 w-5" />,
     },
     {
       label: "Outstanding",
-      value: summary ? money(summary.outstanding_ugx) : "—",
+      value: money(summary?.outstanding_ugx ?? 0),
       icon: <WalletCards className="h-5 w-5" />,
     },
   ];

@@ -19,6 +19,21 @@ import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ToastProvider } from "@/components/ui/Toast";
 
+const NAV_STORAGE_KEY = "bertcom.currentTab";
+const ADMIN_TABS: NavItem[] = ["dashboard", "users", "telemetry"];
+const ALL_TABS: NavItem[] = [
+  "dashboard",
+  "users",
+  "telemetry",
+  "home",
+  "projects",
+  "documents",
+  "business",
+  "tasks",
+  "reports",
+  "settings",
+];
+
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated, isLoading, isPlatformAdmin, refreshProfile } = useAuth();
   const { refreshHealth } = useSystemHealth();
@@ -26,8 +41,24 @@ const AuthenticatedApp: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) setCurrentTab(isPlatformAdmin ? "dashboard" : "home");
+    if (!isAuthenticated) return;
+
+    const stored = sessionStorage.getItem(NAV_STORAGE_KEY) as NavItem | null;
+    const storedIsValid =
+      Boolean(stored) &&
+      ALL_TABS.includes(stored as NavItem) &&
+      (isPlatformAdmin || !ADMIN_TABS.includes(stored as NavItem));
+
+    setCurrentTab(
+      storedIsValid ? (stored as NavItem) : isPlatformAdmin ? "dashboard" : "home",
+    );
   }, [isAuthenticated, isPlatformAdmin]);
+
+  const selectTab = (tab: NavItem) => {
+    if (!isPlatformAdmin && ADMIN_TABS.includes(tab)) return;
+    sessionStorage.setItem(NAV_STORAGE_KEY, tab);
+    setCurrentTab(tab);
+  };
 
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><LoadingSpinner label="Opening Bertcom..." /></div>;
   if (!isAuthenticated) return <LoginPage />;
@@ -42,11 +73,11 @@ const AuthenticatedApp: React.FC = () => {
   };
 
   return (
-    <AppShell currentTab={currentTab} onSelectTab={setCurrentTab} onRefreshAll={handleRefresh} isRefreshing={isRefreshing}>
+    <AppShell currentTab={currentTab} onSelectTab={selectTab} onRefreshAll={handleRefresh} isRefreshing={isRefreshing}>
       {currentTab === "dashboard" && isPlatformAdmin && <DashboardPage />}
       {currentTab === "users" && isPlatformAdmin && <UsersPage />}
       {currentTab === "telemetry" && isPlatformAdmin && <div className="max-w-4xl"><TelemetryStream /></div>}
-      {currentTab === "home" && <HomePage onNavigate={setCurrentTab} />}
+      {currentTab === "home" && <HomePage onNavigate={selectTab} />}
       {currentTab === "projects" && <ProjectsPage />}
       {currentTab === "documents" && <DocumentsPage />}
       {currentTab === "business" && <BusinessPage />}

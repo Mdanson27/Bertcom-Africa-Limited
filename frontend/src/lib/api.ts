@@ -1,4 +1,8 @@
 import { client } from "@/client/client.gen";
+import {
+  getAccessToken,
+  notifySessionExpired,
+} from "@/lib/authSession";
 
 export class ApiError extends Error {
   status?: number;
@@ -15,99 +19,237 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Parses raw error and response objects from backend / fetch into user-friendly ApiError.
- */
+function extractMessage(error: unknown): string | null {
+  if (typeof error === "string" && error.trim()) return error.trim();
+  if (!error || typeof error !== "object") return null;
+
+  const raw = error as Record<string, unknown>;
+  if (typeof raw.detail === "string" && raw.detail.trim()) return raw.detail.trim();
+  if (Array.isArray(raw.detail) && raw.detail.length) {
+    return raw.detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (!item || typeof item !== "object") return String(item);
+        const row = item as Record<string, unknown>;
+        return String(row.msg || row.message || "Invalid value");
+      })
+      .join("; ");
+  }
+  if (typeof raw.error === "string" && raw.error.trim()) return raw.error.trim();
+  if (typeof raw.message === "string" && raw.message.trim()) return raw.message.trim();
+  return null;
+}
+
 export function parseApiError(error: unknown, response?: Response): ApiError {
   if (!response) {
     return new ApiError(
-      "Unable to communicate with the server. Please try again later",
+      "Bertcom could not reach the server. Check your connection and try again.",
       0,
-      error
+      error,
     );
   }
 
   const status = response.status;
-  const rawData: Record<string, unknown> =
-    error && typeof error === "object" ? (error as Record<string, unknown>) : {};
+  const backendMessage = extractMessage(error);
 
   if (status === 401) {
-    return new ApiError("Incorrect email or password", 401, error);
-  }
-
-  if (status === 429) {
-    let retryAfter: number | undefined;
-    const headerVal = response.headers?.get("Retry-After");
-    if (headerVal) {
-      const parsed = parseInt(headerVal, 10);
-      if (!isNaN(parsed) && parsed > 0) retryAfter = parsed;
-    }
-
-    if (retryAfter === undefined && rawData) {
-      if (typeof rawData.retry_after === "number") {
-        retryAfter = rawData.retry_after;
-      } else if (typeof rawData.retryAfter === "number") {
-        retryAfter = rawData.retryAfter;
-      } else if (typeof rawData.retry_after === "string") {
-        const parsed = parseInt(rawData.retry_after, 10);
-        if (!isNaN(parsed)) retryAfter = parsed;
-      }
-    }
-
-    const message =
-      retryAfter !== undefined
-        ? `Too many requests. Please wait ${retryAfter} seconds before retrying`
-        : "Too many requests. Please wait a few seconds before retrying";
-
-    return new ApiError(message, 429, error, retryAfter);
-  }
-
-  if (status >= 500 && status <= 599) {
     return new ApiError(
-      "Unable to communicate with the server. Please try again later",
+      "Your Bertcom session has expired. Please sign in again.",
       status,
-      error
+      error,
+    );
+  }
+  if (status === 403) {
+    return new ApiError(
+      "You do not have permission to perform this action.",
+      status,
+      error,
+    );
+  }
+  if (status === 404) {
+    return new ApiError(backendMessage || "The requested record could not be found.", status, error);
+  }
+  if (status === 409) {
+    return new ApiError(
+      backendMessage || "This record conflicts with existing information.",
+      status,
+      error,
+    );
+  }
+  if (status === 422) {
+    return new ApiError(
+      backendMessage || "Please check the highlighted information and try again.",
+      status,
+      error,
+    );
+  }
+  if (status === 429) {
+    const headerValue = response.headers.get("Retry-After");
+    const parsedHeader = headerValue ? Number.parseInt(headerValue, 10) : Number.NaN;
+    const retryAfter = Number.isFinite(parsedHeader) && parsedHeader > 0 ? parsedHeader : undefined;
+    return new ApiError(
+      retryAfter
+        ? `Too many requests. Please wait ${retryAfter} seconds and try again.`
+        : "Too many requests. Please wait a moment and try again.",
+      status,
+      error,
+      retryAfter,
+    );
+  }
+  if (status >= 500) {
+    return new ApiError(
+      "Bertcom is temporarily unavailable. Please try again shortly.",
+      status,
+      error,
     );
   }
 
-  let extractedMessage: string | null = null;
-  if (rawData) {
-    if (typeof rawData.detail === "string" && rawData.detail.trim()) {
-      extractedMessage = rawData.detail.trim();
-    } else if (Array.isArray(rawData.detail) && rawData.detail.length > 0) {
-      extractedMessage = rawData.detail
-        .map((d: unknown) =>
-          typeof d === "string"
-            ? d
-            : (d as Record<string, unknown>)?.msg ||
-              (d as Record<string, unknown>)?.message ||
-              JSON.stringify(d)
-        )
-        .join("; ");
-    } else if (typeof rawData.error === "string" && rawData.error.trim()) {
-      extractedMessage = rawData.error.trim();
-    } else if (typeof rawData.message === "string" && rawData.message.trim()) {
-      extractedMessage = rawData.message.trim();
-    }
-  }
+  return new ApiError(
+    backendMessage || response.statusText || "The request could not be completed.",
+    status,
+    error,
+  );
+}
 
-  if (typeof error === "string" && error.trim()) {
-    extractedMessage = error.trim();
-  }
-
-  const finalMessage = extractedMessage || response.statusText || "An unexpected error occurred.";
-  return new ApiError(finalMessage, status, error);
+export function getErrorMessage(
+  error: unknown,
+  fallback = "Something went wrong. Please try again.",
+): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 const rawUrl = (import.meta.env.VITE_API_URL || "").trim();
-const sanitizedBase = rawUrl ? rawUrl.replace(/\/api\/v1\/?$/, "").replace(/\/$/, "") : "";
+export const apiBaseUrl = rawUrl
+  ? rawUrl.replace(/\/api\/v1\/?$/, "").replace(/\/$/, "")
+  : "";
+
+const apiPrefix = `${apiBaseUrl}/api/v1`;
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+
+const sleep = (milliseconds: number) =>
+  new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
+function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
+  if (typeof input === "string" && input.startsWith("/")) {
+    return new Request(new URL(input, window.location.origin), init);
+  }
+  return new Request(input, init);
+}
+
+function isProtectedApiRequest(request: Request): boolean {
+  const target = new URL(request.url);
+  const expected = apiBaseUrl
+    ? new URL(apiPrefix)
+    : new URL("/api/v1", window.location.origin);
+  return target.origin === expected.origin && target.pathname.startsWith(expected.pathname);
+}
+
+async function requestWithToken(baseRequest: Request, forceRefresh = false): Promise<Request> {
+  if (!isProtectedApiRequest(baseRequest)) return baseRequest.clone();
+
+  const token = await getAccessToken(forceRefresh);
+  const headers = new Headers(baseRequest.headers);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  else headers.delete("Authorization");
+
+  return new Request(baseRequest.clone(), { headers });
+}
+
+export async function authenticatedFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const baseRequest = asRequest(input, init);
+  const protectedRequest = isProtectedApiRequest(baseRequest);
+  const retryTemporaryFailure = ["GET", "HEAD"].includes(baseRequest.method.toUpperCase());
+
+  let authRetried = false;
+  let temporaryRetries = 0;
+
+  while (true) {
+    const request = await requestWithToken(baseRequest);
+
+    let response: Response;
+    try {
+      response = await globalThis.fetch(request);
+    } catch (error) {
+      if (retryTemporaryFailure && temporaryRetries < 2) {
+        temporaryRetries += 1;
+        await sleep(300 * 2 ** (temporaryRetries - 1));
+        continue;
+      }
+      throw error;
+    }
+
+    if (protectedRequest && response.status === 401 && !authRetried) {
+      authRetried = true;
+      const refreshedToken = await getAccessToken(true);
+      if (refreshedToken) continue;
+      notifySessionExpired();
+      return response;
+    }
+
+    if (protectedRequest && response.status === 401) {
+      notifySessionExpired();
+      return response;
+    }
+
+    if (
+      retryTemporaryFailure &&
+      RETRYABLE_STATUSES.has(response.status) &&
+      temporaryRetries < 2
+    ) {
+      temporaryRetries += 1;
+      await sleep(300 * 2 ** (temporaryRetries - 1));
+      continue;
+    }
+
+    return response;
+  }
+}
+
+async function readErrorBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return text;
+  }
+}
+
+export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  headers.set("Accept", "application/json");
+  if (options.body !== undefined && !(options.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  let response: Response;
+  try {
+    response = await authenticatedFetch(`${apiPrefix}${path}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    throw parseApiError(error);
+  }
+
+  if (!response.ok) {
+    const body = await readErrorBody(response);
+    throw parseApiError(body, response);
+  }
+
+  if (response.status === 204) return undefined as T;
+
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
+}
 
 client.setConfig({
-  baseUrl: sanitizedBase,
-  auth: () => {
-    const token = localStorage.getItem("access_token");
-    return token ? token : "";
-  },
+  baseUrl: apiBaseUrl,
+  auth: async () => (await getAccessToken()) || "",
+  fetch: authenticatedFetch,
 });
 
 client.interceptors.error.use((error, response, request, options) => {
@@ -119,7 +261,6 @@ client.interceptors.error.use((error, response, request, options) => {
       status: parsedError.status,
       retryAfter: parsedError.retryAfter,
       url: request?.url || (options as { url?: string })?.url,
-      data: parsedError.data,
     });
   }
 

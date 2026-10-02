@@ -196,6 +196,10 @@ jobs:
         working-directory: frontend
         run: npx tsc --noEmit
 
+      - name: Frontend auth/API regression tests
+        working-directory: frontend
+        run: npx --yes vitest@4.1.11 run
+
       - name: Frontend build
         working-directory: frontend
         run: npm run build --if-present
