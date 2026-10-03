@@ -6,14 +6,45 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
+import { SectionNav } from "@/components/common/SectionNav";
 import { useAuth } from "@/hooks/useAuth";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { apiV1UsersMeUpdateMe, apiV1UsersMePasswordUpdatePasswordMe, apiV1UsersMeDeleteMe } from "@/client/sdk.gen";
 
+type SettingsSection =
+  | "company"
+  | "users_staff"
+  | "projects"
+  | "documents"
+  | "business"
+  | "notifications"
+  | "integrations";
+
+const settingsCopy: Record<SettingsSection, { title: string; description: string }> = {
+  company: { title: "Company settings", description: "Bertcom company identity, contact details, currency and business-wide preferences belong here." },
+  users_staff: { title: "Users & Staff", description: "Personal account settings are available now. Staff roles and permissions will be added in the dedicated access-control phase." },
+  projects: { title: "Project settings", description: "Project statuses, categories, priorities and project defaults will be managed here." },
+  documents: { title: "Document settings", description: "Document categories, OCR rules and review defaults will be managed here." },
+  business: { title: "Business settings", description: "Quotation, invoice, purchase-order numbering and commercial defaults will be managed here." },
+  notifications: { title: "Notification settings", description: "Task reminders, project deadlines, payment reminders and alert preferences will be managed here." },
+  integrations: { title: "Integrations", description: "External services and future Bertcom integrations will be connected from this area." },
+};
+
 export const SettingsPage: React.FC = () => {
   const { user, refreshProfile, logout } = useAuth();
   const { showSuccessToast, showErrorToast } = useCustomToast();
+  const [section, setSection] = useState<SettingsSection>("company");
   const [activeTab, setActiveTab] = useState<"profile" | "password" | "danger">("profile");
+
+  const settingsSections = [
+    { id: "company" as const, label: "Company" },
+    { id: "users_staff" as const, label: "Users & Staff" },
+    { id: "projects" as const, label: "Projects" },
+    { id: "documents" as const, label: "Documents" },
+    { id: "business" as const, label: "Business" },
+    { id: "notifications" as const, label: "Notifications" },
+    { id: "integrations" as const, label: "Integrations" },
+  ];
 
   // Profile Form State
   const [fullName, setFullName] = useState<string>(user?.full_name || "");
@@ -158,12 +189,23 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-6xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">User Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage your account settings and preferences</p>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Settings</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Configure Bertcom company settings, work standards, access and integrations from one place.
+        </p>
       </div>
 
+      <SectionNav
+        items={settingsSections}
+        active={section}
+        onChange={setSection}
+        ariaLabel="Settings sections"
+      />
+
+      {section === "users_staff" ? (
+        <>
       {/* Tabs Header */}
       <div className="flex gap-2 border-b border-border pb-2">
         <button
@@ -334,6 +376,21 @@ export const SettingsPage: React.FC = () => {
             </div>
           </Modal>
         </div>
+      )}
+        </>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>{settingsCopy[section].title}</CardTitle>
+            <CardDescription>{settingsCopy[section].description}</CardDescription>
+          </CardHeader>
+          <div className="rounded-lg border border-dashed border-border p-5">
+            <p className="text-sm font-medium">Dedicated configuration area established</p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Step 2 creates the correct home for this configuration. The deeper controls will be implemented in their dedicated functional phases instead of being mixed into account settings.
+            </p>
+          </div>
+        </Card>
       )}
     </div>
   );
