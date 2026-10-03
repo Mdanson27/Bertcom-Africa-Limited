@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Alert, AlertDescription } from "@/components/ui/Alert";
+import { Modal } from "@/components/ui/Modal";
 import { Logo } from "@/components/common/Logo";
 import LoginMascot, { type MascotMode } from "@/components/auth/LoginMascot";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,8 +22,14 @@ const GoogleMark = () => (
 );
 
 export const LoginForm: React.FC = () => {
-  const { login, loginWithGoogle, authConfigured } = useAuth();
-  const { showErrorToast, showWarningToast } = useCustomToast();
+  const {
+    login,
+    loginWithGoogle,
+    requestPasswordReset,
+    resetPasswordWithOtp,
+    authConfigured,
+  } = useAuth();
+  const { showErrorToast, showSuccessToast, showWarningToast } = useCustomToast();
 
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -32,6 +39,14 @@ export const LoginForm: React.FC = () => {
   const [serverError, setServerError] = useState<string | null>(() => consumeAuthNotice());
   const [isRateLimited, setIsRateLimited] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [resetOpen, setResetOpen] = useState<boolean>(false);
+  const [resetStep, setResetStep] = useState<"email" | "code">("email");
+  const [resetEmail, setResetEmail] = useState<string>("");
+  const [resetCode, setResetCode] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState<string>("");
+  const [resetBusy, setResetBusy] = useState<boolean>(false);
+  const [resetError, setResetError] = useState<string | null>(null);
 
   const emailHelper = useMemo(() => {
     if (activeField !== "email") return "Use the email linked to your Bertcom workspace.";
@@ -122,6 +137,101 @@ export const LoginForm: React.FC = () => {
     }
   };
 
+  const openPasswordReset = () => {
+    setResetEmail(email.trim());
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setResetError(null);
+    setResetStep("email");
+    setResetOpen(true);
+  };
+
+  const closePasswordReset = () => {
+    if (resetBusy) return;
+    setResetOpen(false);
+    setResetError(null);
+    setResetCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+  };
+
+  const sendResetCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const targetEmail = resetEmail.trim().toLowerCase();
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+      setResetError("Enter the email linked to your Bertcom account.");
+      return;
+    }
+
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      await requestPasswordReset(targetEmail);
+      setResetEmail(targetEmail);
+      setResetStep("code");
+      showSuccessToast(
+        "A password reset code has been sent if this Bertcom account exists.",
+        "Check your email",
+      );
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "The reset code could not be sent. Please try again.";
+      setResetError(message);
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
+  const completePasswordReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!resetCode.trim()) {
+      setResetError("Enter the reset code from your email.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setResetError("Your new password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setResetError("The new passwords do not match.");
+      return;
+    }
+
+    setResetBusy(true);
+    setResetError(null);
+    try {
+      await resetPasswordWithOtp(
+        resetEmail.trim().toLowerCase(),
+        resetCode.trim(),
+        newPassword,
+      );
+      setEmail(resetEmail.trim().toLowerCase());
+      setPassword("");
+      setResetOpen(false);
+      setResetStep("email");
+      setResetCode("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      showSuccessToast(
+        "Your Bertcom password is ready. Sign in with the new password.",
+        "Password updated",
+      );
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "The reset code is invalid or has expired.";
+      setResetError(message);
+    } finally {
+      setResetBusy(false);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="mb-6 lg:hidden">
@@ -206,7 +316,7 @@ export const LoginForm: React.FC = () => {
             <button
               type="button"
               className="text-xs font-semibold text-[#022E55] transition hover:text-[#DC1D2D] dark:text-white/75 dark:hover:text-white"
-              onClick={() => setServerError("Password reset will be available from Bertcom account support.")}
+              onClick={openPasswordReset}
             >
               Forgot password?
             </button>
@@ -245,6 +355,118 @@ export const LoginForm: React.FC = () => {
           Sign in
         </Button>
       </form>
+
+      <Modal
+        isOpen={resetOpen}
+        onClose={closePasswordReset}
+        title={resetStep === "email" ? "Set or reset password" : "Enter reset code"}
+        description={
+          resetStep === "email"
+            ? "We will send a secure one-time code to the email linked to your Bertcom account."
+            : `Enter the code sent to ${resetEmail} and choose your Bertcom password.`
+        }
+      >
+        {resetError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{resetError}</AlertDescription>
+          </Alert>
+        )}
+
+        {resetStep === "email" ? (
+          <form onSubmit={sendResetCode} className="space-y-4">
+            <Input
+              id="reset-email"
+              type="email"
+              label="Bertcom email"
+              value={resetEmail}
+              onChange={(event) => {
+                setResetEmail(event.target.value);
+                if (resetError) setResetError(null);
+              }}
+              placeholder="name@bertcomafrica.com"
+              autoComplete="email"
+              required
+            />
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closePasswordReset}
+                disabled={resetBusy}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" loading={resetBusy}>
+                Send code
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={completePasswordReset} className="space-y-4">
+            <Input
+              id="reset-code"
+              label="Reset code"
+              value={resetCode}
+              onChange={(event) => {
+                setResetCode(event.target.value);
+                if (resetError) setResetError(null);
+              }}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+            />
+            <PasswordInput
+              id="new-login-password"
+              label="New password"
+              value={newPassword}
+              onChange={(event) => {
+                setNewPassword(event.target.value);
+                if (resetError) setResetError(null);
+              }}
+              autoComplete="new-password"
+              required
+            />
+            <PasswordInput
+              id="confirm-login-password"
+              label="Confirm new password"
+              value={confirmNewPassword}
+              onChange={(event) => {
+                setConfirmNewPassword(event.target.value);
+                if (resetError) setResetError(null);
+              }}
+              autoComplete="new-password"
+              required
+            />
+            <div className="flex flex-wrap justify-between gap-2 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setResetStep("email");
+                  setResetCode("");
+                  setResetError(null);
+                }}
+                disabled={resetBusy}
+              >
+                Use another email
+              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closePasswordReset}
+                  disabled={resetBusy}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" loading={resetBusy}>
+                  Save password
+                </Button>
+              </div>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       <div className="mt-6 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
         <Lock className="h-3 w-3" />

@@ -4,39 +4,9 @@ const authUrl = (import.meta.env.VITE_NEON_AUTH_URL || "").trim().replace(/\/$/,
 
 export const isNeonAuthConfigured = Boolean(authUrl);
 
-type AuthError = { message?: string } | null | undefined;
+const authClient = isNeonAuthConfigured ? createAuthClient(authUrl) : null;
 
-interface BertcomNeonAuthClient {
-  getSession: () => Promise<{
-    data?: {
-      session?: unknown;
-      user?: Record<string, unknown>;
-    } | null;
-    error?: AuthError;
-  }>;
-  token: () => Promise<{
-    data?: { token?: string } | null;
-    error?: AuthError;
-  }>;
-  signIn: {
-    email: (input: { email: string; password: string }) => Promise<{
-      data?: unknown;
-      error?: AuthError;
-    }>;
-    social: (input: {
-      provider: "google";
-      callbackURL: string;
-    }) => Promise<{
-      data?: unknown;
-      error?: AuthError;
-    }>;
-  };
-  signOut: () => Promise<unknown>;
-}
-
-const authClient: BertcomNeonAuthClient | null = isNeonAuthConfigured
-  ? (createAuthClient(authUrl) as unknown as BertcomNeonAuthClient)
-  : null;
+export type BertcomNeonAuthClient = NonNullable<typeof authClient>;
 
 export function getNeonAuthClient(): BertcomNeonAuthClient {
   if (!authClient) {

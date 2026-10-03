@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
 import {
   AUTH_SESSION_EXPIRED_EVENT,
+  cacheAccessToken,
   clearCachedAccessToken,
-  getAccessToken,
   getCachedAccessToken,
+  getSessionAccessToken,
 } from "@/lib/authSession";
 import {
   getAuthCallbackUrl,
@@ -23,6 +24,7 @@ export interface AuthUser {
 }
 
 const PLATFORM_ADMIN_EMAIL = "automindsafrica@gmail.com";
+const AUTH_USER_CACHE_KEY = "bertcom.authUser";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -34,6 +36,12 @@ interface AuthContextType {
   authConfigured: boolean;
   login: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPasswordWithOtp: (
+    email: string,
+    otp: string,
+    password: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -62,13 +70,59 @@ function mapNeonUser(raw: Record<string, unknown>): AuthUser {
   };
 }
 
+function readCachedUser(): AuthUser | null {
+  try {
+    const value = localStorage.getItem(AUTH_USER_CACHE_KEY);
+    if (!value) return null;
+
+    const parsed = JSON.parse(value) as Partial<AuthUser>;
+    if (!parsed.id || !parsed.email) return null;
+
+    return {
+      id: String(parsed.id),
+      email: String(parsed.email).trim().toLowerCase(),
+      full_name: String(parsed.full_name || parsed.email),
+      is_active: parsed.is_active !== false,
+      is_superuser:
+        String(parsed.email).trim().toLowerCase() === PLATFORM_ADMIN_EMAIL,
+      role: String(parsed.role || "authenticated"),
+      image: typeof parsed.image === "string" ? parsed.image : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function cacheUser(user: AuthUser): void {
+  localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user));
+}
+
+function clearCachedUser(): void {
+  localStorage.removeItem(AUTH_USER_CACHE_KEY);
+}
+
+function authErrorMessage(
+  error: unknown,
+  fallback: string,
+): string {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return fallback;
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [token, setToken] = useState<string | null>(() => getCachedAccessToken());
+  const initialToken = getCachedAccessToken();
+  const [user, setUser] = useState<AuthUser | null>(() =>
+    initialToken ? readCachedUser() : null,
+  );
+  const [token, setToken] = useState<string | null>(initialToken);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const clearSession = useCallback(() => {
     clearCachedAccessToken();
+    clearCachedUser();
     setToken(null);
     setUser(null);
   }, []);
@@ -80,25 +134,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    const cachedToken = getCachedAccessToken();
+    const cachedUser = cachedToken ? readCachedUser() : null;
+
+    if (cachedToken && cachedUser) {
+      setToken(cachedToken);
+      setUser(cachedUser);
+    }
+
     try {
-      const authClient = getNeonAuthClient();
-      const sessionResult = await authClient.getSession();
+      const sessionResult = await getNeonAuthClient().getSession();
+      const sessionData = sessionResult.data as
+        | { session?: unknown; user?: Record<string, unknown> }
+        | null
+        | undefined;
 
-      if (sessionResult.error || !sessionResult.data?.session || !sessionResult.data?.user) {
+      if (
+        sessionResult.error ||
+        !sessionData?.session ||
+        !sessionData.user
+      ) {
+        // A valid cached JWT remains sufficient for the frontend until expiry.
+        // The API still cryptographically validates every request server-side.
+        if (cachedToken && cachedUser) return;
         clearSession();
         return;
       }
 
-      const jwt = await getAccessToken(true);
-      if (!jwt) {
+      const sessionToken = getSessionAccessToken(sessionResult);
+      if (!sessionToken) {
+        if (cachedToken && cachedUser) return;
         clearSession();
         return;
       }
 
-      setToken(jwt);
-      setUser(mapNeonUser(sessionResult.data.user as unknown as Record<string, unknown>));
+      const mappedUser = mapNeonUser(sessionData.user);
+
+      cacheAccessToken(sessionToken);
+      cacheUser(mappedUser);
+      setToken(sessionToken);
+      setUser(mappedUser);
     } catch {
-      clearSession();
+      if (!(cachedToken && cachedUser)) clearSession();
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +192,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleExpiredSession);
-    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleExpiredSession);
+    return () =>
+      window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleExpiredSession);
   }, [clearSession]);
 
   const login = async (email: string, password: string) => {
@@ -128,10 +206,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await getNeonAuthClient().signIn.email({ email, password });
 
       if (result.error) {
-        throw new ApiError(result.error.message || "Incorrect email or password.");
+        throw new ApiError(
+          authErrorMessage(result.error, "Incorrect email or password."),
+        );
       }
 
       await refreshProfile();
+
+      if (!getCachedAccessToken()) {
+        throw new ApiError(
+          "Bertcom could not establish a secure session. Please try again.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -148,7 +234,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (result?.error) {
-      throw new ApiError(result.error.message || "Google sign-in could not be started.");
+      throw new ApiError(
+        authErrorMessage(result.error, "Google sign-in could not be started."),
+      );
+    }
+  };
+
+  const requestPasswordReset = async (email: string) => {
+    if (!isNeonAuthConfigured) {
+      throw new ApiError("Bertcom authentication is not configured yet.");
+    }
+
+    const result = await getNeonAuthClient().emailOtp.requestPasswordReset({
+      email,
+    });
+
+    if (result?.error) {
+      throw new ApiError(
+        authErrorMessage(
+          result.error,
+          "Bertcom could not send the password reset code.",
+        ),
+      );
+    }
+  };
+
+  const resetPasswordWithOtp = async (
+    email: string,
+    otp: string,
+    password: string,
+  ) => {
+    if (!isNeonAuthConfigured) {
+      throw new ApiError("Bertcom authentication is not configured yet.");
+    }
+
+    const result = await getNeonAuthClient().emailOtp.resetPassword({
+      email,
+      otp,
+      password,
+    });
+
+    if (result?.error) {
+      throw new ApiError(
+        authErrorMessage(
+          result.error,
+          "The reset code is invalid or has expired.",
+        ),
+      );
     }
   };
 
@@ -173,12 +305,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         token,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: !!user && !!token,
         isAdmin,
         isPlatformAdmin,
         authConfigured: isNeonAuthConfigured,
         login,
         loginWithGoogle,
+        requestPasswordReset,
+        resetPasswordWithOtp,
         logout,
         refreshProfile,
       }}
