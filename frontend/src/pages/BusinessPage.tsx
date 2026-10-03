@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
@@ -26,8 +27,15 @@ import {
   type SupplierRecord,
 } from "@/lib/workspaceApi";
 
-type BusinessTab = "clients" | "sales" | "purchases" | "expenses" | "suppliers";
-type CreateKind = BusinessTab | "quotation" | "invoice";
+type BusinessView =
+  | "overview"
+  | "clients"
+  | "suppliers"
+  | "quotations"
+  | "invoices"
+  | "purchase_orders"
+  | "expenses";
+type CreateKind = "clients" | "suppliers" | "quotation" | "invoice" | "purchase_order" | "expense";
 
 const money = (value: number) =>
   new Intl.NumberFormat("en-UG", {
@@ -40,7 +48,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export const BusinessPage: React.FC = () => {
   const { showSuccessToast, showErrorToast, showWarningToast } = useCustomToast();
-  const [tab, setTab] = useState<BusinessTab>("clients");
+  const [tab, setTab] = useState<BusinessView>("overview");
   const [summary, setSummary] = useState<BusinessSummary | null>(null);
   const [clients, setClients] = useState<ClientRecord[]>([]);
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
@@ -92,8 +100,8 @@ export const BusinessPage: React.FC = () => {
     const defaults: Record<string, string> = {};
     if (kind === "quotation") defaults.issue_date = today();
     if (kind === "invoice") defaults.issue_date = today();
-    if (kind === "purchases") defaults.order_date = today();
-    if (kind === "expenses") defaults.expense_date = today();
+    if (kind === "purchase_order") defaults.order_date = today();
+    if (kind === "expense") defaults.expense_date = today();
     setForm(defaults);
     setCreateKind(kind);
   };
@@ -114,7 +122,7 @@ export const BusinessPage: React.FC = () => {
 
     const amount = Number(form.amount || 0);
     if (
-      ["quotation", "invoice", "purchases", "expenses"].includes(createKind) &&
+      ["quotation", "invoice", "purchase_order", "expense"].includes(createKind) &&
       (!Number.isFinite(amount) || amount <= 0)
     ) {
       showWarningToast("Enter an amount greater than zero.", "Check amount");
@@ -135,14 +143,14 @@ export const BusinessPage: React.FC = () => {
     }
 
     if (
-      createKind === "purchases" &&
+      createKind === "purchase_order" &&
       (!form.number?.trim() || !form.supplier_name?.trim())
     ) {
       showWarningToast("Purchase order number and supplier are required.", "Check details");
       return;
     }
 
-    if (createKind === "expenses" && !form.description?.trim()) {
+    if (createKind === "expense" && !form.description?.trim()) {
       showWarningToast("Add a short expense description.", "Check details");
       return;
     }
@@ -182,7 +190,7 @@ export const BusinessPage: React.FC = () => {
           due_date: form.due_date || null,
           status: "draft",
         });
-      } else if (createKind === "purchases") {
+      } else if (createKind === "purchase_order") {
         await workspaceApi.createPurchaseOrder({
           po_number: form.number.trim(),
           supplier_name: form.supplier_name.trim(),
@@ -191,7 +199,7 @@ export const BusinessPage: React.FC = () => {
           expected_date: form.expected_date || null,
           status: "draft",
         });
-      } else if (createKind === "expenses") {
+      } else if (createKind === "expense") {
         await workspaceApi.createExpense({
           description: form.description.trim(),
           amount_ugx: amount,
@@ -206,7 +214,7 @@ export const BusinessPage: React.FC = () => {
       setForm({});
       await load(false);
       showSuccessToast(
-        savedKind === "expenses" ? "Expense recorded successfully." : "Business record saved successfully.",
+        savedKind === "expense" ? "Expense recorded successfully." : "Business record saved successfully.",
         "Saved",
       );
     } catch (error) {
@@ -220,21 +228,25 @@ export const BusinessPage: React.FC = () => {
   };
 
   const tabs = [
-    { id: "clients" as const, label: "Clients", icon: UsersRound },
-    { id: "sales" as const, label: "Sales", icon: FileText },
-    { id: "purchases" as const, label: "Purchases", icon: ShoppingCart },
-    { id: "expenses" as const, label: "Expenses", icon: Receipt },
-    { id: "suppliers" as const, label: "Suppliers", icon: Building2 },
+    { id: "overview" as const, label: "Overview" },
+    { id: "clients" as const, label: "Clients", count: clients.length },
+    { id: "suppliers" as const, label: "Suppliers", count: suppliers.length },
+    { id: "quotations" as const, label: "Quotations", count: quotes.length },
+    { id: "invoices" as const, label: "Invoices", count: invoices.length },
+    { id: "purchase_orders" as const, label: "Purchase Orders", count: purchaseOrders.length },
+    { id: "expenses" as const, label: "Expenses", count: expenses.length },
   ];
 
   const outstanding = summary?.invoice_outstanding_ugx ?? 0;
 
-  const createLabel = useMemo(() => {
-    if (tab === "clients") return "New client";
-    if (tab === "purchases") return "New purchase order";
-    if (tab === "expenses") return "Add expense";
-    if (tab === "suppliers") return "New supplier";
-    return "";
+  const createAction = useMemo(() => {
+    if (tab === "clients") return { kind: "clients" as const, label: "New client" };
+    if (tab === "suppliers") return { kind: "suppliers" as const, label: "New supplier" };
+    if (tab === "quotations") return { kind: "quotation" as const, label: "New quotation" };
+    if (tab === "invoices") return { kind: "invoice" as const, label: "New invoice" };
+    if (tab === "purchase_orders") return { kind: "purchase_order" as const, label: "New purchase order" };
+    if (tab === "expenses") return { kind: "expense" as const, label: "Add expense" };
+    return null;
   }, [tab]);
 
   const simpleRows =
@@ -275,36 +287,37 @@ export const BusinessPage: React.FC = () => {
             Clients, sales, purchases and expenses without accounting complexity.
           </p>
         </div>
-        {tab !== "sales" && (
-          <Button className="gap-2" onClick={() => openCreate(tab)}>
-            <Plus className="h-4 w-4" /> {createLabel}
+        {createAction && (
+          <Button className="gap-2" onClick={() => openCreate(createAction.kind)}>
+            <Plus className="h-4 w-4" /> {createAction.label}
           </Button>
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <Card><p className="text-xs text-muted-foreground">Clients</p><p className="mt-2 text-2xl font-bold">{summary?.clients ?? "—"}</p></Card>
-        <Card><p className="text-xs text-muted-foreground">Suppliers</p><p className="mt-2 text-2xl font-bold">{summary?.suppliers ?? "—"}</p></Card>
-        <Card><p className="text-xs text-muted-foreground">Open quotations</p><p className="mt-2 text-2xl font-bold">{summary?.quotations_open ?? "—"}</p></Card>
-        <Card><p className="text-xs text-muted-foreground">Invoice outstanding</p><p className="mt-2 text-lg font-bold">{money(outstanding)}</p></Card>
-        <Card><p className="text-xs text-muted-foreground">Recorded expenses</p><p className="mt-2 text-lg font-bold">{money(summary?.expenses_ugx ?? 0)}</p></Card>
-      </div>
+      <SectionNav
+        items={tabs}
+        active={tab}
+        onChange={setTab}
+        ariaLabel="Business sections"
+      />
 
-      <div className="flex gap-2 overflow-x-auto border-b border-border pb-2">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            className={
-              tab === id
-                ? "flex items-center gap-2 rounded-lg bg-accent px-3 py-2 text-xs font-semibold"
-                : "flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-accent/50"
-            }
-          >
-            <Icon className="h-4 w-4" /> {label}
-          </button>
-        ))}
-      </div>
+      {tab === "overview" && (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <Card><p className="text-xs text-muted-foreground">Clients</p><p className="mt-2 text-2xl font-bold">{summary?.clients ?? 0}</p></Card>
+            <Card><p className="text-xs text-muted-foreground">Suppliers</p><p className="mt-2 text-2xl font-bold">{summary?.suppliers ?? 0}</p></Card>
+            <Card><p className="text-xs text-muted-foreground">Open quotations</p><p className="mt-2 text-2xl font-bold">{summary?.quotations_open ?? 0}</p></Card>
+            <Card><p className="text-xs text-muted-foreground">Invoice outstanding</p><p className="mt-2 text-lg font-bold">{money(outstanding)}</p></Card>
+            <Card><p className="text-xs text-muted-foreground">Recorded expenses</p><p className="mt-2 text-lg font-bold">{money(summary?.expenses_ugx ?? 0)}</p></Card>
+          </div>
+          <Card>
+            <h2 className="font-semibold">Commercial operations</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+              Business is now a complete work area. Use the sections above to manage clients, suppliers, quotations, invoices, purchase orders and expenses without mixing them into one screen.
+            </p>
+          </Card>
+        </div>
+      )}
 
       {(tab === "clients" || tab === "suppliers") && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -324,40 +337,33 @@ export const BusinessPage: React.FC = () => {
         </div>
       )}
 
-      {tab === "sales" && (
-        <div className="space-y-5">
-          <div className="flex flex-wrap gap-2">
-            <Button className="gap-2" onClick={() => openCreate("quotation")}><Plus className="h-4 w-4" /> New quotation</Button>
-            <Button variant="outline" className="gap-2" onClick={() => openCreate("invoice")}><Plus className="h-4 w-4" /> New invoice</Button>
-          </div>
-          <div className="grid gap-5 lg:grid-cols-2">
-            <Card>
-              <h2 className="font-semibold">Quotations</h2>
-              <div className="mt-4 space-y-2">
-                {quotes.length === 0 ? <p className="text-sm text-muted-foreground">No quotations yet.</p> : quotes.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div><p className="text-sm font-medium">{item.quotation_number}</p><p className="text-xs text-muted-foreground">{item.client_name}</p></div>
-                    <div className="text-right"><p className="text-sm font-semibold">{money(item.amount_ugx)}</p><p className="text-[10px] text-muted-foreground">{item.status}</p></div>
-                  </div>
-                ))}
-              </div>
+      {tab === "quotations" && (
+        <div className="space-y-3">
+          {quotes.length === 0 ? (
+            <Card className="py-12 text-center"><p className="font-medium">No quotations yet</p></Card>
+          ) : quotes.map((item) => (
+            <Card key={item.id} className="flex items-center justify-between gap-4">
+              <div><p className="font-medium">{item.quotation_number}</p><p className="text-sm text-muted-foreground">{item.client_name}</p></div>
+              <div className="text-right"><p className="font-semibold">{money(item.amount_ugx)}</p><p className="text-xs text-muted-foreground">{item.status}</p></div>
             </Card>
-            <Card>
-              <h2 className="font-semibold">Invoices</h2>
-              <div className="mt-4 space-y-2">
-                {invoices.length === 0 ? <p className="text-sm text-muted-foreground">No invoices yet.</p> : invoices.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                    <div><p className="text-sm font-medium">{item.invoice_number}</p><p className="text-xs text-muted-foreground">{item.client_name}</p></div>
-                    <div className="text-right"><p className="text-sm font-semibold">{money(item.amount_ugx)}</p><p className="text-[10px] text-muted-foreground">{item.status}</p></div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          </div>
+          ))}
         </div>
       )}
 
-      {tab === "purchases" && (
+      {tab === "invoices" && (
+        <div className="space-y-3">
+          {invoices.length === 0 ? (
+            <Card className="py-12 text-center"><p className="font-medium">No invoices yet</p></Card>
+          ) : invoices.map((item) => (
+            <Card key={item.id} className="flex items-center justify-between gap-4">
+              <div><p className="font-medium">{item.invoice_number}</p><p className="text-sm text-muted-foreground">{item.client_name}</p></div>
+              <div className="text-right"><p className="font-semibold">{money(item.amount_ugx)}</p><p className="text-xs text-muted-foreground">{item.status}</p></div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {tab === "purchase_orders" && (
         <div className="space-y-3">
           {purchaseOrders.length === 0 ? <Card className="py-12 text-center"><p className="font-medium">No purchase orders yet</p></Card> : purchaseOrders.map((item) => (
             <Card key={item.id} className="flex items-center justify-between">
@@ -387,7 +393,7 @@ export const BusinessPage: React.FC = () => {
           createKind === "suppliers" ? "New supplier" :
           createKind === "quotation" ? "New quotation" :
           createKind === "invoice" ? "New invoice" :
-          createKind === "purchases" ? "New purchase order" : "Add expense"
+          createKind === "purchase_order" ? "New purchase order" : "Add expense"
         }
         description="Keep it simple. You can attach documents in the Documents area."
       >
@@ -416,7 +422,7 @@ export const BusinessPage: React.FC = () => {
             </>
           )}
 
-          {createKind === "purchases" && (
+          {createKind === "purchase_order" && (
             <>
               <Input id="po-number" label="Purchase order number" value={form.number || ""} onChange={(e) => set("number", e.target.value)} required />
               <Input id="supplier-name" label="Supplier" value={form.supplier_name || ""} onChange={(e) => set("supplier_name", e.target.value)} required />
@@ -428,7 +434,7 @@ export const BusinessPage: React.FC = () => {
             </>
           )}
 
-          {createKind === "expenses" && (
+          {createKind === "expense" && (
             <>
               <Input id="expense-description" label="What was paid for?" value={form.description || ""} onChange={(e) => set("description", e.target.value)} required />
               <Input id="expense-amount" label="Amount (UGX)" type="number" value={form.amount || ""} onChange={(e) => set("amount", e.target.value)} required />

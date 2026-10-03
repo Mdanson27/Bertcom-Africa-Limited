@@ -3,6 +3,7 @@ import { Camera, Download, FileText, ScanLine, Search, UploadCloud } from "lucid
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { getErrorMessage } from "@/lib/api";
 import {
@@ -43,10 +44,21 @@ function extractFields(text: string): Record<string, string> {
 const niceCategory = (value: string) =>
   value.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
 
+type DocumentsView =
+  | "overview"
+  | "all"
+  | "ocr_inbox"
+  | "needs_review"
+  | "unclassified"
+  | "project_documents"
+  | "business_documents"
+  | "archived";
+
 export const DocumentsPage: React.FC = () => {
   const { showSuccessToast, showErrorToast } = useCustomToast();
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [view, setView] = useState<DocumentsView>("overview");
   const [query, setQuery] = useState("");
   const [projectId, setProjectId] = useState("");
   const [category, setCategory] = useState("other");
@@ -80,16 +92,47 @@ export const DocumentsPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     const normalized = query.toLowerCase().trim();
-    if (!normalized) return documents;
-    return documents.filter((document) =>
-      [
-        document.title,
-        document.original_filename,
-        document.category,
-        document.ocr_text || "",
-      ].some((value) => value.toLowerCase().includes(normalized)),
-    );
-  }, [documents, query]);
+    return documents.filter((document) => {
+      const matchesSearch =
+        !normalized ||
+        [
+          document.title,
+          document.original_filename,
+          document.category,
+          document.ocr_text || "",
+        ].some((value) => value.toLowerCase().includes(normalized));
+
+      if (!matchesSearch) return false;
+      if (view === "all" || view === "overview") return true;
+      if (view === "ocr_inbox") return document.ocr_status === "processing";
+      if (view === "needs_review") {
+        return document.ocr_status === "completed" && Object.keys(document.extracted_fields || {}).length > 0;
+      }
+      if (view === "unclassified") return document.category === "other";
+      if (view === "project_documents") return Boolean(document.project_id);
+      if (view === "business_documents") return !document.project_id;
+      if (view === "archived") return false;
+      return true;
+    });
+  }, [documents, query, view]);
+
+  const displayedDocuments = useMemo(() => {
+    if (view !== "overview" || query.trim()) return filtered;
+    return [...filtered]
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 5);
+  }, [filtered, query, view]);
+
+  const documentViews = [
+    { id: "overview" as const, label: "Overview" },
+    { id: "all" as const, label: "All Documents", count: documents.length },
+    { id: "ocr_inbox" as const, label: "OCR Inbox", count: documents.filter((document) => document.ocr_status === "processing").length },
+    { id: "needs_review" as const, label: "Needs Review", count: documents.filter((document) => document.ocr_status === "completed" && Object.keys(document.extracted_fields || {}).length > 0).length },
+    { id: "unclassified" as const, label: "Unclassified", count: documents.filter((document) => document.category === "other").length },
+    { id: "project_documents" as const, label: "Project Documents", count: documents.filter((document) => Boolean(document.project_id)).length },
+    { id: "business_documents" as const, label: "Business Documents", count: documents.filter((document) => !document.project_id).length },
+    { id: "archived" as const, label: "Archived", count: 0 },
+  ];
 
   const processFile = async (file: File, scan: boolean) => {
     if (busy) return;
@@ -210,6 +253,22 @@ export const DocumentsPage: React.FC = () => {
         </div>
       </div>
 
+      <SectionNav
+        items={documentViews}
+        active={view}
+        onChange={setView}
+        ariaLabel="Document sections"
+      />
+
+      {view === "overview" && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card><p className="text-xs text-muted-foreground">Total documents</p><p className="mt-2 text-2xl font-bold">{documents.length}</p></Card>
+          <Card><p className="text-xs text-muted-foreground">OCR inbox</p><p className="mt-2 text-2xl font-bold">{documentViews.find((item) => item.id === "ocr_inbox")?.count ?? 0}</p></Card>
+          <Card><p className="text-xs text-muted-foreground">Needs review</p><p className="mt-2 text-2xl font-bold">{documentViews.find((item) => item.id === "needs_review")?.count ?? 0}</p></Card>
+          <Card><p className="text-xs text-muted-foreground">Unclassified</p><p className="mt-2 text-2xl font-bold">{documentViews.find((item) => item.id === "unclassified")?.count ?? 0}</p></Card>
+        </div>
+      )}
+
       <input
         ref={fileInput}
         type="file"
@@ -277,17 +336,21 @@ export const DocumentsPage: React.FC = () => {
         )}
       </Card>
 
-      {filtered.length === 0 ? (
+      {displayedDocuments.length === 0 ? (
         <Card className="py-14 text-center">
           <FileText className="mx-auto h-10 w-10 text-muted-foreground" />
-          <p className="mt-3 font-medium">No documents yet</p>
+          <p className="mt-3 font-medium">
+            {view === "archived" ? "No archived documents" : "No documents in this section"}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Upload a file or scan a receipt, invoice or contract.
+            {view === "archived"
+              ? "The archive area is now separated and ready for the Documents 2.0 archiving workflow."
+              : "Upload a file, scan a document, or choose another document section."}
           </p>
         </Card>
       ) : (
         <div className="grid gap-3">
-          {filtered.map((document) => {
+          {displayedDocuments.map((document) => {
             const project = projects.find((item) => item.id === document.project_id);
             return (
               <Card

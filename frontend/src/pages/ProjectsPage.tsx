@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity, Banknote, CheckCircle2, Circle, Download, FileText, FolderKanban,
+  Activity, ArrowLeft, Banknote, CheckCircle2, Circle, Download, FileText, FolderKanban,
   ListTodo, Plus, Search, UploadCloud, WalletCards,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
@@ -20,6 +21,7 @@ import {
   type ProjectWorkspace,
 } from "@/lib/workspaceApi";
 
+type ProjectsView = "overview" | "all" | "active" | "planning" | "on_hold" | "completed" | "archived";
 type WorkspaceTab = "overview" | "tasks" | "documents" | "finance" | "activity";
 type FinanceKind = "quotation" | "invoice" | "purchase" | "expense";
 
@@ -38,6 +40,7 @@ const activityLabel = (table: string) => ({
 export const ProjectsPage: React.FC = () => {
   const { showSuccessToast, showErrorToast, showWarningToast } = useCustomToast();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [sectionView, setSectionView] = useState<ProjectsView>("overview");
   const [selectedId, setSelectedId] = useState("");
   const [workspace, setWorkspace] = useState<ProjectWorkspace | null>(null);
   const [tab, setTab] = useState<WorkspaceTab>("overview");
@@ -68,7 +71,6 @@ export const ProjectsPage: React.FC = () => {
     try {
       const rows = await workspaceApi.projects();
       setProjects(rows);
-      setSelectedId((current) => current || rows[0]?.id || "");
     } catch (error) {
       setLoadError(getErrorMessage(error, "Projects could not be loaded."));
     } finally {
@@ -103,11 +105,59 @@ export const ProjectsPage: React.FC = () => {
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim();
-    return q
-      ? projects.filter((p) =>
-          p.name.toLowerCase().includes(q) || p.client_name.toLowerCase().includes(q))
-      : projects;
-  }, [projects, query]);
+    return projects.filter((project) => {
+      const matchesSearch =
+        !q ||
+        project.name.toLowerCase().includes(q) ||
+        project.client_name.toLowerCase().includes(q);
+
+      if (!matchesSearch) return false;
+      if (sectionView === "archived") return project.is_archived;
+      if (project.is_archived) return false;
+      if (sectionView === "overview" || sectionView === "all") return true;
+      return project.status === sectionView;
+    });
+  }, [projects, query, sectionView]);
+
+  const listedProjects = useMemo(() => {
+    if (sectionView !== "overview" || query.trim()) return filtered;
+    return [...filtered]
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+      .slice(0, 5);
+  }, [filtered, query, sectionView]);
+
+  const projectCounts = useMemo(() => ({
+    all: projects.filter((project) => !project.is_archived).length,
+    active: projects.filter((project) => !project.is_archived && project.status === "active").length,
+    planning: projects.filter((project) => !project.is_archived && project.status === "planning").length,
+    on_hold: projects.filter((project) => !project.is_archived && project.status === "on_hold").length,
+    completed: projects.filter((project) => !project.is_archived && project.status === "completed").length,
+    archived: projects.filter((project) => project.is_archived).length,
+  }), [projects]);
+
+  const projectViews = [
+    { id: "overview" as const, label: "Overview" },
+    { id: "all" as const, label: "All Projects", count: projectCounts.all },
+    { id: "active" as const, label: "Active", count: projectCounts.active },
+    { id: "planning" as const, label: "Planning", count: projectCounts.planning },
+    { id: "on_hold" as const, label: "On Hold", count: projectCounts.on_hold },
+    { id: "completed" as const, label: "Completed", count: projectCounts.completed },
+    { id: "archived" as const, label: "Archived", count: projectCounts.archived },
+  ];
+
+  const changeSectionView = (view: ProjectsView) => {
+    setSectionView(view);
+    setSelectedId("");
+    setWorkspace(null);
+    setTab("overview");
+  };
+
+  const sectionLabel = projectViews.find((item) => item.id === sectionView)?.label || "Projects";
+  const visibleValue = filtered.reduce((total, project) => total + project.value_ugx, 0);
+  const visibleOutstanding = filtered.reduce(
+    (total, project) => total + Math.max(0, project.value_ugx - project.amount_paid_ugx),
+    0,
+  );
 
   const closeCreate = () => {
     if (createSaving) return;
@@ -371,6 +421,13 @@ export const ProjectsPage: React.FC = () => {
         </Button>
       </div>
 
+      <SectionNav
+        items={projectViews}
+        active={sectionView}
+        onChange={changeSectionView}
+        ariaLabel="Projects sections"
+      />
+
       <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-3">
           <div className="relative">
@@ -383,12 +440,12 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
           <div className="space-y-2">
-            {filtered.length === 0 ? (
+            {listedProjects.length === 0 ? (
               <Card className="py-10 text-center">
                 <FolderKanban className="mx-auto h-8 w-8 text-muted-foreground" />
                 <p className="mt-3 text-sm font-medium">No projects yet</p>
               </Card>
-            ) : filtered.map((project) => (
+            ) : listedProjects.map((project) => (
               <button
                 key={project.id}
                 onClick={() => { setSelectedId(project.id); setTab("overview"); }}
@@ -414,14 +471,63 @@ export const ProjectsPage: React.FC = () => {
         {workspaceLoading ? (
           <PageLoading label="Opening project workspace..." />
         ) : !workspace ? (
-          <Card className="flex min-h-[520px] items-center justify-center text-center">
-            <div>
-              <FolderKanban className="mx-auto h-10 w-10 text-muted-foreground" />
-              <p className="mt-3 font-medium">Select a project folder</p>
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <Card>
+                <p className="text-xs text-muted-foreground">{sectionLabel}</p>
+                <p className="mt-2 text-2xl font-bold">{filtered.length}</p>
+              </Card>
+              <Card>
+                <p className="text-xs text-muted-foreground">Visible project value</p>
+                <p className="mt-2 text-lg font-bold">{money(visibleValue)}</p>
+              </Card>
+              <Card>
+                <p className="text-xs text-muted-foreground">Outstanding</p>
+                <p className="mt-2 text-lg font-bold">{money(visibleOutstanding)}</p>
+              </Card>
+              <Card>
+                <p className="text-xs text-muted-foreground">Projects needing action</p>
+                <p className="mt-2 text-2xl font-bold">
+                  {filtered.filter((project) => project.progress < 100 && project.status !== "completed").length}
+                </p>
+              </Card>
             </div>
-          </Card>
+            <Card className="min-h-[340px] p-6">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="font-semibold">{sectionLabel}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    This is the company-level Projects area. Select a project on the left only when you want to open its working folder.
+                  </p>
+                </div>
+                <span className="rounded-full bg-accent px-3 py-1 text-xs text-muted-foreground">
+                  Section dashboard
+                </span>
+              </div>
+              <div className="mt-8 rounded-xl border border-dashed border-border p-8 text-center">
+                <FolderKanban className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="mt-3 font-medium">Project management area</p>
+                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
+                  Use the section tabs above to move between all projects, active work, planning, on-hold work, completed work and the archive.
+                  Opening a project is now a separate action from managing the Projects section.
+                </p>
+              </div>
+            </Card>
+          </div>
         ) : (
           <div className="min-w-0 space-y-5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit gap-2"
+              onClick={() => {
+                setSelectedId("");
+                setWorkspace(null);
+                setTab("overview");
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to {sectionLabel}
+            </Button>
             <Card className="p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
