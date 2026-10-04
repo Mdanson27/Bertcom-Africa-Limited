@@ -217,6 +217,31 @@
               }
             ]
           },
+          "related_record_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related_record_type": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review_status": {
+            "default": "not_reviewed",
+            "type": "string"
+          },
           "size_bytes": {
             "type": "integer"
           },
@@ -332,6 +357,30 @@
               }
             ]
           },
+          "related_record_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related_record_type": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review_status": {
+            "type": "string"
+          },
           "size_bytes": {
             "type": "integer"
           },
@@ -359,6 +408,9 @@
           "ocr_text",
           "original_filename",
           "project_id",
+          "related_record_id",
+          "related_record_type",
+          "review_status",
           "size_bytes",
           "storage_key",
           "title",
@@ -415,6 +467,37 @@
             "oneOf": [
               {
                 "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related_record_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related_record_type": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "review_status": {
+            "oneOf": [
+              {
                 "type": "string"
               },
               {
@@ -764,6 +847,155 @@
         "title": "Message",
         "type": "object"
       },
+      "PaymentCreate": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "invoice_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "default": "bank",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "payment_date"
+        ],
+        "title": "PaymentCreate",
+        "type": "object"
+      },
+      "PaymentRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invoice_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recorded_by_email": {
+            "type": "string"
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "created_at",
+          "id",
+          "invoice_id",
+          "method",
+          "notes",
+          "payment_date",
+          "project_id",
+          "recorded_by_email",
+          "reference",
+          "updated_at"
+        ],
+        "title": "PaymentRead",
+        "type": "object"
+      },
       "ProjectActivityItem": {
         "properties": {
           "changed_by": {
@@ -791,6 +1023,9 @@
             "format": "uuid",
             "type": "string"
           },
+          "summary": {
+            "type": "string"
+          },
           "table_name": {
             "type": "string"
           },
@@ -804,6 +1039,7 @@
           "id",
           "operation",
           "record_id",
+          "summary",
           "table_name",
           "title"
         ],
@@ -818,6 +1054,16 @@
           },
           "client_name": {
             "type": "string"
+          },
+          "current_milestone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "description": {
             "oneOf": [
@@ -872,6 +1118,18 @@
             "default": "planning",
             "type": "string"
           },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "team_emails": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "value_ugx": {
             "default": 0,
             "type": "number"
@@ -882,6 +1140,54 @@
           "name"
         ],
         "title": "ProjectCreate",
+        "type": "object"
+      },
+      "ProjectDashboardSummary": {
+        "properties": {
+          "active_projects": {
+            "type": "integer"
+          },
+          "amount_received_ugx": {
+            "type": "number"
+          },
+          "completed_projects": {
+            "type": "integer"
+          },
+          "outstanding_ugx": {
+            "type": "number"
+          },
+          "overdue_projects": {
+            "type": "integer"
+          },
+          "planning_projects": {
+            "type": "integer"
+          },
+          "projects_needing_attention": {
+            "type": "integer"
+          },
+          "tasks_due": {
+            "type": "integer"
+          },
+          "total_project_value_ugx": {
+            "type": "number"
+          },
+          "total_projects": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "active_projects",
+          "amount_received_ugx",
+          "completed_projects",
+          "outstanding_ugx",
+          "overdue_projects",
+          "planning_projects",
+          "projects_needing_attention",
+          "tasks_due",
+          "total_project_value_ugx",
+          "total_projects"
+        ],
+        "title": "ProjectDashboardSummary",
         "type": "object"
       },
       "ProjectExpenseItem": {
@@ -954,6 +1260,15 @@
             },
             "type": "array"
           },
+          "payment_total_ugx": {
+            "type": "number"
+          },
+          "payments": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPaymentItem"
+            },
+            "type": "array"
+          },
           "project_outstanding_ugx": {
             "type": "number"
           },
@@ -987,6 +1302,8 @@
           "invoice_paid_ugx",
           "invoice_total_ugx",
           "invoices",
+          "payment_total_ugx",
+          "payments",
           "project_outstanding_ugx",
           "project_value_ugx",
           "purchase_orders",
@@ -1041,6 +1358,66 @@
           "status"
         ],
         "title": "ProjectInvoiceItem",
+        "type": "object"
+      },
+      "ProjectPaymentItem": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invoice_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "id",
+          "invoice_id",
+          "method",
+          "notes",
+          "payment_date",
+          "reference"
+        ],
+        "title": "ProjectPaymentItem",
         "type": "object"
       },
       "ProjectPurchaseOrderItem": {
@@ -1122,6 +1499,16 @@
           "created_by_email": {
             "type": "string"
           },
+          "current_milestone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "description": {
             "oneOf": [
               {
@@ -1180,6 +1567,18 @@
           "status": {
             "type": "string"
           },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "team_emails": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "updated_at": {
             "format": "date-time",
             "type": "string"
@@ -1193,6 +1592,7 @@
           "client_name",
           "created_at",
           "created_by_email",
+          "current_milestone",
           "description",
           "due_date",
           "id",
@@ -1202,6 +1602,8 @@
           "project_manager_email",
           "start_date",
           "status",
+          "tags",
+          "team_emails",
           "updated_at",
           "value_ugx"
         ],
@@ -1221,6 +1623,16 @@
             ]
           },
           "client_name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current_milestone": {
             "oneOf": [
               {
                 "type": "string"
@@ -1306,6 +1718,32 @@
             "oneOf": [
               {
                 "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tags": {
+            "oneOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "team_emails": {
+            "oneOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               },
               {
                 "type": "null"
@@ -1880,7 +2318,7 @@
             "type": "string"
           },
           "status": {
-            "default": "pending",
+            "default": "todo",
             "type": "string"
           },
           "title": {
@@ -2694,6 +3132,171 @@
         "summary": "CreateInvoice"
       }
     },
+    "/api/v1/business/payments": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPaymentsPayments",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "invoice_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Payments"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPaymentsCreatePayment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreatePayment"
+      }
+    },
     "/api/v1/business/purchase-orders": {
       "get": {
         "deprecated": false,
@@ -3467,6 +4070,226 @@
               "default": false,
               "type": "boolean"
             }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "client",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "manager",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "start_from",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "start_to",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "deadline_from",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "deadline_to",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "progress_min",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "progress_max",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "value_min",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "value_max",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
           }
         ],
         "responses": {
@@ -3590,6 +4413,26 @@
           }
         },
         "summary": "CreateProject"
+      }
+    },
+    "/api/v1/projects/dashboard": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ProjectsDashboardDashboard",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDashboardSummary"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Dashboard"
       }
     },
     "/api/v1/projects/{project_id}": {
@@ -3806,6 +4649,146 @@
           }
         },
         "summary": "UpdateProject"
+      }
+    },
+    "/api/v1/projects/{project_id}/duplicate": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1ProjectsProjectIdDuplicateDuplicateProject",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "DuplicateProject"
+      }
+    },
+    "/api/v1/projects/{project_id}/restore": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1ProjectsProjectIdRestoreRestoreProject",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "RestoreProject"
       }
     },
     "/api/v1/projects/{project_id}/workspace": {

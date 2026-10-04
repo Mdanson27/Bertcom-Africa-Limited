@@ -40,10 +40,19 @@ class Project(AuditBase):
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
-    project_manager_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    project_manager_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+    team_emails: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    tags: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default="[]"
+    )
+    current_milestone: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_by_email: Mapped[str] = mapped_column(String(255), nullable=False)
     is_archived: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
+        Boolean, nullable=False, default=False, server_default="false", index=True
     )
 
 
@@ -57,7 +66,7 @@ class ProjectTask(AuditBase):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     assignee_email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="pending", server_default="pending", index=True
+        String(32), nullable=False, default="todo", server_default="todo", index=True
     )
     priority: Mapped[str] = mapped_column(
         String(16), nullable=False, default="normal", server_default="normal"
@@ -86,6 +95,15 @@ class Document(AuditBase):
     ocr_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="not_requested", server_default="not_requested"
     )
+    review_status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="not_reviewed",
+        server_default="not_reviewed",
+        index=True,
+    )
+    related_record_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    related_record_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
     ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     extracted_fields: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default="{}"

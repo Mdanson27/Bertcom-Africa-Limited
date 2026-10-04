@@ -18,6 +18,9 @@ class ProjectCreate(msgspec.Struct, frozen=True):
     due_date: date | None = None
     progress: int = 0
     project_manager_email: str | None = None
+    team_emails: list[str] = msgspec.field(default_factory=list)
+    tags: list[str] = msgspec.field(default_factory=list)
+    current_milestone: str | None = None
 
 
 class ProjectUpdate(msgspec.Struct, frozen=True):
@@ -31,6 +34,9 @@ class ProjectUpdate(msgspec.Struct, frozen=True):
     due_date: date | None = None
     progress: int | None = None
     project_manager_email: str | None = None
+    team_emails: list[str] | None = None
+    tags: list[str] | None = None
+    current_milestone: str | None = None
     is_archived: bool | None = None
 
 
@@ -46,10 +52,26 @@ class ProjectRead(msgspec.Struct, frozen=True):
     due_date: date | None
     progress: int
     project_manager_email: str | None
+    team_emails: list[str]
+    tags: list[str]
+    current_milestone: str | None
     created_by_email: str
     is_archived: bool
     created_at: datetime
     updated_at: datetime
+
+
+class ProjectDashboardSummary(msgspec.Struct, frozen=True):
+    total_projects: int
+    active_projects: int
+    planning_projects: int
+    overdue_projects: int
+    completed_projects: int
+    total_project_value_ugx: float
+    amount_received_ugx: float
+    outstanding_ugx: float
+    tasks_due: int
+    projects_needing_attention: int
 
 
 class TaskCreate(msgspec.Struct, frozen=True):
@@ -57,7 +79,7 @@ class TaskCreate(msgspec.Struct, frozen=True):
     title: str
     description: str | None = None
     assignee_email: str | None = None
-    status: str = "pending"
+    status: str = "todo"
     priority: str = "normal"
     due_date: date | None = None
 
@@ -106,6 +128,9 @@ class DocumentCreate(msgspec.Struct, frozen=True):
     storage_key: str
     project_id: uuid.UUID | None = None
     ocr_status: str = "not_requested"
+    review_status: str = "not_reviewed"
+    related_record_type: str | None = None
+    related_record_id: uuid.UUID | None = None
     ocr_text: str | None = None
     extracted_fields: dict[str, Any] = msgspec.field(default_factory=dict)
 
@@ -115,6 +140,9 @@ class DocumentUpdate(msgspec.Struct, frozen=True):
     category: str | None = None
     project_id: uuid.UUID | None = None
     ocr_status: str | None = None
+    review_status: str | None = None
+    related_record_type: str | None = None
+    related_record_id: uuid.UUID | None = None
     ocr_text: str | None = None
     extracted_fields: dict[str, Any] | None = None
 
@@ -130,6 +158,9 @@ class DocumentRead(msgspec.Struct, frozen=True):
     storage_key: str
     uploaded_by_email: str
     ocr_status: str
+    review_status: str
+    related_record_type: str | None
+    related_record_id: uuid.UUID | None
     ocr_text: str | None
     extracted_fields: dict[str, Any]
     created_at: datetime
@@ -158,6 +189,16 @@ class ProjectInvoiceItem(msgspec.Struct, frozen=True):
     due_date: date | None
 
 
+class ProjectPaymentItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    invoice_id: uuid.UUID | None
+    amount_ugx: float
+    payment_date: date
+    method: str
+    reference: str | None
+    notes: str | None
+
+
 class ProjectPurchaseOrderItem(msgspec.Struct, frozen=True):
     id: uuid.UUID
     po_number: str
@@ -184,10 +225,12 @@ class ProjectFinanceRead(msgspec.Struct, frozen=True):
     invoice_total_ugx: float
     invoice_paid_ugx: float
     invoice_outstanding_ugx: float
+    payment_total_ugx: float
     purchase_orders_ugx: float
     expenses_ugx: float
     quotations: list[ProjectQuotationItem]
     invoices: list[ProjectInvoiceItem]
+    payments: list[ProjectPaymentItem]
     purchase_orders: list[ProjectPurchaseOrderItem]
     expenses: list[ProjectExpenseItem]
 
@@ -198,6 +241,7 @@ class ProjectActivityItem(msgspec.Struct, frozen=True):
     operation: str
     record_id: uuid.UUID
     title: str
+    summary: str
     changed_by: str | None
     created_at: datetime
 

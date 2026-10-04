@@ -106,6 +106,30 @@ class InvoiceRead(msgspec.Struct, frozen=True):
     updated_at: datetime
 
 
+class PaymentCreate(msgspec.Struct, frozen=True):
+    amount_ugx: float
+    payment_date: date
+    project_id: uuid.UUID | None = None
+    invoice_id: uuid.UUID | None = None
+    method: str = "bank"
+    reference: str | None = None
+    notes: str | None = None
+
+
+class PaymentRead(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    project_id: uuid.UUID | None
+    invoice_id: uuid.UUID | None
+    amount_ugx: float
+    payment_date: date
+    method: str
+    reference: str | None
+    notes: str | None
+    recorded_by_email: str
+    created_at: datetime
+    updated_at: datetime
+
+
 class PurchaseOrderCreate(msgspec.Struct, frozen=True):
     po_number: str
     supplier_name: str

@@ -89,6 +89,27 @@ class Invoice(AuditBase):
     created_by_email: Mapped[str] = mapped_column(String(255), nullable=False)
 
 
+class Payment(AuditBase):
+    __tablename__ = "payments"
+
+    project_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    invoice_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("invoices.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    amount_ugx: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=0, server_default="0"
+    )
+    payment_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    method: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="bank", server_default="bank"
+    )
+    reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recorded_by_email: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
 class PurchaseOrder(AuditBase):
     __tablename__ = "purchase_orders"
 
