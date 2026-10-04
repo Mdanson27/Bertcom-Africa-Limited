@@ -3,6 +3,11 @@ import {
   getAccessToken,
   notifySessionExpired,
 } from "@/lib/authSession";
+import {
+  getBuildApiUrl,
+  loadRuntimeApiUrl,
+  normalizeApiUrl,
+} from "@/lib/runtimeConfig";
 
 export class ApiError extends Error {
   status?: number;
@@ -118,12 +123,26 @@ export function getErrorMessage(
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-const rawUrl = (import.meta.env.VITE_API_URL || "").trim();
-export const apiBaseUrl = rawUrl
-  ? rawUrl.replace(/\/api\/v1\/?$/, "").replace(/\/$/, "")
-  : "";
+let apiBaseUrl = getBuildApiUrl();
 
-const apiPrefix = `${apiBaseUrl}/api/v1`;
+export function getApiBaseUrl(): string {
+  return apiBaseUrl;
+}
+
+function getApiPrefix(): string {
+  return `${apiBaseUrl}/api/v1`;
+}
+
+export function configureApiBaseUrl(value: string): string {
+  apiBaseUrl = normalizeApiUrl(value);
+  client.setConfig({
+    baseUrl: apiBaseUrl,
+    auth: async () => (await getAccessToken()) || "",
+    fetch: authenticatedFetch,
+  });
+  return apiBaseUrl;
+}
+
 const RETRYABLE_STATUSES = new Set([502, 503, 504]);
 
 const sleep = (milliseconds: number) =>
@@ -136,12 +155,37 @@ function asRequest(input: RequestInfo | URL, init?: RequestInit): Request {
   return new Request(input, init);
 }
 
+function isApiServerRequest(request: Request): boolean {
+  const target = new URL(request.url);
+  const expectedOrigin = apiBaseUrl
+    ? new URL(apiBaseUrl).origin
+    : window.location.origin;
+  return target.origin === expectedOrigin;
+}
+
 function isProtectedApiRequest(request: Request): boolean {
   const target = new URL(request.url);
   const expected = apiBaseUrl
-    ? new URL(apiPrefix)
+    ? new URL(getApiPrefix())
     : new URL("/api/v1", window.location.origin);
   return target.origin === expected.origin && target.pathname.startsWith(expected.pathname);
+}
+
+function rebaseApiRequest(request: Request, nextBaseUrl: string): Request {
+  const target = new URL(request.url);
+  const nextUrl = new URL(
+    `${target.pathname}${target.search}`,
+    nextBaseUrl || window.location.origin,
+  );
+  return new Request(nextUrl, request.clone());
+}
+
+async function recoverApiBaseUrl(request: Request): Promise<Request | null> {
+  if (!isApiServerRequest(request)) return null;
+  const nextBaseUrl = await loadRuntimeApiUrl();
+  if (!nextBaseUrl || nextBaseUrl === apiBaseUrl) return null;
+  configureApiBaseUrl(nextBaseUrl);
+  return rebaseApiRequest(request, nextBaseUrl);
 }
 
 async function requestWithToken(baseRequest: Request, forceRefresh = false): Promise<Request> {
@@ -159,12 +203,13 @@ export async function authenticatedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
-  const baseRequest = asRequest(input, init);
-  const protectedRequest = isProtectedApiRequest(baseRequest);
+  let baseRequest = asRequest(input, init);
+  let protectedRequest = isProtectedApiRequest(baseRequest);
   const retryTemporaryFailure = ["GET", "HEAD"].includes(baseRequest.method.toUpperCase());
 
   let authRetried = false;
   let temporaryRetries = 0;
+  let runtimeConfigRetried = false;
 
   while (true) {
     const request = await requestWithToken(baseRequest);
@@ -173,6 +218,15 @@ export async function authenticatedFetch(
     try {
       response = await globalThis.fetch(request);
     } catch (error) {
+      if (!runtimeConfigRetried) {
+        runtimeConfigRetried = true;
+        const recovered = await recoverApiBaseUrl(baseRequest);
+        if (recovered) {
+          baseRequest = recovered;
+          protectedRequest = isProtectedApiRequest(baseRequest);
+          continue;
+        }
+      }
       if (retryTemporaryFailure && temporaryRetries < 2) {
         temporaryRetries += 1;
         await sleep(300 * 2 ** (temporaryRetries - 1));
@@ -227,7 +281,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
 
   let response: Response;
   try {
-    response = await authenticatedFetch(`${apiPrefix}${path}`, {
+    response = await authenticatedFetch(`${getApiPrefix()}${path}`, {
       ...options,
       headers,
     });
@@ -246,11 +300,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-client.setConfig({
-  baseUrl: apiBaseUrl,
-  auth: async () => (await getAccessToken()) || "",
-  fetch: authenticatedFetch,
-});
+configureApiBaseUrl(apiBaseUrl);
 
 client.interceptors.error.use((error, response, request, options) => {
   const parsedError = parseApiError(error, response);
