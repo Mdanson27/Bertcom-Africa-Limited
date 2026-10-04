@@ -7,7 +7,12 @@ const authMocks = vi.hoisted(() => ({
 
 vi.mock("@/lib/authSession", () => authMocks);
 
-import { authenticatedFetch, parseApiError } from "@/lib/api";
+import {
+  authenticatedFetch,
+  configureApiBaseUrl,
+  getApiBaseUrl,
+  parseApiError,
+} from "@/lib/api";
 
 describe("central authenticated API client", () => {
   beforeEach(() => {
@@ -15,7 +20,9 @@ describe("central authenticated API client", () => {
     vi.stubGlobal("window", {
       location: { origin: "https://bertcom.test" },
       setTimeout,
+      clearTimeout,
     });
+    configureApiBaseUrl("");
   });
 
   it("adds the Neon bearer token to protected API requests", async () => {
@@ -63,6 +70,38 @@ describe("central authenticated API client", () => {
     expect(response.status).toBe(401);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(authMocks.notifySessionExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers from an expired API host using the no-cache runtime config", async () => {
+    configureApiBaseUrl("https://expired-tunnel.test");
+    authMocks.getAccessToken.mockResolvedValue("jwt-one");
+
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("DNS failure"))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ apiUrl: "https://current-tunnel.test" }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await authenticatedFetch(
+      "https://expired-tunnel.test/api/v1/projects",
+    );
+
+    expect(response.status).toBe(200);
+    expect(getApiBaseUrl()).toBe("https://current-tunnel.test");
+    const retried = fetchMock.mock.calls[2][0] as Request;
+    expect(retried.url).toBe("https://current-tunnel.test/api/v1/projects");
+    expect(retried.headers.get("Authorization")).toBe("Bearer jwt-one");
   });
 });
 
