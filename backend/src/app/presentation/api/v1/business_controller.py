@@ -1,16 +1,25 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, ClassVar
 
 from litestar import Controller, Request, get, post
-from litestar.exceptions import ClientException
+from litestar.exceptions import ClientException, NotFoundException
 from litestar.status_codes import HTTP_201_CREATED
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.business.models import Client, Expense, Invoice, PurchaseOrder, Quotation, Supplier
+from app.domain.business.models import (
+    Client,
+    Expense,
+    Invoice,
+    Payment,
+    PurchaseOrder,
+    Quotation,
+    Supplier,
+)
 from app.domain.business.schemas import (
     BusinessSummary,
     ClientCreate,
@@ -19,6 +28,8 @@ from app.domain.business.schemas import (
     ExpenseRead,
     InvoiceCreate,
     InvoiceRead,
+    PaymentCreate,
+    PaymentRead,
     PurchaseOrderCreate,
     PurchaseOrderRead,
     QuotationCreate,
@@ -26,6 +37,7 @@ from app.domain.business.schemas import (
     SupplierCreate,
     SupplierRead,
 )
+from app.domain.workspace.models import Project
 from app.presentation.guards.auth_guard import JWTAuthGuard
 
 
@@ -96,6 +108,22 @@ def _invoice_read(item: Invoice) -> InvoiceRead:
         issue_date=item.issue_date,
         due_date=item.due_date,
         notes=item.notes,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+    )
+
+
+def _payment_read(item: Payment) -> PaymentRead:
+    return PaymentRead(
+        id=item.id,
+        project_id=item.project_id,
+        invoice_id=item.invoice_id,
+        amount_ugx=float(item.amount_ugx or 0),
+        payment_date=item.payment_date,
+        method=item.method,
+        reference=item.reference,
+        notes=item.notes,
+        recorded_by_email=item.recorded_by_email,
         created_at=item.created_at,
         updated_at=item.updated_at,
     )
@@ -264,6 +292,94 @@ class BusinessController(Controller):
         await db_session.commit()
         await db_session.refresh(item)
         return _invoice_read(item)
+
+    @get(path="/payments")
+    async def payments(
+        self,
+        db_session: AsyncSession,
+        project_id: str | None = None,
+        invoice_id: str | None = None,
+    ) -> list[PaymentRead]:
+        stmt = select(Payment).order_by(Payment.payment_date.desc(), Payment.created_at.desc())
+        if project_id:
+            try:
+                stmt = stmt.where(Payment.project_id == uuid.UUID(project_id))
+            except ValueError as exc:
+                raise ClientException(detail="Invalid project id.", status_code=400) from exc
+        if invoice_id:
+            try:
+                stmt = stmt.where(Payment.invoice_id == uuid.UUID(invoice_id))
+            except ValueError as exc:
+                raise ClientException(detail="Invalid invoice id.", status_code=400) from exc
+        rows = (await db_session.execute(stmt)).scalars().all()
+        return [_payment_read(row) for row in rows]
+
+    @post(path="/payments", status_code=HTTP_201_CREATED)
+    async def create_payment(
+        self,
+        request: Request,
+        data: PaymentCreate,
+        db_session: AsyncSession,
+    ) -> PaymentRead:
+        amount = Decimal(str(max(0, data.amount_ugx)))
+        if amount <= 0:
+            raise ClientException(
+                detail="Payment amount must be greater than zero.", status_code=400
+            )
+
+        invoice: Invoice | None = None
+        project_id = data.project_id
+
+        if data.invoice_id:
+            invoice = await db_session.get(Invoice, data.invoice_id)
+            if invoice is None:
+                raise NotFoundException(detail="Invoice not found.")
+            if project_id and invoice.project_id and project_id != invoice.project_id:
+                raise ClientException(
+                    detail="Invoice does not belong to the selected project.",
+                    status_code=409,
+                )
+            project_id = project_id or invoice.project_id
+            outstanding = max(Decimal(), invoice.amount_ugx - invoice.paid_amount_ugx)
+            if amount > outstanding:
+                raise ClientException(
+                    detail="Payment exceeds the invoice outstanding amount.",
+                    status_code=409,
+                )
+
+        project: Project | None = None
+        if project_id:
+            project = await db_session.get(Project, project_id)
+            if project is None:
+                raise NotFoundException(detail="Project not found.")
+
+        item = Payment(
+            project_id=project_id,
+            invoice_id=data.invoice_id,
+            amount_ugx=amount,
+            payment_date=data.payment_date,
+            method=data.method.strip().lower() or "bank",
+            reference=data.reference.strip() if data.reference else None,
+            notes=data.notes,
+            recorded_by_email=_email(request),
+        )
+        db_session.add(item)
+
+        if invoice is not None:
+            invoice.paid_amount_ugx = min(invoice.amount_ugx, invoice.paid_amount_ugx + amount)
+            invoice.status = "paid" if invoice.paid_amount_ugx >= invoice.amount_ugx else "partial"
+
+        if project is not None:
+            received = (project.amount_paid_ugx or Decimal()) + amount
+            project.amount_paid_ugx = (
+                min(project.value_ugx, received)
+                if project.value_ugx and project.value_ugx > 0
+                else received
+            )
+
+        await db_session.commit()
+        await db_session.refresh(item)
+        return _payment_read(item)
 
     @get(path="/purchase-orders")
     async def purchase_orders(self, db_session: AsyncSession) -> list[PurchaseOrderRead]:

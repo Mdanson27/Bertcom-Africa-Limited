@@ -1,7 +1,33 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Activity, ArrowLeft, Banknote, CheckCircle2, Circle, Download, FileText, FolderKanban,
-  ListTodo, Plus, Search, UploadCloud, WalletCards,
+  Activity,
+  AlertTriangle,
+  Archive,
+  ArrowLeft,
+  Banknote,
+  CalendarDays,
+  CheckCircle2,
+  Circle,
+  Clock3,
+  Copy,
+  Download,
+  Edit3,
+  FileCheck2,
+  FileText,
+  Filter,
+  FolderKanban,
+  LayoutGrid,
+  List,
+  MoreHorizontal,
+  Plus,
+  Receipt,
+  Search,
+  ShoppingCart,
+  Tag,
+  Undo2,
+  UploadCloud,
+  Users,
+  WalletCards,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -17,60 +43,305 @@ import {
   workspaceApi,
   type DocumentRecord,
   type Project,
+  type ProjectDashboardSummary,
   type ProjectTask,
   type ProjectWorkspace,
 } from "@/lib/workspaceApi";
 
-type ProjectsView = "overview" | "all" | "active" | "planning" | "on_hold" | "completed" | "archived";
+type ProjectsSection =
+  | "overview"
+  | "all"
+  | "active"
+  | "planning"
+  | "on_hold"
+  | "completed"
+  | "archived";
+
+type PortfolioView = "table" | "cards" | "timeline" | "calendar";
 type WorkspaceTab = "overview" | "tasks" | "documents" | "finance" | "activity";
-type FinanceKind = "quotation" | "invoice" | "purchase" | "expense";
+type FinanceKind = "quotation" | "invoice" | "payment" | "purchase" | "expense";
+type FinanceView = "quotations" | "invoices" | "payments" | "purchase_orders" | "expenses";
+
+type ProjectFormState = {
+  name: string;
+  client_name: string;
+  description: string;
+  status: string;
+  value_ugx: string;
+  amount_paid_ugx: string;
+  start_date: string;
+  due_date: string;
+  progress: string;
+  project_manager_email: string;
+  team_emails: string;
+  tags: string;
+  current_milestone: string;
+};
+
+type TaskFormState = {
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assignee_email: string;
+  due_date: string;
+};
+
+type FilterState = {
+  status: string;
+  client: string;
+  manager: string;
+  start_from: string;
+  start_to: string;
+  deadline_from: string;
+  deadline_to: string;
+  progress_min: string;
+  progress_max: string;
+  value_min: string;
+  value_max: string;
+  tag: string;
+};
+
+const emptyProjectForm: ProjectFormState = {
+  name: "",
+  client_name: "",
+  description: "",
+  status: "planning",
+  value_ugx: "",
+  amount_paid_ugx: "",
+  start_date: "",
+  due_date: "",
+  progress: "0",
+  project_manager_email: "",
+  team_emails: "",
+  tags: "",
+  current_milestone: "",
+};
+
+const emptyTaskForm: TaskFormState = {
+  title: "",
+  description: "",
+  status: "todo",
+  priority: "normal",
+  assignee_email: "",
+  due_date: "",
+};
+
+const emptyFilters: FilterState = {
+  status: "",
+  client: "",
+  manager: "",
+  start_from: "",
+  start_to: "",
+  deadline_from: "",
+  deadline_to: "",
+  progress_min: "",
+  progress_max: "",
+  value_min: "",
+  value_max: "",
+  tag: "",
+};
 
 const money = (value: number) =>
   new Intl.NumberFormat("en-UG", {
-    style: "currency", currency: "UGX", maximumFractionDigits: 0,
-  }).format(value);
+    style: "currency",
+    currency: "UGX",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
 
 const today = () => new Date().toISOString().slice(0, 10);
-const activityLabel = (table: string) => ({
-  projects: "Project", project_tasks: "Task", documents: "Document",
-  quotations: "Quotation", invoices: "Invoice",
-  purchase_orders: "Purchase order", expenses: "Expense",
-}[table] || table.replaceAll("_", " "));
+
+const splitList = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const makeFinanceForm = (kind: FinanceKind, project: Project) => {
+  const date = today();
+  return {
+    issue_date: date,
+    order_date: date,
+    expense_date: date,
+    payment_date: date,
+    party: kind === "purchase" ? "" : project.client_name,
+    method: "bank",
+    category: "general",
+    number: "",
+    amount: "",
+    paid: "",
+    description: "",
+    reference: "",
+    invoice_id: "",
+    due_date: "",
+  };
+};
+
+const normalizeTaskStatus = (status: string) => (status === "pending" ? "todo" : status);
+
+const statusLabel = (status: string) =>
+  ({
+    planning: "Planning",
+    active: "Active",
+    on_hold: "On Hold",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    todo: "To Do",
+    pending: "To Do",
+    in_progress: "In Progress",
+    review: "Review",
+  })[status] || status.replaceAll("_", " ");
+
+const daysRemaining = (dueDate: string | null) => {
+  if (!dueDate) return null;
+  const due = new Date(`${dueDate}T23:59:59`).getTime();
+  const now = new Date().getTime();
+  return Math.ceil((due - now) / 86_400_000);
+};
+
+const projectHealth = (project: Project) => {
+  if (project.is_archived) return { label: "Archived", tone: "muted" };
+  if (project.status === "completed") return { label: "Complete", tone: "good" };
+  if (project.status === "on_hold") return { label: "On hold", tone: "watch" };
+
+  const remaining = daysRemaining(project.due_date);
+  if (remaining !== null && remaining < 0) return { label: "Overdue", tone: "bad" };
+  if (!project.project_manager_email) return { label: "Needs manager", tone: "watch" };
+  if (remaining !== null && remaining <= 7 && project.progress < 80) {
+    return { label: "At risk", tone: "bad" };
+  }
+  if (project.status === "active" && project.progress < 25) {
+    return { label: "Needs attention", tone: "watch" };
+  }
+  return { label: "On track", tone: "good" };
+};
+
+const healthClass = (tone: string) =>
+  tone === "good"
+    ? "bg-emerald-500/10 text-emerald-500"
+    : tone === "bad"
+      ? "bg-destructive/10 text-destructive"
+      : tone === "watch"
+        ? "bg-amber-500/10 text-amber-500"
+        : "bg-muted text-muted-foreground";
+
+const selectClass =
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30";
+
+const textareaClass =
+  "min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/30";
+
+const metricCard = (
+  label: string,
+  value: React.ReactNode,
+  helper?: string,
+  icon?: React.ReactNode,
+) => (
+  <Card>
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-2 text-xl font-bold">{value}</p>
+        {helper && <p className="mt-1 text-[10px] text-muted-foreground">{helper}</p>}
+      </div>
+      {icon && <div className="rounded-lg bg-primary/10 p-2 text-primary">{icon}</div>}
+    </div>
+  </Card>
+);
 
 export const ProjectsPage: React.FC = () => {
   const { showSuccessToast, showErrorToast, showWarningToast } = useCustomToast();
+
   const [projects, setProjects] = useState<Project[]>([]);
-  const [sectionView, setSectionView] = useState<ProjectsView>("overview");
+  const [dashboard, setDashboard] = useState<ProjectDashboardSummary | null>(null);
+  const [section, setSection] = useState<ProjectsSection>("overview");
+  const [portfolioView, setPortfolioView] = useState<PortfolioView>("table");
   const [selectedId, setSelectedId] = useState("");
   const [workspace, setWorkspace] = useState<ProjectWorkspace | null>(null);
-  const [tab, setTab] = useState<WorkspaceTab>("overview");
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("overview");
+  const [financeView, setFinanceView] = useState<FinanceView>("invoices");
+
   const [query, setQuery] = useState("");
-  const [createOpen, setCreateOpen] = useState(false);
-  const [taskTitle, setTaskTitle] = useState("");
-  const [docBusy, setDocBusy] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(emptyFilters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const [projectModal, setProjectModal] = useState<"create" | "edit" | null>(null);
+  const [projectForm, setProjectForm] = useState<ProjectFormState>(emptyProjectForm);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [projectSaving, setProjectSaving] = useState(false);
+
+  const [actionProject, setActionProject] = useState<Project | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskForm, setTaskForm] = useState<TaskFormState>(emptyTaskForm);
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [taskProjectId, setTaskProjectId] = useState("");
+
   const [financeKind, setFinanceKind] = useState<FinanceKind | null>(null);
+  const [financeProject, setFinanceProject] = useState<Project | null>(null);
   const [financeForm, setFinanceForm] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({
-    name: "", client_name: "", value_ugx: "", due_date: "",
-  });
+  const [financeSaving, setFinanceSaving] = useState(false);
+
+  const [uploadProjectId, setUploadProjectId] = useState("");
+  const [documentCategory, setDocumentCategory] = useState("other");
+  const [docBusy, setDocBusy] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [createSaving, setCreateSaving] = useState(false);
-  const [taskBusyId, setTaskBusyId] = useState<string | null>(null);
-  const [financeSaving, setFinanceSaving] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
 
-  const createDirty = createOpen && Object.values(form).some((value) => value.trim() !== "");
-  const financeDirty = Boolean(financeKind) && Object.values(financeForm).some((value) => value.trim() !== "");
-  useUnsavedChanges(createDirty || financeDirty);
+  const projectDirty =
+    Boolean(projectModal) &&
+    JSON.stringify(projectForm) !== JSON.stringify(emptyProjectForm) &&
+    (!editingProject ||
+      JSON.stringify(projectForm) !==
+        JSON.stringify({
+          name: editingProject.name,
+          client_name: editingProject.client_name,
+          description: editingProject.description || "",
+          status: editingProject.status,
+          value_ugx: String(editingProject.value_ugx),
+          amount_paid_ugx: String(editingProject.amount_paid_ugx),
+          start_date: editingProject.start_date || "",
+          due_date: editingProject.due_date || "",
+          progress: String(editingProject.progress),
+          project_manager_email: editingProject.project_manager_email || "",
+          team_emails: editingProject.team_emails.join(", "),
+          tags: editingProject.tags.join(", "),
+          current_milestone: editingProject.current_milestone || "",
+        }));
 
-  const loadProjects = useCallback(async (showLoading = true) => {
+  const taskDirty =
+    taskModalOpen &&
+    (editingTask
+      ? taskForm.title !== editingTask.title ||
+        taskForm.description !== (editingTask.description || "") ||
+        taskForm.status !== normalizeTaskStatus(editingTask.status) ||
+        taskForm.priority !== editingTask.priority ||
+        taskForm.assignee_email !== (editingTask.assignee_email || "") ||
+        taskForm.due_date !== (editingTask.due_date || "")
+      : JSON.stringify(taskForm) !== JSON.stringify(emptyTaskForm));
+
+  const financeDirty =
+    Boolean(financeKind && financeProject) &&
+    JSON.stringify(financeForm) !==
+      JSON.stringify(makeFinanceForm(financeKind as FinanceKind, financeProject as Project));
+
+  useUnsavedChanges(projectDirty || taskDirty || financeDirty);
+
+  const loadPortfolio = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true);
     setLoadError(null);
     try {
-      const rows = await workspaceApi.projects();
+      const [rows, summary] = await Promise.all([
+        workspaceApi.projects({ include_archived: true }),
+        workspaceApi.projectDashboard(),
+      ]);
       setProjects(rows);
+      setDashboard(summary);
     } catch (error) {
       setLoadError(getErrorMessage(error, "Projects could not be loaded."));
     } finally {
@@ -95,47 +366,35 @@ export const ProjectsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    void loadProjects();
-  }, [loadProjects]);
+    void loadPortfolio();
+  }, [loadPortfolio]);
 
   useEffect(() => {
     if (selectedId) void loadWorkspace(selectedId);
     else setWorkspace(null);
   }, [loadWorkspace, selectedId]);
 
-  const filtered = useMemo(() => {
-    const q = query.toLowerCase().trim();
-    return projects.filter((project) => {
-      const matchesSearch =
-        !q ||
-        project.name.toLowerCase().includes(q) ||
-        project.client_name.toLowerCase().includes(q);
+  const projectCounts = useMemo(
+    () => ({
+      all: projects.filter((project) => !project.is_archived).length,
+      active: projects.filter(
+        (project) => !project.is_archived && project.status === "active",
+      ).length,
+      planning: projects.filter(
+        (project) => !project.is_archived && project.status === "planning",
+      ).length,
+      on_hold: projects.filter(
+        (project) => !project.is_archived && project.status === "on_hold",
+      ).length,
+      completed: projects.filter(
+        (project) => !project.is_archived && project.status === "completed",
+      ).length,
+      archived: projects.filter((project) => project.is_archived).length,
+    }),
+    [projects],
+  );
 
-      if (!matchesSearch) return false;
-      if (sectionView === "archived") return project.is_archived;
-      if (project.is_archived) return false;
-      if (sectionView === "overview" || sectionView === "all") return true;
-      return project.status === sectionView;
-    });
-  }, [projects, query, sectionView]);
-
-  const listedProjects = useMemo(() => {
-    if (sectionView !== "overview" || query.trim()) return filtered;
-    return [...filtered]
-      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-      .slice(0, 5);
-  }, [filtered, query, sectionView]);
-
-  const projectCounts = useMemo(() => ({
-    all: projects.filter((project) => !project.is_archived).length,
-    active: projects.filter((project) => !project.is_archived && project.status === "active").length,
-    planning: projects.filter((project) => !project.is_archived && project.status === "planning").length,
-    on_hold: projects.filter((project) => !project.is_archived && project.status === "on_hold").length,
-    completed: projects.filter((project) => !project.is_archived && project.status === "completed").length,
-    archived: projects.filter((project) => project.is_archived).length,
-  }), [projects]);
-
-  const projectViews = [
+  const sections = [
     { id: "overview" as const, label: "Overview" },
     { id: "all" as const, label: "All Projects", count: projectCounts.all },
     { id: "active" as const, label: "Active", count: projectCounts.active },
@@ -145,576 +404,2332 @@ export const ProjectsPage: React.FC = () => {
     { id: "archived" as const, label: "Archived", count: projectCounts.archived },
   ];
 
-  const changeSectionView = (view: ProjectsView) => {
-    setSectionView(view);
-    setSelectedId("");
-    setWorkspace(null);
-    setTab("overview");
-  };
-
-  const sectionLabel = projectViews.find((item) => item.id === sectionView)?.label || "Projects";
-  const visibleValue = filtered.reduce((total, project) => total + project.value_ugx, 0);
-  const visibleOutstanding = filtered.reduce(
-    (total, project) => total + Math.max(0, project.value_ugx - project.amount_paid_ugx),
-    0,
+  const clients = useMemo(
+    () => Array.from(new Set(projects.map((project) => project.client_name))).sort(),
+    [projects],
+  );
+  const managers = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          projects
+            .map((project) => project.project_manager_email)
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ).sort(),
+    [projects],
+  );
+  const tags = useMemo(
+    () => Array.from(new Set(projects.flatMap((project) => project.tags))).sort(),
+    [projects],
   );
 
-  const closeCreate = () => {
-    if (createSaving) return;
-    if (!confirmDiscardChanges(createDirty, "Discard this new project?")) return;
-    setCreateOpen(false);
-    setForm({ name: "", client_name: "", value_ugx: "", due_date: "" });
+  const filteredProjects = useMemo(() => {
+    const search = query.trim().toLowerCase();
+    const minProgress = filters.progress_min ? Number(filters.progress_min) : null;
+    const maxProgress = filters.progress_max ? Number(filters.progress_max) : null;
+    const minValue = filters.value_min ? Number(filters.value_min) : null;
+    const maxValue = filters.value_max ? Number(filters.value_max) : null;
+
+    return projects.filter((project) => {
+      if (section === "archived") {
+        if (!project.is_archived) return false;
+      } else if (project.is_archived) {
+        return false;
+      }
+
+      if (
+        section !== "overview" &&
+        section !== "all" &&
+        section !== "archived" &&
+        project.status !== section
+      ) {
+        return false;
+      }
+
+      if (filters.status && project.status !== filters.status) return false;
+      if (filters.client && project.client_name !== filters.client) return false;
+      if (filters.manager && project.project_manager_email !== filters.manager) return false;
+      if (filters.start_from && (!project.start_date || project.start_date < filters.start_from)) {
+        return false;
+      }
+      if (filters.start_to && (!project.start_date || project.start_date > filters.start_to)) {
+        return false;
+      }
+      if (
+        filters.deadline_from &&
+        (!project.due_date || project.due_date < filters.deadline_from)
+      ) {
+        return false;
+      }
+      if (
+        filters.deadline_to &&
+        (!project.due_date || project.due_date > filters.deadline_to)
+      ) {
+        return false;
+      }
+      if (minProgress !== null && project.progress < minProgress) return false;
+      if (maxProgress !== null && project.progress > maxProgress) return false;
+      if (minValue !== null && project.value_ugx < minValue) return false;
+      if (maxValue !== null && project.value_ugx > maxValue) return false;
+      if (filters.tag && !project.tags.includes(filters.tag)) return false;
+
+      if (search) {
+        const haystack = [
+          project.name,
+          project.client_name,
+          project.description || "",
+          project.project_manager_email || "",
+          project.current_milestone || "",
+          ...project.tags,
+          ...project.team_emails,
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+
+      return true;
+    });
+  }, [projects, query, filters, section]);
+
+  const recentProjects = useMemo(
+    () =>
+      [...projects]
+        .filter((project) => !project.is_archived)
+        .sort(
+          (a, b) =>
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+        )
+        .slice(0, 6),
+    [projects],
+  );
+
+  const attentionProjects = useMemo(
+    () =>
+      projects
+        .filter((project) => {
+          if (project.is_archived || project.status === "completed") return false;
+          const health = projectHealth(project);
+          return health.tone === "bad" || health.tone === "watch";
+        })
+        .slice(0, 6),
+    [projects],
+  );
+
+  const clearFilters = () => {
+    setFilters(emptyFilters);
+    setQuery("");
   };
 
-  const createProject = async (event: React.FormEvent) => {
+  const openProject = (project: Project) => {
+    setActionProject(null);
+    setSelectedId(project.id);
+    setWorkspaceTab("overview");
+  };
+
+  const changeSection = (value: ProjectsSection) => {
+    setSection(value);
+    setSelectedId("");
+    setWorkspace(null);
+    setWorkspaceTab("overview");
+  };
+
+  const openCreateProject = () => {
+    setEditingProject(null);
+    setProjectForm(emptyProjectForm);
+    setProjectModal("create");
+  };
+
+  const openEditProject = (project: Project) => {
+    setEditingProject(project);
+    setProjectForm({
+      name: project.name,
+      client_name: project.client_name,
+      description: project.description || "",
+      status: project.status,
+      value_ugx: String(project.value_ugx),
+      amount_paid_ugx: String(project.amount_paid_ugx),
+      start_date: project.start_date || "",
+      due_date: project.due_date || "",
+      progress: String(project.progress),
+      project_manager_email: project.project_manager_email || "",
+      team_emails: project.team_emails.join(", "),
+      tags: project.tags.join(", "),
+      current_milestone: project.current_milestone || "",
+    });
+    setProjectModal("edit");
+    setActionProject(null);
+  };
+
+  const closeProjectModal = () => {
+    if (projectSaving) return;
+    if (!confirmDiscardChanges(projectDirty, "Discard these project changes?")) return;
+    setProjectModal(null);
+    setEditingProject(null);
+    setProjectForm(emptyProjectForm);
+  };
+
+  const saveProject = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (createSaving) return;
+    if (projectSaving) return;
 
-    const name = form.name.trim();
-    const clientName = form.client_name.trim();
-    const value = Number(form.value_ugx || 0);
-
-    if (!name || !clientName) {
+    if (!projectForm.name.trim() || !projectForm.client_name.trim()) {
       showWarningToast("Project name and client are required.", "Check project details");
       return;
     }
-    if (!Number.isFinite(value) || value < 0) {
-      showWarningToast("Project value must be zero or a positive amount.", "Check project value");
+
+    const value = Number(projectForm.value_ugx || 0);
+    const paid = Number(projectForm.amount_paid_ugx || 0);
+    const progress = Number(projectForm.progress || 0);
+
+    if (!Number.isFinite(value) || value < 0 || !Number.isFinite(paid) || paid < 0) {
+      showWarningToast("Project money values must be valid positive amounts.", "Check finances");
       return;
     }
 
-    setCreateSaving(true);
+    if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
+      showWarningToast("Progress must be between 0 and 100.", "Check progress");
+      return;
+    }
+
+    const payload = {
+      name: projectForm.name.trim(),
+      client_name: projectForm.client_name.trim(),
+      description: projectForm.description.trim() || null,
+      status: projectForm.status,
+      value_ugx: value,
+      amount_paid_ugx: paid,
+      start_date: projectForm.start_date || null,
+      due_date: projectForm.due_date || null,
+      progress,
+      project_manager_email: projectForm.project_manager_email.trim(),
+      team_emails: splitList(projectForm.team_emails),
+      tags: splitList(projectForm.tags),
+      current_milestone: projectForm.current_milestone.trim(),
+    };
+
+    setProjectSaving(true);
     try {
-      const project = await workspaceApi.createProject({
-        name,
-        client_name: clientName,
-        value_ugx: value,
-        due_date: form.due_date || null,
-        status: "planning",
-        progress: 0,
-      });
-      setForm({ name: "", client_name: "", value_ugx: "", due_date: "" });
-      setCreateOpen(false);
-      await loadProjects(false);
-      setSelectedId(project.id);
-      setTab("overview");
-      showSuccessToast(`${project.name} was created successfully.`, "Project created");
+      const saved =
+        projectModal === "edit" && editingProject
+          ? await workspaceApi.updateProject(editingProject.id, payload)
+          : await workspaceApi.createProject(payload);
+
+      setProjectModal(null);
+      setEditingProject(null);
+      setProjectForm(emptyProjectForm);
+      await loadPortfolio(false);
+
+      if (selectedId === saved.id) await loadWorkspace(saved.id);
+      if (projectModal === "create") {
+        setSelectedId(saved.id);
+        setWorkspaceTab("overview");
+      }
+
+      showSuccessToast(
+        projectModal === "edit"
+          ? "Project details were updated."
+          : `${saved.name} was created.`,
+        projectModal === "edit" ? "Project updated" : "Project created",
+      );
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The project could not be created."), "Project not saved");
+      showErrorToast(
+        getErrorMessage(error, "The project could not be saved."),
+        "Project not saved",
+      );
     } finally {
-      setCreateSaving(false);
+      setProjectSaving(false);
     }
   };
 
-  const addTask = async () => {
-    if (!workspace || !taskTitle.trim() || taskBusyId) return;
-    setTaskBusyId("new");
+  const archiveOrRestore = async (project: Project) => {
+    const action = project.is_archived ? "restore" : "archive";
+    if (
+      !window.confirm(
+        project.is_archived
+          ? `Restore "${project.name}" to active project management?`
+          : `Archive "${project.name}"? Its records will remain available in Archived.`,
+      )
+    ) {
+      return;
+    }
+
+    setActionBusy(true);
     try {
-      await workspaceApi.createTask({
-        project_id: workspace.project.id,
-        title: taskTitle.trim(),
-        status: "pending",
-        priority: "normal",
-      });
-      setTaskTitle("");
-      await loadWorkspace(workspace.project.id);
-      showSuccessToast("Task added to the project.", "Task created");
+      if (project.is_archived) await workspaceApi.restoreProject(project.id);
+      else await workspaceApi.archiveProject(project.id);
+
+      if (selectedId === project.id && !project.is_archived) {
+        setSelectedId("");
+        setWorkspace(null);
+      }
+      setActionProject(null);
+      await loadPortfolio(false);
+      showSuccessToast(
+        project.is_archived ? "Project restored." : "Project archived.",
+        project.is_archived ? "Project restored" : "Project archived",
+      );
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The task could not be created."), "Task not saved");
+      showErrorToast(
+        getErrorMessage(error, `The project could not be ${action}d.`),
+        "Project not updated",
+      );
     } finally {
-      setTaskBusyId(null);
+      setActionBusy(false);
     }
   };
 
-  const toggleTask = async (task: ProjectTask) => {
-    if (taskBusyId) return;
-    setTaskBusyId(task.id);
+  const duplicateProject = async (project: Project) => {
+    setActionBusy(true);
     try {
-      await workspaceApi.updateTask(task.id, {
-        status: task.status === "completed" ? "pending" : "completed",
-      });
-      if (workspace) await loadWorkspace(workspace.project.id);
+      const duplicate = await workspaceApi.duplicateProject(project.id);
+      setActionProject(null);
+      await loadPortfolio(false);
+      showSuccessToast(
+        `${duplicate.name} was created as a planning project.`,
+        "Project duplicated",
+      );
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The task could not be updated."), "Task not updated");
+      showErrorToast(
+        getErrorMessage(error, "The project could not be duplicated."),
+        "Duplicate failed",
+      );
     } finally {
-      setTaskBusyId(null);
+      setActionBusy(false);
     }
+  };
+
+  const changeStatus = async (project: Project, status: string) => {
+    setActionBusy(true);
+    try {
+      await workspaceApi.updateProject(project.id, {
+        status,
+        progress: status === "completed" ? 100 : project.progress,
+      });
+      setActionProject(null);
+      await loadPortfolio(false);
+      if (selectedId === project.id) await loadWorkspace(project.id);
+      showSuccessToast(`Status changed to ${statusLabel(status)}.`, "Project updated");
+    } catch (error) {
+      showErrorToast(
+        getErrorMessage(error, "The project status could not be updated."),
+        "Status not changed",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const openTaskModal = (projectId: string, task?: ProjectTask) => {
+    setTaskProjectId(projectId);
+    setEditingTask(task || null);
+    setTaskForm(
+      task
+        ? {
+            title: task.title,
+            description: task.description || "",
+            status: normalizeTaskStatus(task.status),
+            priority: task.priority,
+            assignee_email: task.assignee_email || "",
+            due_date: task.due_date || "",
+          }
+        : emptyTaskForm,
+    );
+    setTaskModalOpen(true);
+    setActionProject(null);
+  };
+
+  const closeTaskModal = () => {
+    if (taskSaving) return;
+    if (!confirmDiscardChanges(taskDirty, "Discard these task changes?")) return;
+    setTaskModalOpen(false);
+    setEditingTask(null);
+    setTaskForm(emptyTaskForm);
+    setTaskProjectId("");
+  };
+
+  const saveTask = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!taskForm.title.trim() || !taskProjectId) {
+      showWarningToast("Task title is required.", "Check task");
+      return;
+    }
+
+    setTaskSaving(true);
+    try {
+      const payload = {
+        project_id: taskProjectId,
+        title: taskForm.title.trim(),
+        description: taskForm.description.trim() || null,
+        status: taskForm.status,
+        priority: taskForm.priority,
+        assignee_email: taskForm.assignee_email.trim() || null,
+        due_date: taskForm.due_date || null,
+      };
+
+      if (editingTask) {
+        const { project_id: _projectId, ...update } = payload;
+        await workspaceApi.updateTask(editingTask.id, update);
+      } else {
+        await workspaceApi.createTask(payload);
+      }
+
+      setTaskModalOpen(false);
+      setEditingTask(null);
+      setTaskForm(emptyTaskForm);
+      setTaskProjectId("");
+      if (selectedId) await loadWorkspace(selectedId);
+      await loadPortfolio(false);
+      showSuccessToast(
+        editingTask ? "Task updated." : "Task added to the project.",
+        editingTask ? "Task updated" : "Task created",
+      );
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The task could not be saved."), "Task not saved");
+    } finally {
+      setTaskSaving(false);
+    }
+  };
+
+  const updateTaskStatus = async (task: ProjectTask, status: string) => {
+    try {
+      await workspaceApi.updateTask(task.id, { status });
+      if (selectedId) await loadWorkspace(selectedId);
+      await loadPortfolio(false);
+    } catch (error) {
+      showErrorToast(
+        getErrorMessage(error, "The task status could not be updated."),
+        "Task not updated",
+      );
+    }
+  };
+
+  const startUpload = (projectId: string) => {
+    setUploadProjectId(projectId);
+    setActionProject(null);
+    window.setTimeout(() => fileInput.current?.click(), 0);
   };
 
   const uploadDocument = async (file: File) => {
-    if (!workspace || docBusy) return;
+    const projectId = uploadProjectId || workspace?.project.id;
+    if (!projectId || docBusy) return;
+
     setDocBusy(true);
     try {
       const signed = await workspaceApi.createUploadUrl({
         filename: file.name,
         content_type: file.type || "application/octet-stream",
-        project_id: workspace.project.id,
+        project_id: projectId,
       });
       await uploadToPresignedUrl(signed.upload_url, file);
       await workspaceApi.createDocument({
         title: file.name.replace(/\.[^.]+$/, ""),
         original_filename: file.name,
-        category: "other",
+        category: documentCategory,
         content_type: file.type || "application/octet-stream",
         size_bytes: file.size,
         storage_key: signed.storage_key,
-        project_id: workspace.project.id,
+        project_id: projectId,
         ocr_status: "not_requested",
-        ocr_text: null,
-        extracted_fields: {},
+        review_status: "not_reviewed",
       });
-      await loadWorkspace(workspace.project.id);
-      showSuccessToast(`${file.name} was attached to the project.`, "Document uploaded");
+      if (selectedId === projectId) await loadWorkspace(projectId);
+      showSuccessToast("Document uploaded and attached to the project.", "Upload complete");
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The document could not be uploaded."), "Upload failed");
+      showErrorToast(
+        getErrorMessage(error, "The document could not be uploaded."),
+        "Upload failed",
+      );
     } finally {
       setDocBusy(false);
+      setUploadProjectId("");
+    }
+  };
+
+  const updateDocument = async (
+    document: DocumentRecord,
+    body: Record<string, unknown>,
+  ) => {
+    try {
+      await workspaceApi.updateDocument(document.id, body);
+      if (selectedId) await loadWorkspace(selectedId);
+    } catch (error) {
+      showErrorToast(
+        getErrorMessage(error, "The document could not be updated."),
+        "Document not updated",
+      );
     }
   };
 
   const openDocument = async (document: DocumentRecord) => {
     try {
-      const result = await workspaceApi.downloadDocument(document.id);
-      window.open(result.url, "_blank", "noopener,noreferrer");
+      const { url } = await workspaceApi.downloadDocument(document.id);
+      window.open(url, "_blank", "noopener,noreferrer");
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The document could not be opened."), "Open failed");
+      showErrorToast(
+        getErrorMessage(error, "The document could not be opened."),
+        "Document unavailable",
+      );
     }
   };
 
-  const openFinance = (kind: FinanceKind) => {
-    const dateField = kind === "purchase" ? "order_date" : kind === "expense" ? "expense_date" : "issue_date";
-    setFinanceForm({ [dateField]: today() });
+  const openFinance = (kind: FinanceKind, project: Project) => {
     setFinanceKind(kind);
+    setFinanceProject(project);
+    setActionProject(null);
+    setFinanceForm(makeFinanceForm(kind, project));
   };
 
   const closeFinance = () => {
     if (financeSaving) return;
-    if (!confirmDiscardChanges(financeDirty, "Discard this unsaved financial record?")) return;
+    if (!confirmDiscardChanges(financeDirty, "Discard this finance record?")) return;
     setFinanceKind(null);
+    setFinanceProject(null);
     setFinanceForm({});
   };
 
   const saveFinance = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!financeKind || !workspace || financeSaving) return;
+    if (!financeKind || !financeProject) return;
 
     const amount = Number(financeForm.amount || 0);
     if (!Number.isFinite(amount) || amount <= 0) {
-      showWarningToast("Enter an amount greater than zero.", "Check amount");
-      return;
-    }
-
-    if (
-      financeKind !== "expense" &&
-      (!financeForm.number?.trim() || !(financeForm.party || workspace.project.client_name).trim())
-    ) {
-      showWarningToast("Number and client/supplier are required.", "Check details");
-      return;
-    }
-
-    if (financeKind === "expense" && !financeForm.description?.trim()) {
-      showWarningToast("Add a short expense description.", "Check details");
+      showWarningToast("Enter a valid amount greater than zero.", "Check amount");
       return;
     }
 
     setFinanceSaving(true);
-    const project = workspace.project;
-    const common = { project_id: project.id };
-
     try {
       if (financeKind === "quotation") {
         await workspaceApi.createQuotation({
-          ...common,
-          quotation_number: financeForm.number.trim(),
-          client_name: (financeForm.party || project.client_name).trim(),
+          quotation_number: financeForm.number?.trim(),
+          client_name: financeForm.party?.trim() || financeProject.client_name,
+          project_id: financeProject.id,
           amount_ugx: amount,
           issue_date: financeForm.issue_date || today(),
           status: "draft",
         });
       } else if (financeKind === "invoice") {
         await workspaceApi.createInvoice({
-          ...common,
-          invoice_number: financeForm.number.trim(),
-          client_name: (financeForm.party || project.client_name).trim(),
+          invoice_number: financeForm.number?.trim(),
+          client_name: financeForm.party?.trim() || financeProject.client_name,
+          project_id: financeProject.id,
           amount_ugx: amount,
           paid_amount_ugx: Number(financeForm.paid || 0),
           issue_date: financeForm.issue_date || today(),
           due_date: financeForm.due_date || null,
           status: "draft",
         });
+      } else if (financeKind === "payment") {
+        await workspaceApi.createPayment({
+          project_id: financeProject.id,
+          invoice_id: financeForm.invoice_id || null,
+          amount_ugx: amount,
+          payment_date: financeForm.payment_date || today(),
+          method: financeForm.method || "bank",
+          reference: financeForm.reference?.trim() || null,
+        });
       } else if (financeKind === "purchase") {
         await workspaceApi.createPurchaseOrder({
-          ...common,
-          po_number: financeForm.number.trim(),
-          supplier_name: (financeForm.party || "").trim(),
+          po_number: financeForm.number?.trim(),
+          supplier_name: financeForm.party?.trim(),
+          project_id: financeProject.id,
           amount_ugx: amount,
           order_date: financeForm.order_date || today(),
           status: "draft",
         });
       } else {
         await workspaceApi.createExpense({
-          ...common,
-          description: financeForm.description.trim(),
+          description: financeForm.description?.trim(),
+          project_id: financeProject.id,
           amount_ugx: amount,
           expense_date: financeForm.expense_date || today(),
-          category: financeForm.category || "general",
-          reference: financeForm.reference || null,
+          category: financeForm.category?.trim() || "general",
+          reference: financeForm.reference?.trim() || null,
         });
       }
 
-      const savedKind = financeKind;
       setFinanceKind(null);
+      setFinanceProject(null);
       setFinanceForm({});
-      await loadWorkspace(project.id);
-      showSuccessToast(
-        savedKind === "expense" ? "Expense added to the project." : "Financial record saved.",
-        "Saved",
-      );
+      await loadPortfolio(false);
+      if (selectedId === financeProject.id) await loadWorkspace(financeProject.id);
+      showSuccessToast("The finance record was saved.", "Finance updated");
     } catch (error) {
       showErrorToast(
-        getErrorMessage(error, "The financial record could not be saved."),
-        "Not saved",
+        getErrorMessage(error, "The finance record could not be saved."),
+        "Finance not saved",
       );
     } finally {
       setFinanceSaving(false);
     }
   };
 
-  const tabs = [
-    { id: "overview" as const, label: "Overview", icon: FolderKanban },
-    { id: "tasks" as const, label: "Tasks", icon: ListTodo },
-    { id: "documents" as const, label: "Documents", icon: FileText },
-    { id: "finance" as const, label: "Finance", icon: WalletCards },
-    { id: "activity" as const, label: "Activity", icon: Activity },
-  ];
-
-  const doneTasks = workspace?.tasks.filter((task) => task.status === "completed").length ?? 0;
-
-  if (isLoading) {
-    return <PageLoading label="Loading projects..." />;
-  }
-
-  if (loadError) {
+  if (isLoading) return <PageLoading label="Loading Projects 2.0..." />;
+  if (loadError && projects.length === 0) {
     return (
       <PageError
         message={loadError}
-        onRetry={async () => {
-          await loadProjects();
-          if (selectedId) await loadWorkspace(selectedId);
-        }}
+        onRetry={() => void loadPortfolio()}
         title="Projects are temporarily unavailable"
       />
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Every project is a complete working folder for delivery, documents and money.
-          </p>
-        </div>
-        <Button className="gap-2" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4" /> New project
-        </Button>
-      </div>
+  const renderPortfolioProject = (project: Project) => {
+    const health = projectHealth(project);
+    const remaining = daysRemaining(project.due_date);
 
-      <SectionNav
-        items={projectViews}
-        active={sectionView}
-        onChange={changeSectionView}
-        ariaLabel="Projects sections"
-      />
-
-      <div className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search projects..."
-              className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-3 text-sm outline-none focus:border-primary"
-            />
+    if (portfolioView === "cards") {
+      return (
+        <Card key={project.id} className="flex h-full flex-col p-4">
+          <div className="flex items-start justify-between gap-3">
+            <button className="min-w-0 text-left" onClick={() => openProject(project)}>
+              <p className="truncate text-sm font-semibold">{project.name}</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {project.client_name}
+              </p>
+            </button>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label={`Actions for ${project.name}`}
+              onClick={() => setActionProject(project)}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="space-y-2">
-            {listedProjects.length === 0 ? (
-              <Card className="py-10 text-center">
-                <FolderKanban className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-3 text-sm font-medium">No projects yet</p>
-              </Card>
-            ) : listedProjects.map((project) => (
-              <button
-                key={project.id}
-                onClick={() => { setSelectedId(project.id); setTab("overview"); }}
-                className="w-full text-left"
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className={`rounded-full px-2 py-1 text-[10px] font-medium ${healthClass(health.tone)}`}>
+              {health.label}
+            </span>
+            <span className="rounded-full bg-accent px-2 py-1 text-[10px] text-muted-foreground">
+              {statusLabel(project.status)}
+            </span>
+            {project.tags.slice(0, 2).map((tagValue) => (
+              <span
+                key={tagValue}
+                className="rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground"
               >
-                <Card className={selectedId === project.id
-                  ? "border-primary/60 bg-primary/5 p-4"
-                  : "p-4 hover:border-primary/30"}>
-                  <p className="truncate text-xs text-muted-foreground">{project.client_name}</p>
-                  <p className="mt-1 truncate text-sm font-semibold">{project.name}</p>
-                  <div className="mt-3 flex justify-between text-[10px] text-muted-foreground">
-                    <span>{project.status}</span><span>{project.progress}%</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-muted">
-                    <div className="h-1.5 rounded-full bg-primary" style={{ width: `${project.progress}%` }} />
-                  </div>
-                </Card>
-              </button>
+                {tagValue}
+              </span>
             ))}
           </div>
-        </div>
-
-        {workspaceLoading ? (
-          <PageLoading label="Opening project workspace..." />
-        ) : !workspace ? (
-          <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <Card>
-                <p className="text-xs text-muted-foreground">{sectionLabel}</p>
-                <p className="mt-2 text-2xl font-bold">{filtered.length}</p>
-              </Card>
-              <Card>
-                <p className="text-xs text-muted-foreground">Visible project value</p>
-                <p className="mt-2 text-lg font-bold">{money(visibleValue)}</p>
-              </Card>
-              <Card>
-                <p className="text-xs text-muted-foreground">Outstanding</p>
-                <p className="mt-2 text-lg font-bold">{money(visibleOutstanding)}</p>
-              </Card>
-              <Card>
-                <p className="text-xs text-muted-foreground">Projects needing action</p>
-                <p className="mt-2 text-2xl font-bold">
-                  {filtered.filter((project) => project.progress < 100 && project.status !== "completed").length}
-                </p>
-              </Card>
+          <div className="mt-4">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>Progress</span>
+              <span>{project.progress}%</span>
             </div>
-            <Card className="min-h-[340px] p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 className="font-semibold">{sectionLabel}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    This is the company-level Projects area. Select a project on the left only when you want to open its working folder.
-                  </p>
-                </div>
-                <span className="rounded-full bg-accent px-3 py-1 text-xs text-muted-foreground">
-                  Section dashboard
-                </span>
-              </div>
-              <div className="mt-8 rounded-xl border border-dashed border-border p-8 text-center">
-                <FolderKanban className="mx-auto h-10 w-10 text-muted-foreground" />
-                <p className="mt-3 font-medium">Project management area</p>
-                <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted-foreground">
-                  Use the section tabs above to move between all projects, active work, planning, on-hold work, completed work and the archive.
-                  Opening a project is now a separate action from managing the Projects section.
-                </p>
-              </div>
-            </Card>
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${project.progress}%` }}
+              />
+            </div>
           </div>
-        ) : (
-          <div className="min-w-0 space-y-5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-fit gap-2"
-              onClick={() => {
-                setSelectedId("");
-                setWorkspace(null);
-                setTab("overview");
-              }}
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to {sectionLabel}
-            </Button>
-            <Card className="p-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">{workspace.project.client_name}</p>
-                  <h2 className="mt-1 text-xl font-bold">{workspace.project.name}</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {workspace.project.status} · {workspace.project.progress}% complete
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Project value</p>
-                  <p className="font-semibold">{money(workspace.project.value_ugx)}</p>
-                </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <p className="text-[10px] text-muted-foreground">Value</p>
+              <p className="mt-1 font-semibold">{money(project.value_ugx)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Deadline</p>
+              <p className="mt-1 font-medium">
+                {project.due_date || "Not set"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Manager</p>
+              <p className="mt-1 truncate">
+                {project.project_manager_email || "Unassigned"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground">Days remaining</p>
+              <p className="mt-1">
+                {remaining === null
+                  ? "—"
+                  : remaining < 0
+                    ? `${Math.abs(remaining)} overdue`
+                    : remaining}
+              </p>
+            </div>
+          </div>
+          <Button className="mt-5 w-full" variant="outline" onClick={() => openProject(project)}>
+            Open workspace
+          </Button>
+        </Card>
+      );
+    }
+
+    if (portfolioView === "timeline") {
+      return (
+        <Card key={project.id} className="p-4">
+          <div className="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)_140px_120px] md:items-center">
+            <div>
+              <p className="text-[10px] uppercase text-muted-foreground">
+                {project.start_date || "No start date"}
+              </p>
+              <p className="mt-1 text-xs font-medium">
+                → {project.due_date || "No deadline"}
+              </p>
+            </div>
+            <button className="text-left" onClick={() => openProject(project)}>
+              <p className="font-semibold">{project.name}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {project.client_name} · {project.current_milestone || "No current milestone"}
+              </p>
+            </button>
+            <div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${project.progress}%` }}
+                />
               </div>
-              <div className="mt-5 flex gap-2 overflow-x-auto border-t border-border pt-4">
-                {tabs.map(({ id, label, icon: Icon }) => (
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                {project.progress}% complete
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-2">
+              <span className={`rounded-full px-2 py-1 text-[10px] ${healthClass(health.tone)}`}>
+                {health.label}
+              </span>
+              <Button size="icon-sm" variant="ghost" onClick={() => setActionProject(project)}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
+      );
+    }
+
+    if (portfolioView === "calendar") {
+      return null;
+    }
+
+    return (
+      <tr key={project.id} className="border-b border-border last:border-0 hover:bg-accent/20">
+        <td className="px-3 py-3">
+          <button className="text-left" onClick={() => openProject(project)}>
+            <p className="text-sm font-semibold">{project.name}</p>
+            <p className="mt-0.5 text-[10px] text-muted-foreground">
+              {project.tags.slice(0, 3).join(" · ") || "No tags"}
+            </p>
+          </button>
+        </td>
+        <td className="px-3 py-3 text-xs">{project.client_name}</td>
+        <td className="px-3 py-3 text-xs">{statusLabel(project.status)}</td>
+        <td className="px-3 py-3">
+          <span className={`rounded-full px-2 py-1 text-[10px] ${healthClass(health.tone)}`}>
+            {health.label}
+          </span>
+        </td>
+        <td className="px-3 py-3 text-xs">
+          <div className="min-w-24">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>{project.progress}%</span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary"
+                style={{ width: `${project.progress}%` }}
+              />
+            </div>
+          </div>
+        </td>
+        <td className="px-3 py-3 text-xs">{project.due_date || "—"}</td>
+        <td className="px-3 py-3 text-xs">{money(project.value_ugx)}</td>
+        <td className="px-3 py-3 text-xs">
+          {project.project_manager_email || "Unassigned"}
+        </td>
+        <td className="px-3 py-3 text-right">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label={`Actions for ${project.name}`}
+            onClick={() => setActionProject(project)}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </td>
+      </tr>
+    );
+  };
+
+  const calendarGroups = (() => {
+    const groups = new Map<string, Project[]>();
+    filteredProjects.forEach((project) => {
+      const key = project.due_date ? project.due_date.slice(0, 7) : "No deadline";
+      const rows = groups.get(key) || [];
+      rows.push(project);
+      groups.set(key, rows);
+    });
+    return Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b));
+  })();
+
+  const financeLinkOptions = workspace
+    ? [
+        ...workspace.finance.quotations.map((item) => ({
+          value: `quotation:${item.id}`,
+          label: `Quotation ${item.quotation_number}`,
+        })),
+        ...workspace.finance.invoices.map((item) => ({
+          value: `invoice:${item.id}`,
+          label: `Invoice ${item.invoice_number}`,
+        })),
+        ...workspace.finance.payments.map((item) => ({
+          value: `payment:${item.id}`,
+          label: `Payment ${item.reference || item.payment_date}`,
+        })),
+        ...workspace.finance.purchase_orders.map((item) => ({
+          value: `purchase_order:${item.id}`,
+          label: `PO ${item.po_number}`,
+        })),
+        ...workspace.finance.expenses.map((item) => ({
+          value: `expense:${item.id}`,
+          label: `Expense ${item.description}`,
+        })),
+      ]
+    : [];
+
+  const workspaceWarnings = workspace
+    ? [
+        workspace.project.is_archived ? "This project is archived." : "",
+        daysRemaining(workspace.project.due_date) !== null &&
+        (daysRemaining(workspace.project.due_date) as number) < 0 &&
+        workspace.project.status !== "completed"
+          ? "The project deadline has passed."
+          : "",
+        !workspace.project.project_manager_email ? "No project manager is assigned." : "",
+        workspace.tasks.some(
+          (task) =>
+            task.status !== "completed" &&
+            task.priority === "high" &&
+            task.due_date &&
+            task.due_date < today(),
+        )
+          ? "A high-priority task is overdue."
+          : "",
+        workspace.finance.invoice_outstanding_ugx > 0
+          ? "There is outstanding invoiced revenue."
+          : "",
+      ].filter(Boolean)
+    : [];
+
+  const completedTasks =
+    workspace?.tasks.filter((task) => normalizeTaskStatus(task.status) === "completed").length || 0;
+
+  const taskColumns = [
+    { id: "todo", label: "To Do" },
+    { id: "in_progress", label: "In Progress" },
+    { id: "review", label: "Review" },
+    { id: "completed", label: "Completed" },
+  ];
+
+  const workspaceTabs = [
+    { id: "overview" as const, label: "Overview", icon: FolderKanban },
+    { id: "tasks" as const, label: "Tasks", icon: CheckCircle2 },
+    { id: "documents" as const, label: "Documents", icon: FileText },
+    { id: "finance" as const, label: "Finance", icon: WalletCards },
+    { id: "activity" as const, label: "Activity", icon: Activity },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <input
+        ref={fileInput}
+        type="file"
+        className="hidden"
+        accept=".pdf,image/*,.doc,.docx,.xls,.xlsx"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void uploadDocument(file);
+          event.currentTarget.value = "";
+        }}
+      />
+
+      {!workspace && (
+        <>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Projects</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Company-wide project control, delivery, documents, teams and money.
+              </p>
+            </div>
+            <Button className="gap-2" onClick={openCreateProject}>
+              <Plus className="h-4 w-4" /> New project
+            </Button>
+          </div>
+
+          <SectionNav
+            items={sections}
+            active={section}
+            onChange={changeSection}
+            ariaLabel="Project sections"
+          />
+
+          {section === "overview" && dashboard && (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {metricCard("Total Projects", dashboard.total_projects, undefined, <FolderKanban className="h-4 w-4" />)}
+                {metricCard("Active Projects", dashboard.active_projects)}
+                {metricCard("Planning", dashboard.planning_projects)}
+                {metricCard("Overdue", dashboard.overdue_projects, undefined, <AlertTriangle className="h-4 w-4" />)}
+                {metricCard("Completed", dashboard.completed_projects, undefined, <CheckCircle2 className="h-4 w-4" />)}
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {metricCard("Total Project Value", money(dashboard.total_project_value_ugx))}
+                {metricCard("Amount Received", money(dashboard.amount_received_ugx), undefined, <Banknote className="h-4 w-4" />)}
+                {metricCard("Outstanding", money(dashboard.outstanding_ugx), undefined, <WalletCards className="h-4 w-4" />)}
+                {metricCard("Tasks Due", dashboard.tasks_due, "Due today or overdue")}
+                {metricCard("Needs Attention", dashboard.projects_needing_attention, undefined, <AlertTriangle className="h-4 w-4" />)}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <Card>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-semibold">Projects needing attention</h2>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Overdue, unassigned or low-progress active work.
+                      </p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => setSection("all")}>
+                      View all
+                    </Button>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {attentionProjects.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        No projects need immediate attention.
+                      </p>
+                    ) : (
+                      attentionProjects.map((project) => {
+                        const health = projectHealth(project);
+                        return (
+                          <button
+                            key={project.id}
+                            onClick={() => openProject(project)}
+                            className="flex w-full items-center justify-between gap-4 rounded-lg border border-border p-3 text-left hover:bg-accent/30"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">{project.name}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {project.client_name} · {project.progress}% complete
+                              </p>
+                            </div>
+                            <span className={`rounded-full px-2 py-1 text-[10px] ${healthClass(health.tone)}`}>
+                              {health.label}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </Card>
+
+                <Card>
+                  <div>
+                    <h2 className="font-semibold">Recently updated</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      The latest project folders your team has worked on.
+                    </p>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {recentProjects.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        No projects yet.
+                      </p>
+                    ) : (
+                      recentProjects.map((project) => (
+                        <button
+                          key={project.id}
+                          onClick={() => openProject(project)}
+                          className="flex w-full items-center justify-between gap-4 rounded-lg border border-border p-3 text-left hover:bg-accent/30"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{project.name}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {project.client_name} · {statusLabel(project.status)}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(project.updated_at).toLocaleDateString()}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          <Card className="space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[240px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search projects, clients, managers, milestones or tags..."
+                  className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+                />
+              </div>
+              <Button
+                variant={filtersOpen ? "secondary" : "outline"}
+                className="gap-2"
+                onClick={() => setFiltersOpen((value) => !value)}
+              >
+                <Filter className="h-4 w-4" /> Filters
+              </Button>
+              <div className="flex rounded-lg border border-border p-1">
+                {[
+                  { id: "table" as const, label: "Table", icon: List },
+                  { id: "cards" as const, label: "Cards", icon: LayoutGrid },
+                  { id: "timeline" as const, label: "Timeline", icon: Clock3 },
+                  { id: "calendar" as const, label: "Calendar", icon: CalendarDays },
+                ].map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
-                    onClick={() => setTab(id)}
-                    className={tab === id
-                      ? "flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-                      : "flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-accent"}
+                    title={label}
+                    onClick={() => setPortfolioView(id)}
+                    className={
+                      portfolioView === id
+                        ? "flex items-center gap-1 rounded-md bg-accent px-2 py-1.5 text-xs font-medium"
+                        : "flex items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground hover:bg-accent/60"
+                    }
                   >
-                    <Icon className="h-4 w-4" /> {label}
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="hidden xl:inline">{label}</span>
                   </button>
                 ))}
               </div>
-            </Card>
+            </div>
 
-            {tab === "overview" && (
-              <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <Card><p className="text-xs text-muted-foreground">Progress</p><p className="mt-2 text-2xl font-bold">{workspace.project.progress}%</p></Card>
-                  <Card><p className="text-xs text-muted-foreground">Tasks</p><p className="mt-2 text-2xl font-bold">{doneTasks}/{workspace.tasks.length}</p></Card>
-                  <Card><p className="text-xs text-muted-foreground">Documents</p><p className="mt-2 text-2xl font-bold">{workspace.documents.length}</p></Card>
-                  <Card><p className="text-xs text-muted-foreground">Outstanding</p><p className="mt-2 text-lg font-bold">{money(workspace.finance.project_outstanding_ugx)}</p></Card>
+            {filtersOpen && (
+              <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase text-muted-foreground">Status</label>
+                  <select
+                    className={selectClass}
+                    value={filters.status}
+                    onChange={(event) =>
+                      setFilters((previous) => ({ ...previous, status: event.target.value }))
+                    }
+                  >
+                    <option value="">Any status</option>
+                    <option value="planning">Planning</option>
+                    <option value="active">Active</option>
+                    <option value="on_hold">On Hold</option>
+                    <option value="completed">Completed</option>
+                  </select>
                 </div>
-                <Card>
-                  <h3 className="font-semibold">Project overview</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {workspace.project.description || "No project description has been added yet."}
-                  </p>
-                  <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div><p className="text-[10px] uppercase text-muted-foreground">Start</p><p className="mt-1 text-sm">{workspace.project.start_date || "Not set"}</p></div>
-                    <div><p className="text-[10px] uppercase text-muted-foreground">Deadline</p><p className="mt-1 text-sm">{workspace.project.due_date || "Not set"}</p></div>
-                    <div><p className="text-[10px] uppercase text-muted-foreground">Manager</p><p className="mt-1 truncate text-sm">{workspace.project.project_manager_email || "Not assigned"}</p></div>
-                    <div><p className="text-[10px] uppercase text-muted-foreground">Received</p><p className="mt-1 text-sm">{money(workspace.project.amount_paid_ugx)}</p></div>
-                  </div>
-                </Card>
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase text-muted-foreground">Client</label>
+                  <select
+                    className={selectClass}
+                    value={filters.client}
+                    onChange={(event) =>
+                      setFilters((previous) => ({ ...previous, client: event.target.value }))
+                    }
+                  >
+                    <option value="">Any client</option>
+                    {clients.map((client) => (
+                      <option key={client} value={client}>{client}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase text-muted-foreground">Project manager</label>
+                  <select
+                    className={selectClass}
+                    value={filters.manager}
+                    onChange={(event) =>
+                      setFilters((previous) => ({ ...previous, manager: event.target.value }))
+                    }
+                  >
+                    <option value="">Any manager</option>
+                    {managers.map((manager) => (
+                      <option key={manager} value={manager}>{manager}</option>
+                    ))}
+                  </select>
+                </div>
+                <Input
+                  label="Start date from"
+                  type="date"
+                  value={filters.start_from}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, start_from: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Start date to"
+                  type="date"
+                  value={filters.start_to}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, start_to: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Deadline from"
+                  type="date"
+                  value={filters.deadline_from}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, deadline_from: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Deadline to"
+                  type="date"
+                  value={filters.deadline_to}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, deadline_to: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Progress min %"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={filters.progress_min}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, progress_min: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Progress max %"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={filters.progress_max}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, progress_max: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Value min UGX"
+                  type="number"
+                  min="0"
+                  value={filters.value_min}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, value_min: event.target.value }))
+                  }
+                />
+                <Input
+                  label="Value max UGX"
+                  type="number"
+                  min="0"
+                  value={filters.value_max}
+                  onChange={(event) =>
+                    setFilters((previous) => ({ ...previous, value_max: event.target.value }))
+                  }
+                />
+                <div>
+                  <label className="mb-1 block text-[10px] uppercase text-muted-foreground">Tag</label>
+                  <select
+                    className={selectClass}
+                    value={filters.tag}
+                    onChange={(event) =>
+                      setFilters((previous) => ({ ...previous, tag: event.target.value }))
+                    }
+                  >
+                    <option value="">Any tag</option>
+                    {tags.map((tagValue) => (
+                      <option key={tagValue} value={tagValue}>{tagValue}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <Button variant="ghost" onClick={clearFilters}>Clear filters</Button>
+                </div>
               </div>
             )}
 
-            {tab === "tasks" && (
-              <Card>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><h3 className="font-semibold">Project tasks</h3><p className="text-xs text-muted-foreground">{doneTasks} completed of {workspace.tasks.length}</p></div>
-                  <div className="flex min-w-[280px] flex-1 gap-2 sm:max-w-md">
-                    <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Add a task..."
-                      className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-sm" />
-                    <Button size="sm" isLoading={taskBusyId === "new"} onClick={() => void addTask()}>Add</Button>
-                  </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  {workspace.tasks.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No tasks yet.</p> : workspace.tasks.map((task) => (
-                    <button key={task.id} onClick={() => void toggleTask(task)}
-                      disabled={Boolean(taskBusyId)}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left hover:bg-accent/30 disabled:cursor-wait disabled:opacity-60">
-                      {task.status === "completed" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Circle className="h-4 w-4 text-muted-foreground" />}
-                      <div className="min-w-0 flex-1">
-                        <p className={task.status === "completed" ? "text-sm line-through text-muted-foreground" : "text-sm font-medium"}>{task.title}</p>
-                        <p className="mt-0.5 text-[10px] text-muted-foreground">{task.priority} priority{task.due_date ? ` · due ${task.due_date}` : ""}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </Card>
-            )}
+            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+              <div>
+                <p className="text-sm font-semibold">
+                  {sections.find((item) => item.id === section)?.label || "Projects"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredProjects.length} project{filteredProjects.length === 1 ? "" : "s"} shown
+                </p>
+              </div>
+              {(query || Object.values(filters).some(Boolean)) && (
+                <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] text-primary">
+                  Filters active
+                </span>
+              )}
+            </div>
 
-            {tab === "documents" && (
+            {filteredProjects.length === 0 ? (
+              <div className="py-16 text-center">
+                <FolderKanban className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="mt-3 font-medium">No projects match this view</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Change the filters or create a new project.
+                </p>
+              </div>
+            ) : portfolioView === "table" ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[980px] border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-border text-[10px] uppercase text-muted-foreground">
+                      <th className="px-3 py-2">Project</th>
+                      <th className="px-3 py-2">Client</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2">Health</th>
+                      <th className="px-3 py-2">Progress</th>
+                      <th className="px-3 py-2">Deadline</th>
+                      <th className="px-3 py-2">Value</th>
+                      <th className="px-3 py-2">Manager</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>{filteredProjects.map(renderPortfolioProject)}</tbody>
+                </table>
+              </div>
+            ) : portfolioView === "cards" ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredProjects.map(renderPortfolioProject)}
+              </div>
+            ) : portfolioView === "timeline" ? (
               <div className="space-y-3">
-                <Card className="flex flex-wrap items-center justify-between gap-4">
-                  <div><h3 className="font-semibold">Project documents</h3><p className="text-xs text-muted-foreground">Files uploaded here stay attached to this project.</p></div>
-                  <Button className="gap-2" disabled={docBusy} onClick={() => fileInput.current?.click()}>
-                    <UploadCloud className="h-4 w-4" /> {docBusy ? "Uploading..." : "Upload file"}
-                  </Button>
-                  <input ref={fileInput} type="file" className="hidden" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx"
-                    onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadDocument(file); e.currentTarget.value = ""; }} />
-                </Card>
-                {workspace.documents.length === 0 ? (
-                  <Card className="py-12 text-center"><FileText className="mx-auto h-9 w-9 text-muted-foreground" /><p className="mt-3 text-sm font-medium">No project documents yet</p></Card>
-                ) : workspace.documents.map((document) => (
-                  <Card key={document.id} className="flex items-center justify-between gap-4 p-4">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">{document.title}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{document.category.replaceAll("_", " ")} · {Math.max(1, Math.round(document.size_bytes / 1024))} KB</p>
+                {[...filteredProjects]
+                  .sort((a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999"))
+                  .map(renderPortfolioProject)}
+              </div>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                {calendarGroups.map(([month, rows]) => (
+                  <Card key={month}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold">
+                          {month === "No deadline"
+                            ? month
+                            : new Date(`${month}-01T00:00:00`).toLocaleDateString(undefined, {
+                                month: "long",
+                                year: "numeric",
+                              })}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {rows.length} deadline{rows.length === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <Button size="sm" variant="outline" className="gap-2" onClick={() => void openDocument(document)}>
-                      <Download className="h-3.5 w-3.5" /> Open
-                    </Button>
+                    <div className="mt-4 space-y-2">
+                      {rows
+                        .sort((a, b) => (a.due_date || "").localeCompare(b.due_date || ""))
+                        .map((project) => (
+                          <button
+                            key={project.id}
+                            className="w-full rounded-lg border border-border p-3 text-left hover:bg-accent/30"
+                            onClick={() => openProject(project)}
+                          >
+                            <div className="flex justify-between gap-3">
+                              <p className="text-sm font-medium">{project.name}</p>
+                              <span className="text-[10px] text-muted-foreground">
+                                {project.due_date?.slice(8) || "—"}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {project.client_name} · {project.progress}%
+                            </p>
+                          </button>
+                        ))}
+                    </div>
                   </Card>
                 ))}
               </div>
             )}
+          </Card>
+        </>
+      )}
 
-            {tab === "finance" && (
-              <div className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <Card><p className="text-xs text-muted-foreground">Invoiced</p><p className="mt-2 text-lg font-bold">{money(workspace.finance.invoice_total_ugx)}</p></Card>
-                  <Card><p className="text-xs text-muted-foreground">Invoice outstanding</p><p className="mt-2 text-lg font-bold">{money(workspace.finance.invoice_outstanding_ugx)}</p></Card>
-                  <Card><p className="text-xs text-muted-foreground">Purchase orders</p><p className="mt-2 text-lg font-bold">{money(workspace.finance.purchase_orders_ugx)}</p></Card>
-                  <Card><p className="text-xs text-muted-foreground">Expenses</p><p className="mt-2 text-lg font-bold">{money(workspace.finance.expenses_ugx)}</p></Card>
+      {workspaceLoading && selectedId && <PageLoading label="Opening project workspace..." />}
+
+      {workspace && !workspaceLoading && (
+        <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                setSelectedId("");
+                setWorkspace(null);
+                setWorkspaceTab("overview");
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" /> Back to Projects
+            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => openEditProject(workspace.project)}>
+                <Edit3 className="h-4 w-4" /> Edit project
+              </Button>
+              <Button size="sm" onClick={() => setActionProject(workspace.project)}>
+                Actions
+              </Button>
+            </div>
+          </div>
+
+          <Card className="p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl font-bold">{workspace.project.name}</h1>
+                  <span className={`rounded-full px-2 py-1 text-[10px] ${healthClass(projectHealth(workspace.project).tone)}`}>
+                    {projectHealth(workspace.project).label}
+                  </span>
+                  <span className="rounded-full bg-accent px-2 py-1 text-[10px] text-muted-foreground">
+                    {statusLabel(workspace.project.status)}
+                  </span>
                 </div>
-                <Card>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div><h3 className="font-semibold">Project finance</h3><p className="text-xs text-muted-foreground">All commercial records linked to this project.</p></div>
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" variant="outline" onClick={() => openFinance("quotation")}>New quote</Button>
-                      <Button size="sm" variant="outline" onClick={() => openFinance("invoice")}>New invoice</Button>
-                      <Button size="sm" variant="outline" onClick={() => openFinance("purchase")}>New PO</Button>
-                      <Button size="sm" onClick={() => openFinance("expense")}>Add expense</Button>
-                    </div>
-                  </div>
-                  <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                    <div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Invoices</p>{workspace.finance.invoices.length === 0 ? <p className="text-sm text-muted-foreground">No invoices.</p> : workspace.finance.invoices.map((item) => <div key={item.id} className="mb-2 flex justify-between rounded-lg border border-border p-3 text-sm"><span>{item.invoice_number}</span><span className="font-semibold">{money(item.amount_ugx)}</span></div>)}</div>
-                    <div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Expenses</p>{workspace.finance.expenses.length === 0 ? <p className="text-sm text-muted-foreground">No expenses.</p> : workspace.finance.expenses.map((item) => <div key={item.id} className="mb-2 flex justify-between rounded-lg border border-border p-3 text-sm"><span>{item.description}</span><span className="font-semibold">{money(item.amount_ugx)}</span></div>)}</div>
-                    <div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Quotations</p>{workspace.finance.quotations.length === 0 ? <p className="text-sm text-muted-foreground">No quotations.</p> : workspace.finance.quotations.map((item) => <div key={item.id} className="mb-2 flex justify-between rounded-lg border border-border p-3 text-sm"><span>{item.quotation_number}</span><span>{money(item.amount_ugx)}</span></div>)}</div>
-                    <div><p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Purchase orders</p>{workspace.finance.purchase_orders.length === 0 ? <p className="text-sm text-muted-foreground">No purchase orders.</p> : workspace.finance.purchase_orders.map((item) => <div key={item.id} className="mb-2 flex justify-between rounded-lg border border-border p-3 text-sm"><span>{item.po_number} · {item.supplier_name}</span><span>{money(item.amount_ugx)}</span></div>)}</div>
-                  </div>
-                </Card>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {workspace.project.client_name}
+                  {workspace.project.current_milestone
+                    ? ` · ${workspace.project.current_milestone}`
+                    : ""}
+                </p>
               </div>
-            )}
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Project value</p>
+                <p className="text-lg font-bold">{money(workspace.project.value_ugx)}</p>
+              </div>
+            </div>
 
-            {tab === "activity" && (
-              <Card>
-                <div><h3 className="font-semibold">Project activity</h3><p className="text-xs text-muted-foreground">Automatic history from project, task, document and finance changes.</p></div>
-                <div className="mt-4 space-y-2">
-                  {workspace.activity.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">No activity recorded yet.</p> : workspace.activity.map((item) => (
-                    <div key={item.id} className="flex gap-3 rounded-lg border border-border p-3">
-                      <div className="mt-1 rounded-full bg-primary/10 p-2 text-primary"><Activity className="h-3.5 w-3.5" /></div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm"><span className="font-medium">{activityLabel(item.table_name)}</span> {item.operation.toLowerCase()}: {item.title}</p>
-                        <p className="mt-1 text-[10px] text-muted-foreground">{new Date(item.created_at).toLocaleString()}{item.changed_by ? ` · ${item.changed_by}` : ""}</p>
+            <div className="mt-5 flex gap-2 overflow-x-auto border-t border-border pt-4">
+              {workspaceTabs.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setWorkspaceTab(id)}
+                  className={
+                    workspaceTab === id
+                      ? "flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                      : "flex items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-accent"
+                  }
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {workspaceTab === "overview" && (
+            <div className="space-y-4">
+              {workspaceWarnings.length > 0 && (
+                <Card className="border-amber-500/30 bg-amber-500/5">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-500" />
+                    <div>
+                      <h3 className="font-semibold">Project warnings</h3>
+                      <div className="mt-2 space-y-1">
+                        {workspaceWarnings.map((warning) => (
+                          <p key={warning} className="text-sm text-muted-foreground">• {warning}</p>
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  </div>
+                </Card>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                {metricCard("Project Health", projectHealth(workspace.project).label)}
+                {metricCard("Progress", `${workspace.project.progress}%`)}
+                {metricCard(
+                  "Task Completion",
+                  `${completedTasks}/${workspace.tasks.length}`,
+                  workspace.tasks.length
+                    ? `${Math.round((completedTasks / workspace.tasks.length) * 100)}% complete`
+                    : "No tasks yet",
+                )}
+                {metricCard("Documents", workspace.documents.length)}
+                {metricCard(
+                  "Days Remaining",
+                  daysRemaining(workspace.project.due_date) === null
+                    ? "—"
+                    : (daysRemaining(workspace.project.due_date) as number) < 0
+                      ? `${Math.abs(daysRemaining(workspace.project.due_date) as number)} overdue`
+                      : daysRemaining(workspace.project.due_date),
+                )}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+                <Card>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold">Project overview</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Delivery ownership, milestone, team and schedule.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold">{workspace.project.progress}%</span>
+                  </div>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${workspace.project.progress}%` }}
+                    />
+                  </div>
+                  <p className="mt-5 text-sm leading-6 text-muted-foreground">
+                    {workspace.project.description || "No project description has been added yet."}
+                  </p>
+                  <div className="mt-5 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Client</p>
+                      <p className="mt-1 text-sm font-medium">{workspace.project.client_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Manager</p>
+                      <p className="mt-1 break-all text-sm">
+                        {workspace.project.project_manager_email || "Not assigned"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Current milestone</p>
+                      <p className="mt-1 text-sm">
+                        {workspace.project.current_milestone || "Not set"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Start date</p>
+                      <p className="mt-1 text-sm">{workspace.project.start_date || "Not set"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Deadline</p>
+                      <p className="mt-1 text-sm">{workspace.project.due_date || "Not set"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase text-muted-foreground">Assigned staff</p>
+                      <p className="mt-1 text-sm">{workspace.project.team_emails.length}</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 border-t border-border pt-4">
+                    <p className="text-[10px] uppercase text-muted-foreground">Team</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {workspace.project.team_emails.length === 0 ? (
+                        <span className="text-sm text-muted-foreground">No staff assigned.</span>
+                      ) : (
+                        workspace.project.team_emails.map((email) => (
+                          <span key={email} className="rounded-full bg-accent px-3 py-1 text-xs">
+                            {email}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {workspace.project.tags.map((tagValue) => (
+                        <span key={tagValue} className="flex items-center gap-1 rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground">
+                          <Tag className="h-3 w-3" /> {tagValue}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+
+                <div className="space-y-4">
+                  <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                    {metricCard("Project Value", money(workspace.finance.project_value_ugx))}
+                    {metricCard("Paid / Received", money(workspace.finance.amount_paid_ugx))}
+                    {metricCard("Outstanding", money(workspace.finance.project_outstanding_ugx))}
+                  </div>
+                  <Card>
+                    <h3 className="font-semibold">Recent activity</h3>
+                    <div className="mt-3 space-y-3">
+                      {workspace.activity.slice(0, 5).length === 0 ? (
+                        <p className="text-sm text-muted-foreground">No activity yet.</p>
+                      ) : (
+                        workspace.activity.slice(0, 5).map((item) => (
+                          <div key={item.id} className="border-l-2 border-primary/30 pl-3">
+                            <p className="text-xs font-medium">{item.summary}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              {new Date(item.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {workspaceTab === "tasks" && (
+            <div className="space-y-4">
+              <Card className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold">Project tasks</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Move work through To Do, In Progress, Review and Completed.
+                  </p>
+                </div>
+                <Button onClick={() => openTaskModal(workspace.project.id)}>
+                  <Plus className="h-4 w-4" /> Add task
+                </Button>
+              </Card>
+
+              <div className="grid gap-4 xl:grid-cols-4">
+                {taskColumns.map((column) => {
+                  const columnTasks = workspace.tasks.filter(
+                    (task) => normalizeTaskStatus(task.status) === column.id,
+                  );
+                  return (
+                    <Card key={column.id} className="min-h-[320px] p-3">
+                      <div className="flex items-center justify-between gap-2 border-b border-border pb-3">
+                        <p className="text-sm font-semibold">{column.label}</p>
+                        <span className="rounded-full bg-accent px-2 py-0.5 text-[10px]">
+                          {columnTasks.length}
+                        </span>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        {columnTasks.length === 0 ? (
+                          <p className="py-8 text-center text-xs text-muted-foreground">
+                            No tasks
+                          </p>
+                        ) : (
+                          columnTasks.map((task) => (
+                            <div key={task.id} className="rounded-lg border border-border p-3">
+                              <button
+                                className="w-full text-left"
+                                onClick={() => openTaskModal(workspace.project.id, task)}
+                              >
+                                <p className="text-sm font-medium">{task.title}</p>
+                                {task.description && (
+                                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                                    {task.description}
+                                  </p>
+                                )}
+                              </button>
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                <span className={
+                                  task.priority === "high"
+                                    ? "rounded-full bg-destructive/10 px-2 py-1 text-[10px] text-destructive"
+                                    : task.priority === "low"
+                                      ? "rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground"
+                                      : "rounded-full bg-amber-500/10 px-2 py-1 text-[10px] text-amber-500"
+                                }>
+                                  {task.priority} priority
+                                </span>
+                                {task.due_date && (
+                                  <span className="rounded-full bg-accent px-2 py-1 text-[10px] text-muted-foreground">
+                                    Due {task.due_date}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-2 break-all text-[10px] text-muted-foreground">
+                                {task.assignee_email || "Unassigned"}
+                              </p>
+                              <select
+                                className={`${selectClass} mt-3 h-8 text-xs`}
+                                value={normalizeTaskStatus(task.status)}
+                                onChange={(event) =>
+                                  void updateTaskStatus(task, event.target.value)
+                                }
+                              >
+                                {taskColumns.map((option) => (
+                                  <option key={option.id} value={option.id}>{option.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {workspaceTab === "documents" && (
+            <div className="space-y-4">
+              <Card className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold">Project documents</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Upload, classify, review and open files attached to this project.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div>
+                    <label className="mb-1 block text-[10px] uppercase text-muted-foreground">
+                      Upload category
+                    </label>
+                    <select
+                      className={selectClass}
+                      value={documentCategory}
+                      onChange={(event) => setDocumentCategory(event.target.value)}
+                    >
+                      <option value="other">Other</option>
+                      <option value="contract">Contract</option>
+                      <option value="quotation">Quotation</option>
+                      <option value="invoice">Invoice</option>
+                      <option value="purchase_order">Purchase Order</option>
+                      <option value="receipt">Receipt</option>
+                      <option value="report">Report</option>
+                    </select>
+                  </div>
+                  <Button
+                    className="gap-2"
+                    isLoading={docBusy}
+                    onClick={() => startUpload(workspace.project.id)}
+                  >
+                    <UploadCloud className="h-4 w-4" /> Upload
+                  </Button>
                 </div>
               </Card>
-            )}
-          </div>
-        )}
-      </div>
 
-      <Modal isOpen={createOpen} onClose={closeCreate} title="New project" description="Create the project folder with the essentials.">
-        <form onSubmit={createProject} className="space-y-4">
-          <Input id="project-name" label="Project name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required />
-          <Input id="project-client" label="Client" value={form.client_name} onChange={(e) => setForm((p) => ({ ...p, client_name: e.target.value }))} required />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input id="project-value" label="Value (UGX)" type="number" value={form.value_ugx} onChange={(e) => setForm((p) => ({ ...p, value_ugx: e.target.value }))} />
-            <Input id="project-due" label="Deadline" type="date" value={form.due_date} onChange={(e) => setForm((p) => ({ ...p, due_date: e.target.value }))} />
+              {workspace.documents.length === 0 ? (
+                <Card className="py-14 text-center">
+                  <FileText className="mx-auto h-9 w-9 text-muted-foreground" />
+                  <p className="mt-3 font-medium">No project documents yet</p>
+                </Card>
+              ) : (
+                <div className="space-y-3">
+                  {workspace.documents.map((document) => (
+                    <Card key={document.id} className="p-4">
+                      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_150px_120px_180px_220px_auto] lg:items-center">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold">{document.title}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {document.original_filename} · {Math.max(1, Math.round(document.size_bytes / 1024))} KB
+                          </p>
+                          {document.related_record_type && (
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              Related to {document.related_record_type.replaceAll("_", " ")}
+                            </p>
+                          )}
+                        </div>
+                        <select
+                          className={selectClass}
+                          value={document.category}
+                          onChange={(event) =>
+                            void updateDocument(document, { category: event.target.value })
+                          }
+                        >
+                          <option value="other">Other</option>
+                          <option value="contract">Contract</option>
+                          <option value="quotation">Quotation</option>
+                          <option value="invoice">Invoice</option>
+                          <option value="purchase_order">Purchase Order</option>
+                          <option value="receipt">Receipt</option>
+                          <option value="report">Report</option>
+                        </select>
+                        <div>
+                          <p className="text-[10px] uppercase text-muted-foreground">OCR</p>
+                          <p className="mt-1 text-xs font-medium">
+                            {document.ocr_status.replaceAll("_", " ")}
+                          </p>
+                        </div>
+                        <select
+                          className={selectClass}
+                          value={document.review_status}
+                          onChange={(event) =>
+                            void updateDocument(document, { review_status: event.target.value })
+                          }
+                        >
+                          <option value="not_reviewed">Not reviewed</option>
+                          <option value="needs_review">Needs review</option>
+                          <option value="reviewed">Reviewed</option>
+                          <option value="approved">Approved</option>
+                        </select>
+                        <select
+                          className={selectClass}
+                          value={
+                            document.related_record_type && document.related_record_id
+                              ? `${document.related_record_type}:${document.related_record_id}`
+                              : ""
+                          }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            if (!value) {
+                              void updateDocument(document, { related_record_type: "" });
+                              return;
+                            }
+                            const [related_record_type, related_record_id] = value.split(":", 2);
+                            void updateDocument(document, {
+                              related_record_type,
+                              related_record_id,
+                            });
+                          }}
+                        >
+                          <option value="">No finance link</option>
+                          {financeLinkOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="gap-2"
+                          onClick={() => void openDocument(document)}
+                        >
+                          <Download className="h-3.5 w-3.5" /> Open
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {workspaceTab === "finance" && (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                {metricCard("Project Value", money(workspace.finance.project_value_ugx))}
+                {metricCard("Received", money(workspace.finance.amount_paid_ugx))}
+                {metricCard("Outstanding", money(workspace.finance.project_outstanding_ugx))}
+                {metricCard("Expenses", money(workspace.finance.expenses_ugx))}
+                {metricCard("Purchase Orders", money(workspace.finance.purchase_orders_ugx))}
+              </div>
+
+              <Card>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold">Project finance</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Quotations, invoices, payments, purchase orders and expenses.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => openFinance("quotation", workspace.project)}>New quote</Button>
+                    <Button size="sm" variant="outline" onClick={() => openFinance("invoice", workspace.project)}>New invoice</Button>
+                    <Button size="sm" variant="outline" onClick={() => openFinance("payment", workspace.project)}>Record payment</Button>
+                    <Button size="sm" variant="outline" onClick={() => openFinance("purchase", workspace.project)}>New PO</Button>
+                    <Button size="sm" onClick={() => openFinance("expense", workspace.project)}>Add expense</Button>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex gap-2 overflow-x-auto border-b border-border pb-3">
+                  {[
+                    { id: "quotations" as const, label: "Quotations", count: workspace.finance.quotations.length },
+                    { id: "invoices" as const, label: "Invoices", count: workspace.finance.invoices.length },
+                    { id: "payments" as const, label: "Payments", count: workspace.finance.payments.length },
+                    { id: "purchase_orders" as const, label: "Purchase Orders", count: workspace.finance.purchase_orders.length },
+                    { id: "expenses" as const, label: "Expenses", count: workspace.finance.expenses.length },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setFinanceView(item.id)}
+                      className={
+                        financeView === item.id
+                          ? "rounded-lg bg-accent px-3 py-2 text-xs font-semibold"
+                          : "rounded-lg px-3 py-2 text-xs text-muted-foreground hover:bg-accent/50"
+                      }
+                    >
+                      {item.label} <span className="ml-1 opacity-60">{item.count}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4">
+                  {financeView === "quotations" && (
+                    <div className="space-y-2">
+                      {workspace.finance.quotations.length === 0 ? (
+                        <p className="py-10 text-center text-sm text-muted-foreground">No quotations.</p>
+                      ) : workspace.finance.quotations.map((item) => (
+                        <div key={item.id} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_160px_120px]">
+                          <div><p className="text-sm font-medium">{item.quotation_number}</p><p className="text-xs text-muted-foreground">{item.issue_date}</p></div>
+                          <p className="text-sm font-semibold">{money(item.amount_ugx)}</p>
+                          <p className="text-xs text-muted-foreground">{item.status}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {financeView === "invoices" && (
+                    <div className="space-y-2">
+                      {workspace.finance.invoices.length === 0 ? (
+                        <p className="py-10 text-center text-sm text-muted-foreground">No invoices.</p>
+                      ) : workspace.finance.invoices.map((item) => (
+                        <div key={item.id} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_150px_150px_100px]">
+                          <div><p className="text-sm font-medium">{item.invoice_number}</p><p className="text-xs text-muted-foreground">Due {item.due_date || "—"}</p></div>
+                          <div><p className="text-[10px] text-muted-foreground">Invoice</p><p className="text-sm font-semibold">{money(item.amount_ugx)}</p></div>
+                          <div><p className="text-[10px] text-muted-foreground">Paid</p><p className="text-sm font-semibold">{money(item.paid_amount_ugx)}</p></div>
+                          <p className="text-xs text-muted-foreground">{item.status}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {financeView === "payments" && (
+                    <div className="space-y-2">
+                      <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                        {metricCard("Payments recorded", money(workspace.finance.payment_total_ugx))}
+                        {metricCard("Invoice paid total", money(workspace.finance.invoice_paid_ugx))}
+                      </div>
+                      {workspace.finance.payments.length === 0 ? (
+                        <p className="py-10 text-center text-sm text-muted-foreground">No payments recorded.</p>
+                      ) : workspace.finance.payments.map((item) => (
+                        <div key={item.id} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_150px_120px]">
+                          <div><p className="text-sm font-medium">{item.reference || "Payment"}</p><p className="text-xs text-muted-foreground">{item.payment_date} · {item.method}</p></div>
+                          <p className="text-sm font-semibold">{money(item.amount_ugx)}</p>
+                          <p className="text-xs text-muted-foreground">{item.invoice_id ? "Linked invoice" : "Project payment"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {financeView === "purchase_orders" && (
+                    <div className="space-y-2">
+                      {workspace.finance.purchase_orders.length === 0 ? (
+                        <p className="py-10 text-center text-sm text-muted-foreground">No purchase orders.</p>
+                      ) : workspace.finance.purchase_orders.map((item) => (
+                        <div key={item.id} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_160px_110px]">
+                          <div><p className="text-sm font-medium">{item.po_number}</p><p className="text-xs text-muted-foreground">{item.supplier_name}</p></div>
+                          <p className="text-sm font-semibold">{money(item.amount_ugx)}</p>
+                          <p className="text-xs text-muted-foreground">{item.status}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {financeView === "expenses" && (
+                    <div className="space-y-2">
+                      {workspace.finance.expenses.length === 0 ? (
+                        <p className="py-10 text-center text-sm text-muted-foreground">No expenses.</p>
+                      ) : workspace.finance.expenses.map((item) => (
+                        <div key={item.id} className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_160px_120px]">
+                          <div><p className="text-sm font-medium">{item.description}</p><p className="text-xs text-muted-foreground">{item.category} · {item.expense_date}</p></div>
+                          <p className="text-sm font-semibold">{money(item.amount_ugx)}</p>
+                          <p className="text-xs text-muted-foreground">{item.reference || "—"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {workspaceTab === "activity" && (
+            <Card>
+              <div>
+                <h3 className="font-semibold">Project activity</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Human-readable timeline of project, task, document and finance changes.
+                </p>
+              </div>
+              <div className="mt-5 space-y-3">
+                {workspace.activity.length === 0 ? (
+                  <p className="py-10 text-center text-sm text-muted-foreground">
+                    No activity recorded yet.
+                  </p>
+                ) : (
+                  workspace.activity.map((item) => (
+                    <div key={item.id} className="flex gap-3">
+                      <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Activity className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0 flex-1 rounded-lg border border-border p-3">
+                        <p className="text-sm font-medium">{item.summary}</p>
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {new Date(item.created_at).toLocaleString()}
+                          {item.changed_by ? ` · ${item.changed_by}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      <Modal
+        isOpen={Boolean(projectModal)}
+        onClose={closeProjectModal}
+        title={projectModal === "edit" ? "Edit project" : "New project"}
+        description="Set the project essentials, ownership, schedule and delivery context."
+        className="max-w-3xl"
+      >
+        <form onSubmit={saveProject} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input label="Project name" value={projectForm.name} onChange={(event) => setProjectForm((previous) => ({ ...previous, name: event.target.value }))} required />
+            <Input label="Client" value={projectForm.client_name} onChange={(event) => setProjectForm((previous) => ({ ...previous, client_name: event.target.value }))} required />
           </div>
-          <div className="flex justify-end gap-2 pt-3"><Button type="button" variant="outline" onClick={closeCreate} disabled={createSaving}>Cancel</Button><Button type="submit" isLoading={createSaving}>Create project</Button></div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-medium">Description</label>
+            <textarea
+              className={textareaClass}
+              value={projectForm.description}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, description: event.target.value }))
+              }
+              placeholder="What is this project delivering?"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium">Status</label>
+              <select
+                className={selectClass}
+                value={projectForm.status}
+                onChange={(event) =>
+                  setProjectForm((previous) => ({ ...previous, status: event.target.value }))
+                }
+              >
+                <option value="planning">Planning</option>
+                <option value="active">Active</option>
+                <option value="on_hold">On Hold</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <Input
+              label="Progress %"
+              type="number"
+              min="0"
+              max="100"
+              value={projectForm.progress}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, progress: event.target.value }))
+              }
+            />
+            <Input
+              label="Current milestone"
+              value={projectForm.current_milestone}
+              onChange={(event) =>
+                setProjectForm((previous) => ({
+                  ...previous,
+                  current_milestone: event.target.value,
+                }))
+              }
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Input
+              label="Project value UGX"
+              type="number"
+              min="0"
+              value={projectForm.value_ugx}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, value_ugx: event.target.value }))
+              }
+            />
+            <Input
+              label="Amount received UGX"
+              type="number"
+              min="0"
+              value={projectForm.amount_paid_ugx}
+              onChange={(event) =>
+                setProjectForm((previous) => ({
+                  ...previous,
+                  amount_paid_ugx: event.target.value,
+                }))
+              }
+            />
+            <Input
+              label="Start date"
+              type="date"
+              value={projectForm.start_date}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, start_date: event.target.value }))
+              }
+            />
+            <Input
+              label="Deadline"
+              type="date"
+              value={projectForm.due_date}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, due_date: event.target.value }))
+              }
+            />
+          </div>
+
+          <Input
+            label="Project manager email"
+            type="email"
+            value={projectForm.project_manager_email}
+            onChange={(event) =>
+              setProjectForm((previous) => ({
+                ...previous,
+                project_manager_email: event.target.value,
+              }))
+            }
+            helperText="The staff roles phase will later replace free-text assignment with managed staff selection."
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="Assigned staff emails"
+              value={projectForm.team_emails}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, team_emails: event.target.value }))
+              }
+              helperText="Separate multiple emails with commas."
+            />
+            <Input
+              label="Tags"
+              value={projectForm.tags}
+              onChange={(event) =>
+                setProjectForm((previous) => ({ ...previous, tags: event.target.value }))
+              }
+              helperText="Example: Priority, MTN, Installation"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button type="button" variant="outline" onClick={closeProjectModal} disabled={projectSaving}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={projectSaving}>
+              {projectModal === "edit" ? "Save changes" : "Create project"}
+            </Button>
+          </div>
         </form>
       </Modal>
 
-      <Modal isOpen={Boolean(financeKind)} onClose={closeFinance}
-        title={financeKind === "quotation" ? "New project quotation" : financeKind === "invoice" ? "New project invoice" : financeKind === "purchase" ? "New project purchase order" : "Add project expense"}
-        description="This record will be linked directly to the selected project.">
+      <Modal
+        isOpen={Boolean(actionProject)}
+        onClose={() => !actionBusy && setActionProject(null)}
+        title={actionProject ? `${actionProject.name} — Actions` : "Project actions"}
+        description="Choose what you need to do with this project."
+        className="max-w-2xl"
+      >
+        {actionProject && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button variant="outline" className="justify-start" onClick={() => openProject(actionProject)}>
+              <FolderKanban className="h-4 w-4" /> Open workspace
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openEditProject(actionProject)}>
+              <Edit3 className="h-4 w-4" /> Edit project
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openEditProject(actionProject)}>
+              <Users className="h-4 w-4" /> Assign manager
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openEditProject(actionProject)}>
+              <Users className="h-4 w-4" /> Assign team
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => void duplicateProject(actionProject)} isLoading={actionBusy}>
+              <Copy className="h-4 w-4" /> Duplicate project
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openTaskModal(actionProject.id)}>
+              <CheckCircle2 className="h-4 w-4" /> Add task
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => startUpload(actionProject.id)}>
+              <UploadCloud className="h-4 w-4" /> Upload document
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openFinance("quotation", actionProject)}>
+              <FileCheck2 className="h-4 w-4" /> Create quotation
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openFinance("invoice", actionProject)}>
+              <Receipt className="h-4 w-4" /> Create invoice
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openFinance("purchase", actionProject)}>
+              <ShoppingCart className="h-4 w-4" /> Create purchase order
+            </Button>
+            <Button variant="outline" className="justify-start" onClick={() => openFinance("expense", actionProject)}>
+              <Banknote className="h-4 w-4" /> Add expense
+            </Button>
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-xs font-medium">Change status</label>
+              <select
+                className={selectClass}
+                value={actionProject.status}
+                onChange={(event) => void changeStatus(actionProject, event.target.value)}
+                disabled={actionBusy}
+              >
+                <option value="planning">Planning</option>
+                <option value="active">Active</option>
+                <option value="on_hold">On Hold</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <Button
+              variant={actionProject.is_archived ? "outline" : "destructive"}
+              className="justify-start sm:col-span-2"
+              onClick={() => void archiveOrRestore(actionProject)}
+              isLoading={actionBusy}
+            >
+              {actionProject.is_archived ? <Undo2 className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+              {actionProject.is_archived ? "Restore project" : "Archive project"}
+            </Button>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={taskModalOpen}
+        onClose={closeTaskModal}
+        title={editingTask ? "Edit task" : "Add project task"}
+        description="Set the workflow state, priority, assignee and due date."
+      >
+        <form onSubmit={saveTask} className="space-y-4">
+          <Input
+            label="Task title"
+            value={taskForm.title}
+            onChange={(event) => setTaskForm((previous) => ({ ...previous, title: event.target.value }))}
+            required
+          />
+          <div>
+            <label className="mb-1.5 block text-xs font-medium">Description</label>
+            <textarea
+              className={textareaClass}
+              value={taskForm.description}
+              onChange={(event) =>
+                setTaskForm((previous) => ({ ...previous, description: event.target.value }))
+              }
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium">Status</label>
+              <select
+                className={selectClass}
+                value={taskForm.status}
+                onChange={(event) =>
+                  setTaskForm((previous) => ({ ...previous, status: event.target.value }))
+                }
+              >
+                <option value="todo">To Do</option>
+                <option value="in_progress">In Progress</option>
+                <option value="review">Review</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium">Priority</label>
+              <select
+                className={selectClass}
+                value={taskForm.priority}
+                onChange={(event) =>
+                  setTaskForm((previous) => ({ ...previous, priority: event.target.value }))
+                }
+              >
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+          </div>
+          <Input
+            label="Assignee email"
+            type="email"
+            value={taskForm.assignee_email}
+            onChange={(event) =>
+              setTaskForm((previous) => ({ ...previous, assignee_email: event.target.value }))
+            }
+          />
+          <Input
+            label="Due date"
+            type="date"
+            value={taskForm.due_date}
+            onChange={(event) =>
+              setTaskForm((previous) => ({ ...previous, due_date: event.target.value }))
+            }
+          />
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button type="button" variant="outline" onClick={closeTaskModal} disabled={taskSaving}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={taskSaving}>
+              {editingTask ? "Save task" : "Add task"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(financeKind)}
+        onClose={closeFinance}
+        title={
+          financeKind === "quotation"
+            ? "New project quotation"
+            : financeKind === "invoice"
+              ? "New project invoice"
+              : financeKind === "payment"
+                ? "Record project payment"
+                : financeKind === "purchase"
+                  ? "New project purchase order"
+                  : "Add project expense"
+        }
+        description={
+          financeProject
+            ? `This record will be linked to ${financeProject.name}.`
+            : "This record will be linked to the selected project."
+        }
+      >
         <form onSubmit={saveFinance} className="space-y-4">
-          {financeKind !== "expense" && (
+          {financeKind === "payment" && (
             <>
-              <Input id="finance-number" label="Number" value={financeForm.number || ""} onChange={(e) => setFinanceForm((p) => ({ ...p, number: e.target.value }))} required />
-              <Input id="finance-party" label={financeKind === "purchase" ? "Supplier" : "Client"} value={financeForm.party || (financeKind === "purchase" ? "" : workspace?.project.client_name || "")} onChange={(e) => setFinanceForm((p) => ({ ...p, party: e.target.value }))} required />
+              <div>
+                <label className="mb-1.5 block text-xs font-medium">Invoice (optional)</label>
+                <select
+                  className={selectClass}
+                  value={financeForm.invoice_id || ""}
+                  onChange={(event) =>
+                    setFinanceForm((previous) => ({ ...previous, invoice_id: event.target.value }))
+                  }
+                >
+                  <option value="">Project payment only</option>
+                  {(workspace && workspace.project.id === financeProject?.id
+                    ? workspace.finance.invoices
+                    : []
+                  ).map((invoice) => (
+                    <option key={invoice.id} value={invoice.id}>
+                      {invoice.invoice_number} — outstanding {money(Math.max(0, invoice.amount_ugx - invoice.paid_amount_ugx))}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Input
+                label="Reference"
+                value={financeForm.reference || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, reference: event.target.value }))
+                }
+                placeholder="Bank ref, receipt no..."
+              />
+              <div>
+                <label className="mb-1.5 block text-xs font-medium">Method</label>
+                <select
+                  className={selectClass}
+                  value={financeForm.method || "bank"}
+                  onChange={(event) =>
+                    setFinanceForm((previous) => ({ ...previous, method: event.target.value }))
+                  }
+                >
+                  <option value="bank">Bank</option>
+                  <option value="cash">Cash</option>
+                  <option value="mobile_money">Mobile Money</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
             </>
           )}
-          {financeKind === "expense" && <Input id="finance-description" label="Description" value={financeForm.description || ""} onChange={(e) => setFinanceForm((p) => ({ ...p, description: e.target.value }))} required />}
-          <Input id="finance-amount" label="Amount (UGX)" type="number" value={financeForm.amount || ""} onChange={(e) => setFinanceForm((p) => ({ ...p, amount: e.target.value }))} required />
-          {financeKind === "invoice" && <Input id="finance-paid" label="Already paid (UGX)" type="number" value={financeForm.paid || ""} onChange={(e) => setFinanceForm((p) => ({ ...p, paid: e.target.value }))} />}
-          {financeKind === "expense" && <Input id="finance-category" label="Category" value={financeForm.category || ""} onChange={(e) => setFinanceForm((p) => ({ ...p, category: e.target.value }))} placeholder="Transport, equipment..." />}
-          <Input id="finance-date" label="Date" type="date"
-            value={financeForm[financeKind === "purchase" ? "order_date" : financeKind === "expense" ? "expense_date" : "issue_date"] || today()}
-            onChange={(e) => {
-              const key = financeKind === "purchase" ? "order_date" : financeKind === "expense" ? "expense_date" : "issue_date";
-              setFinanceForm((p) => ({ ...p, [key]: e.target.value }));
-            }} />
+
+          {financeKind !== "expense" && financeKind !== "payment" && (
+            <>
+              <Input
+                label="Number"
+                value={financeForm.number || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, number: event.target.value }))
+                }
+                required
+              />
+              <Input
+                label={financeKind === "purchase" ? "Supplier" : "Client"}
+                value={financeForm.party || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, party: event.target.value }))
+                }
+                required
+              />
+            </>
+          )}
+
+          {financeKind === "expense" && (
+            <Input
+              label="Description"
+              value={financeForm.description || ""}
+              onChange={(event) =>
+                setFinanceForm((previous) => ({ ...previous, description: event.target.value }))
+              }
+              required
+            />
+          )}
+
+          <Input
+            label="Amount UGX"
+            type="number"
+            min="0"
+            value={financeForm.amount || ""}
+            onChange={(event) =>
+              setFinanceForm((previous) => ({ ...previous, amount: event.target.value }))
+            }
+            required
+          />
+
+          {financeKind === "invoice" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Already paid UGX"
+                type="number"
+                min="0"
+                value={financeForm.paid || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, paid: event.target.value }))
+                }
+              />
+              <Input
+                label="Due date"
+                type="date"
+                value={financeForm.due_date || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, due_date: event.target.value }))
+                }
+              />
+            </div>
+          )}
+
+          {financeKind === "expense" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Category"
+                value={financeForm.category || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, category: event.target.value }))
+                }
+              />
+              <Input
+                label="Reference"
+                value={financeForm.reference || ""}
+                onChange={(event) =>
+                  setFinanceForm((previous) => ({ ...previous, reference: event.target.value }))
+                }
+              />
+            </div>
+          )}
+
+          <Input
+            label="Date"
+            type="date"
+            value={
+              financeForm[
+                financeKind === "purchase"
+                  ? "order_date"
+                  : financeKind === "expense"
+                    ? "expense_date"
+                    : financeKind === "payment"
+                      ? "payment_date"
+                      : "issue_date"
+              ] || today()
+            }
+            onChange={(event) => {
+              const key =
+                financeKind === "purchase"
+                  ? "order_date"
+                  : financeKind === "expense"
+                    ? "expense_date"
+                    : financeKind === "payment"
+                      ? "payment_date"
+                      : "issue_date";
+              setFinanceForm((previous) => ({ ...previous, [key]: event.target.value }));
+            }}
+          />
+
           <div className="flex justify-end gap-2 border-t border-border pt-4">
-            <Button type="button" variant="outline" onClick={closeFinance} disabled={financeSaving}>Cancel</Button>
-            <Button type="submit" isLoading={financeSaving}><Banknote className="mr-2 h-4 w-4" /> Save</Button>
+            <Button type="button" variant="outline" onClick={closeFinance} disabled={financeSaving}>
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={financeSaving}>
+              <Banknote className="h-4 w-4" /> Save
+            </Button>
           </div>
         </form>
       </Modal>

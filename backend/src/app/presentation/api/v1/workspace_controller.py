@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any, ClassVar
 
@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.storage import delete_object, presign_download, presign_upload, storage_configured
 from app.domain.audit.models import AuditLog
-from app.domain.business.models import Expense, Invoice, PurchaseOrder, Quotation
+from app.domain.business.models import Expense, Invoice, Payment, PurchaseOrder, Quotation
 from app.domain.workspace.models import Document, Project, ProjectTask
 from app.domain.workspace.schemas import (
     DocumentCreate,
@@ -27,9 +27,11 @@ from app.domain.workspace.schemas import (
     DownloadResponse,
     ProjectActivityItem,
     ProjectCreate,
+    ProjectDashboardSummary,
     ProjectExpenseItem,
     ProjectFinanceRead,
     ProjectInvoiceItem,
+    ProjectPaymentItem,
     ProjectPurchaseOrderItem,
     ProjectQuotationItem,
     ProjectRead,
@@ -65,6 +67,9 @@ def _project_read(item: Project) -> ProjectRead:
         due_date=item.due_date,
         progress=item.progress,
         project_manager_email=item.project_manager_email,
+        team_emails=list(item.team_emails or []),
+        tags=list(item.tags or []),
+        current_milestone=item.current_milestone,
         created_by_email=item.created_by_email,
         is_archived=item.is_archived,
         created_at=item.created_at,
@@ -100,6 +105,9 @@ def _document_read(item: Document) -> DocumentRead:
         storage_key=item.storage_key,
         uploaded_by_email=item.uploaded_by_email,
         ocr_status=item.ocr_status,
+        review_status=item.review_status,
+        related_record_type=item.related_record_type,
+        related_record_id=item.related_record_id,
         ocr_text=item.ocr_text,
         extracted_fields=dict(item.extracted_fields or {}),
         created_at=item.created_at,
@@ -115,12 +123,79 @@ def _activity_title(item: AuditLog) -> str:
         "documents": "title",
         "quotations": "quotation_number",
         "invoices": "invoice_number",
+        "payments": "reference",
         "purchase_orders": "po_number",
         "expenses": "description",
     }
     field = key_by_table.get(item.table_name)
     value = str(payload.get(field) or "").strip() if field else ""
     return value or item.table_name.replace("_", " ").title()
+
+
+def _activity_summary(item: AuditLog) -> str:
+    table_labels = {
+        "projects": "Project",
+        "project_tasks": "Task",
+        "documents": "Document",
+        "quotations": "Quotation",
+        "invoices": "Invoice",
+        "payments": "Payment",
+        "purchase_orders": "Purchase order",
+        "expenses": "Expense",
+    }
+    label = table_labels.get(item.table_name, item.table_name.replace("_", " ").title())
+    title = _activity_title(item)
+    operation = item.operation.upper()
+
+    if operation == "INSERT":
+        return f"{label} created: {title}"
+    if operation == "DELETE":
+        return f"{label} removed: {title}"
+
+    old_data = dict(item.old_data or {})
+    new_data = dict(item.new_data or {})
+    changed: list[str] = []
+    human_fields = {
+        "status": "status",
+        "progress": "progress",
+        "project_manager_email": "manager",
+        "current_milestone": "milestone",
+        "amount_paid_ugx": "amount received",
+        "review_status": "review status",
+        "ocr_status": "OCR status",
+        "assignee_email": "assignee",
+        "priority": "priority",
+    }
+    for field, label_name in human_fields.items():
+        if field in new_data and old_data.get(field) != new_data.get(field):
+            before = old_data.get(field)
+            after = new_data.get(field)
+            if before in (None, ""):
+                changed.append(f"{label_name} set to {after}")
+            else:
+                changed.append(f"{label_name} changed from {before} to {after}")
+
+    if changed:
+        return f"{label} updated: {title} — " + "; ".join(changed[:3])
+    return f"{label} updated: {title}"
+
+
+def _clean_emails(values: list[str] | None) -> list[str]:
+    result: list[str] = []
+    for value in values or []:
+        email = value.strip().lower()
+        if email and email not in result:
+            result.append(email)
+    return result
+
+
+def _clean_tags(values: list[str] | None) -> list[str]:
+    result: list[str] = []
+    for value in values or []:
+        tag = value.strip()
+        if tag and tag.lower() not in {existing.lower() for existing in result}:
+            result.append(tag)
+    return result
 
 
 class ProjectsController(Controller):
@@ -133,15 +208,174 @@ class ProjectsController(Controller):
         db_session: AsyncSession,
         q: str | None = None,
         include_archived: bool = False,
+        status: str | None = None,
+        client: str | None = None,
+        manager: str | None = None,
+        start_from: date | None = None,
+        start_to: date | None = None,
+        deadline_from: date | None = None,
+        deadline_to: date | None = None,
+        progress_min: int | None = None,
+        progress_max: int | None = None,
+        value_min: float | None = None,
+        value_max: float | None = None,
+        tag: str | None = None,
     ) -> list[ProjectRead]:
         stmt = select(Project).order_by(Project.updated_at.desc())
         if not include_archived:
             stmt = stmt.where(Project.is_archived.is_(False))
+        if status:
+            stmt = stmt.where(Project.status == status)
+        if client:
+            stmt = stmt.where(Project.client_name.ilike(f"%{client.strip()}%"))
+        if manager:
+            stmt = stmt.where(Project.project_manager_email.ilike(f"%{manager.strip()}%"))
+        if start_from:
+            stmt = stmt.where(Project.start_date >= start_from)
+        if start_to:
+            stmt = stmt.where(Project.start_date <= start_to)
+        if deadline_from:
+            stmt = stmt.where(Project.due_date >= deadline_from)
+        if deadline_to:
+            stmt = stmt.where(Project.due_date <= deadline_to)
+        if progress_min is not None:
+            stmt = stmt.where(Project.progress >= max(0, progress_min))
+        if progress_max is not None:
+            stmt = stmt.where(Project.progress <= min(100, progress_max))
+        if value_min is not None:
+            stmt = stmt.where(Project.value_ugx >= Decimal(str(max(0, value_min))))
+        if value_max is not None:
+            stmt = stmt.where(Project.value_ugx <= Decimal(str(max(0, value_max))))
+        if tag:
+            stmt = stmt.where(Project.tags.contains([tag.strip()]))
         if q:
             term = f"%{q.strip()}%"
-            stmt = stmt.where(or_(Project.name.ilike(term), Project.client_name.ilike(term)))
+            stmt = stmt.where(
+                or_(
+                    Project.name.ilike(term),
+                    Project.client_name.ilike(term),
+                    Project.description.ilike(term),
+                    Project.current_milestone.ilike(term),
+                )
+            )
         rows = (await db_session.execute(stmt)).scalars().all()
         return [_project_read(row) for row in rows]
+
+    @get(path="/dashboard")
+    async def dashboard(self, db_session: AsyncSession) -> ProjectDashboardSummary:
+        today = datetime.now(UTC).date()
+        current = Project.is_archived.is_(False)
+        unfinished = Project.status.notin_(["completed", "cancelled"])
+
+        total_projects = int(
+            (await db_session.scalar(select(func.count()).select_from(Project).where(current))) or 0
+        )
+        active_projects = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Project)
+                    .where(current, Project.status == "active")
+                )
+            )
+            or 0
+        )
+        planning_projects = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Project)
+                    .where(current, Project.status == "planning")
+                )
+            )
+            or 0
+        )
+        overdue_projects = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Project)
+                    .where(
+                        current,
+                        unfinished,
+                        Project.due_date.is_not(None),
+                        Project.due_date < today,
+                    )
+                )
+            )
+            or 0
+        )
+        completed_projects = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Project)
+                    .where(current, Project.status == "completed")
+                )
+            )
+            or 0
+        )
+        total_value = await db_session.scalar(
+            select(func.coalesce(func.sum(Project.value_ugx), 0)).where(current)
+        )
+        received = await db_session.scalar(
+            select(func.coalesce(func.sum(Project.amount_paid_ugx), 0)).where(current)
+        )
+        outstanding = await db_session.scalar(
+            select(
+                func.coalesce(
+                    func.sum(func.greatest(Project.value_ugx - Project.amount_paid_ugx, 0)),
+                    0,
+                )
+            ).where(current)
+        )
+        tasks_due = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(ProjectTask)
+                    .join(Project, Project.id == ProjectTask.project_id)
+                    .where(
+                        current,
+                        ProjectTask.status != "completed",
+                        ProjectTask.due_date.is_not(None),
+                        ProjectTask.due_date <= today,
+                    )
+                )
+            )
+            or 0
+        )
+        attention = int(
+            (
+                await db_session.scalar(
+                    select(func.count())
+                    .select_from(Project)
+                    .where(
+                        current,
+                        unfinished,
+                        or_(
+                            and_(Project.due_date.is_not(None), Project.due_date < today),
+                            Project.project_manager_email.is_(None),
+                            and_(Project.progress < 25, Project.status == "active"),
+                        ),
+                    )
+                )
+            )
+            or 0
+        )
+
+        return ProjectDashboardSummary(
+            total_projects=total_projects,
+            active_projects=active_projects,
+            planning_projects=planning_projects,
+            overdue_projects=overdue_projects,
+            completed_projects=completed_projects,
+            total_project_value_ugx=float(total_value or 0),
+            amount_received_ugx=float(received or 0),
+            outstanding_ugx=float(outstanding or 0),
+            tasks_due=tasks_due,
+            projects_needing_attention=attention,
+        )
 
     @post(status_code=HTTP_201_CREATED)
     async def create_project(
@@ -163,7 +397,18 @@ class ProjectsController(Controller):
             start_date=data.start_date,
             due_date=data.due_date,
             progress=progress,
-            project_manager_email=data.project_manager_email,
+            project_manager_email=(
+                data.project_manager_email.strip().lower()
+                if data.project_manager_email and data.project_manager_email.strip()
+                else None
+            ),
+            team_emails=_clean_emails(data.team_emails),
+            tags=_clean_tags(data.tags),
+            current_milestone=(
+                data.current_milestone.strip()
+                if data.current_milestone and data.current_milestone.strip()
+                else None
+            ),
             created_by_email=_email(request),
         )
         db_session.add(item)
@@ -232,6 +477,17 @@ class ProjectsController(Controller):
             .scalars()
             .all()
         )
+        payments = (
+            (
+                await db_session.execute(
+                    select(Payment)
+                    .where(Payment.project_id == project_id)
+                    .order_by(Payment.payment_date.desc(), Payment.created_at.desc())
+                )
+            )
+            .scalars()
+            .all()
+        )
         purchase_orders = (
             (
                 await db_session.execute(
@@ -280,6 +536,7 @@ class ProjectsController(Controller):
                             linked_project("documents"),
                             linked_project("quotations"),
                             linked_project("invoices"),
+                            linked_project("payments"),
                             linked_project("purchase_orders"),
                             linked_project("expenses"),
                         )
@@ -295,6 +552,7 @@ class ProjectsController(Controller):
         quotation_total = sum((row.amount_ugx or Decimal(0)) for row in quotations)
         invoice_total = sum((row.amount_ugx or Decimal(0)) for row in invoices)
         invoice_paid = sum((row.paid_amount_ugx or Decimal(0)) for row in invoices)
+        payment_total = sum((row.amount_ugx or Decimal(0)) for row in payments)
         purchase_total = sum((row.amount_ugx or Decimal(0)) for row in purchase_orders)
         expense_total = sum((row.amount_ugx or Decimal(0)) for row in expenses)
 
@@ -308,6 +566,7 @@ class ProjectsController(Controller):
             invoice_total_ugx=float(invoice_total),
             invoice_paid_ugx=float(invoice_paid),
             invoice_outstanding_ugx=float(max(Decimal(0), invoice_total - invoice_paid)),
+            payment_total_ugx=float(payment_total),
             purchase_orders_ugx=float(purchase_total),
             expenses_ugx=float(expense_total),
             quotations=[
@@ -331,6 +590,18 @@ class ProjectsController(Controller):
                     due_date=row.due_date,
                 )
                 for row in invoices
+            ],
+            payments=[
+                ProjectPaymentItem(
+                    id=row.id,
+                    invoice_id=row.invoice_id,
+                    amount_ugx=float(row.amount_ugx or 0),
+                    payment_date=row.payment_date,
+                    method=row.method,
+                    reference=row.reference,
+                    notes=row.notes,
+                )
+                for row in payments
             ],
             purchase_orders=[
                 ProjectPurchaseOrderItem(
@@ -368,6 +639,7 @@ class ProjectsController(Controller):
                     operation=row.operation,
                     record_id=row.record_id,
                     title=_activity_title(row),
+                    summary=_activity_summary(row),
                     changed_by=row.changed_by,
                     created_at=row.created_at,
                 )
@@ -392,12 +664,19 @@ class ProjectsController(Controller):
             "status",
             "start_date",
             "due_date",
-            "project_manager_email",
             "is_archived",
         ):
             value = getattr(data, field)
             if value is not None:
                 setattr(item, field, value)
+        if data.project_manager_email is not None:
+            item.project_manager_email = data.project_manager_email.strip().lower() or None
+        if data.team_emails is not None:
+            item.team_emails = _clean_emails(data.team_emails)
+        if data.tags is not None:
+            item.tags = _clean_tags(data.tags)
+        if data.current_milestone is not None:
+            item.current_milestone = data.current_milestone.strip() or None
         if data.progress is not None:
             item.progress = max(0, min(100, data.progress))
         if data.value_ugx is not None:
@@ -416,6 +695,49 @@ class ProjectsController(Controller):
         item.is_archived = True
         await db_session.commit()
         return {"message": "Project archived."}
+
+    @post(path="/{project_id:uuid}/restore", status_code=HTTP_200_OK)
+    async def restore_project(self, project_id: uuid.UUID, db_session: AsyncSession) -> ProjectRead:
+        item = await db_session.get(Project, project_id)
+        if item is None:
+            raise NotFoundException(detail="Project not found.")
+        item.is_archived = False
+        await db_session.commit()
+        await db_session.refresh(item)
+        return _project_read(item)
+
+    @post(path="/{project_id:uuid}/duplicate", status_code=HTTP_201_CREATED)
+    async def duplicate_project(
+        self,
+        request: Request,
+        project_id: uuid.UUID,
+        db_session: AsyncSession,
+    ) -> ProjectRead:
+        source = await db_session.get(Project, project_id)
+        if source is None:
+            raise NotFoundException(detail="Project not found.")
+
+        item = Project(
+            name=f"{source.name} — Copy",
+            client_name=source.client_name,
+            description=source.description,
+            status="planning",
+            value_ugx=source.value_ugx,
+            amount_paid_ugx=Decimal(),
+            start_date=None,
+            due_date=source.due_date,
+            progress=0,
+            project_manager_email=source.project_manager_email,
+            team_emails=list(source.team_emails or []),
+            tags=list(source.tags or []),
+            current_milestone=None,
+            created_by_email=_email(request),
+            is_archived=False,
+        )
+        db_session.add(item)
+        await db_session.commit()
+        await db_session.refresh(item)
+        return _project_read(item)
 
 
 class TasksController(Controller):
@@ -447,8 +769,8 @@ class TasksController(Controller):
             project_id=data.project_id,
             title=data.title.strip(),
             description=data.description,
-            assignee_email=data.assignee_email,
-            status=data.status,
+            assignee_email=data.assignee_email.strip().lower() if data.assignee_email else None,
+            status="todo" if data.status == "pending" else data.status,
             priority=data.priority,
             due_date=data.due_date,
         )
@@ -472,8 +794,9 @@ class TasksController(Controller):
             if value is not None:
                 setattr(item, field, value)
         if data.status is not None:
-            item.status = data.status
-            item.completed_at = datetime.now(UTC) if data.status == "completed" else None
+            next_status = "todo" if data.status == "pending" else data.status
+            item.status = next_status
+            item.completed_at = datetime.now(UTC) if next_status == "completed" else None
         await db_session.commit()
         await db_session.refresh(item)
         return _task_read(item)
@@ -543,6 +866,9 @@ class DocumentsController(Controller):
             storage_key=data.storage_key,
             uploaded_by_email=_email(request),
             ocr_status=data.ocr_status,
+            review_status=data.review_status,
+            related_record_type=data.related_record_type,
+            related_record_id=data.related_record_id,
             ocr_text=data.ocr_text,
             extracted_fields=data.extracted_fields,
         )
@@ -566,12 +892,26 @@ class DocumentsController(Controller):
             "category",
             "project_id",
             "ocr_status",
+            "review_status",
             "ocr_text",
             "extracted_fields",
         ):
             value = getattr(data, field)
             if value is not None:
                 setattr(item, field, value)
+
+        if data.related_record_type is not None:
+            related_type = data.related_record_type.strip()
+            if not related_type:
+                item.related_record_type = None
+                item.related_record_id = None
+            else:
+                item.related_record_type = related_type
+                if data.related_record_id is not None:
+                    item.related_record_id = data.related_record_id
+        elif data.related_record_id is not None:
+            item.related_record_id = data.related_record_id
+
         await db_session.commit()
         await db_session.refresh(item)
         return _document_read(item)

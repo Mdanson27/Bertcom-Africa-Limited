@@ -56,6 +56,9 @@ export type DocumentCreate = {
     ocr_text?: string | null;
     original_filename: string;
     project_id?: string | null;
+    related_record_id?: string | null;
+    related_record_type?: string | null;
+    review_status?: string;
     size_bytes: number;
     storage_key: string;
     title: string;
@@ -94,6 +97,9 @@ export type DocumentRead = {
     ocr_text: string | null;
     original_filename: string;
     project_id: string | null;
+    related_record_id: string | null;
+    related_record_type: string | null;
+    review_status: string;
     size_bytes: number;
     storage_key: string;
     title: string;
@@ -112,6 +118,9 @@ export type DocumentUpdate = {
     ocr_status?: string | null;
     ocr_text?: string | null;
     project_id?: string | null;
+    related_record_id?: string | null;
+    related_record_type?: string | null;
+    review_status?: string | null;
     title?: string | null;
 };
 
@@ -194,6 +203,36 @@ export type Message = {
 };
 
 /**
+ * PaymentCreate
+ */
+export type PaymentCreate = {
+    amount_ugx: number;
+    invoice_id?: string | null;
+    method?: string;
+    notes?: string | null;
+    payment_date: string;
+    project_id?: string | null;
+    reference?: string | null;
+};
+
+/**
+ * PaymentRead
+ */
+export type PaymentRead = {
+    amount_ugx: number;
+    created_at: string;
+    id: string;
+    invoice_id: string | null;
+    method: string;
+    notes: string | null;
+    payment_date: string;
+    project_id: string | null;
+    recorded_by_email: string;
+    reference: string | null;
+    updated_at: string;
+};
+
+/**
  * ProjectActivityItem
  */
 export type ProjectActivityItem = {
@@ -202,6 +241,7 @@ export type ProjectActivityItem = {
     id: string;
     operation: string;
     record_id: string;
+    summary: string;
     table_name: string;
     title: string;
 };
@@ -212,6 +252,7 @@ export type ProjectActivityItem = {
 export type ProjectCreate = {
     amount_paid_ugx?: number;
     client_name: string;
+    current_milestone?: string | null;
     description?: string | null;
     due_date?: string | null;
     name: string;
@@ -219,7 +260,25 @@ export type ProjectCreate = {
     project_manager_email?: string | null;
     start_date?: string | null;
     status?: string;
+    tags?: Array<string>;
+    team_emails?: Array<string>;
     value_ugx?: number;
+};
+
+/**
+ * ProjectDashboardSummary
+ */
+export type ProjectDashboardSummary = {
+    active_projects: number;
+    amount_received_ugx: number;
+    completed_projects: number;
+    outstanding_ugx: number;
+    overdue_projects: number;
+    planning_projects: number;
+    projects_needing_attention: number;
+    tasks_due: number;
+    total_project_value_ugx: number;
+    total_projects: number;
 };
 
 /**
@@ -245,6 +304,8 @@ export type ProjectFinanceRead = {
     invoice_paid_ugx: number;
     invoice_total_ugx: number;
     invoices: Array<ProjectInvoiceItem>;
+    payment_total_ugx: number;
+    payments: Array<ProjectPaymentItem>;
     project_outstanding_ugx: number;
     project_value_ugx: number;
     purchase_orders: Array<ProjectPurchaseOrderItem>;
@@ -264,6 +325,19 @@ export type ProjectInvoiceItem = {
     issue_date: string;
     paid_amount_ugx: number;
     status: string;
+};
+
+/**
+ * ProjectPaymentItem
+ */
+export type ProjectPaymentItem = {
+    amount_ugx: number;
+    id: string;
+    invoice_id: string | null;
+    method: string;
+    notes: string | null;
+    payment_date: string;
+    reference: string | null;
 };
 
 /**
@@ -297,6 +371,7 @@ export type ProjectRead = {
     client_name: string;
     created_at: string;
     created_by_email: string;
+    current_milestone: string | null;
     description: string | null;
     due_date: string | null;
     id: string;
@@ -306,6 +381,8 @@ export type ProjectRead = {
     project_manager_email: string | null;
     start_date: string | null;
     status: string;
+    tags: Array<string>;
+    team_emails: Array<string>;
     updated_at: string;
     value_ugx: number;
 };
@@ -316,6 +393,7 @@ export type ProjectRead = {
 export type ProjectUpdate = {
     amount_paid_ugx?: number | null;
     client_name?: string | null;
+    current_milestone?: string | null;
     description?: string | null;
     due_date?: string | null;
     is_archived?: boolean | null;
@@ -324,6 +402,8 @@ export type ProjectUpdate = {
     project_manager_email?: string | null;
     start_date?: string | null;
     status?: string | null;
+    tags?: Array<string> | null;
+    team_emails?: Array<string> | null;
     value_ugx?: number | null;
 };
 
@@ -764,6 +844,71 @@ export type ApiV1BusinessInvoicesCreateInvoiceResponses = {
 
 export type ApiV1BusinessInvoicesCreateInvoiceResponse = ApiV1BusinessInvoicesCreateInvoiceResponses[keyof ApiV1BusinessInvoicesCreateInvoiceResponses];
 
+export type ApiV1BusinessPaymentsPaymentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        project_id?: string | null;
+        invoice_id?: string | null;
+    };
+    url: '/api/v1/business/payments';
+};
+
+export type ApiV1BusinessPaymentsPaymentsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPaymentsPaymentsError = ApiV1BusinessPaymentsPaymentsErrors[keyof ApiV1BusinessPaymentsPaymentsErrors];
+
+export type ApiV1BusinessPaymentsPaymentsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<PaymentRead>;
+};
+
+export type ApiV1BusinessPaymentsPaymentsResponse = ApiV1BusinessPaymentsPaymentsResponses[keyof ApiV1BusinessPaymentsPaymentsResponses];
+
+export type ApiV1BusinessPaymentsCreatePaymentData = {
+    body: PaymentCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/payments';
+};
+
+export type ApiV1BusinessPaymentsCreatePaymentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPaymentsCreatePaymentError = ApiV1BusinessPaymentsCreatePaymentErrors[keyof ApiV1BusinessPaymentsCreatePaymentErrors];
+
+export type ApiV1BusinessPaymentsCreatePaymentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: PaymentRead;
+};
+
+export type ApiV1BusinessPaymentsCreatePaymentResponse = ApiV1BusinessPaymentsCreatePaymentResponses[keyof ApiV1BusinessPaymentsCreatePaymentResponses];
+
 export type ApiV1BusinessPurchaseOrdersPurchaseOrdersData = {
     body?: never;
     path?: never;
@@ -1124,6 +1269,18 @@ export type ApiV1ProjectsListProjectsData = {
     query?: {
         q?: string | null;
         include_archived?: boolean;
+        status?: string | null;
+        client?: string | null;
+        manager?: string | null;
+        start_from?: string | null;
+        start_to?: string | null;
+        deadline_from?: string | null;
+        deadline_to?: string | null;
+        progress_min?: number | null;
+        progress_max?: number | null;
+        value_min?: number | null;
+        value_max?: number | null;
+        tag?: string | null;
     };
     url: '/api/v1/projects';
 };
@@ -1182,6 +1339,22 @@ export type ApiV1ProjectsCreateProjectResponses = {
 };
 
 export type ApiV1ProjectsCreateProjectResponse = ApiV1ProjectsCreateProjectResponses[keyof ApiV1ProjectsCreateProjectResponses];
+
+export type ApiV1ProjectsDashboardDashboardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/projects/dashboard';
+};
+
+export type ApiV1ProjectsDashboardDashboardResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ProjectDashboardSummary;
+};
+
+export type ApiV1ProjectsDashboardDashboardResponse = ApiV1ProjectsDashboardDashboardResponses[keyof ApiV1ProjectsDashboardDashboardResponses];
 
 export type ApiV1ProjectsProjectIdArchiveProjectData = {
     body?: never;
@@ -1283,6 +1456,72 @@ export type ApiV1ProjectsProjectIdUpdateProjectResponses = {
 };
 
 export type ApiV1ProjectsProjectIdUpdateProjectResponse = ApiV1ProjectsProjectIdUpdateProjectResponses[keyof ApiV1ProjectsProjectIdUpdateProjectResponses];
+
+export type ApiV1ProjectsProjectIdDuplicateDuplicateProjectData = {
+    body?: never;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/duplicate';
+};
+
+export type ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsProjectIdDuplicateDuplicateProjectError = ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors[keyof ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors];
+
+export type ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: ProjectRead;
+};
+
+export type ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponse = ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses[keyof ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses];
+
+export type ApiV1ProjectsProjectIdRestoreRestoreProjectData = {
+    body?: never;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/projects/{project_id}/restore';
+};
+
+export type ApiV1ProjectsProjectIdRestoreRestoreProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ProjectsProjectIdRestoreRestoreProjectError = ApiV1ProjectsProjectIdRestoreRestoreProjectErrors[keyof ApiV1ProjectsProjectIdRestoreRestoreProjectErrors];
+
+export type ApiV1ProjectsProjectIdRestoreRestoreProjectResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ProjectRead;
+};
+
+export type ApiV1ProjectsProjectIdRestoreRestoreProjectResponse = ApiV1ProjectsProjectIdRestoreRestoreProjectResponses[keyof ApiV1ProjectsProjectIdRestoreRestoreProjectResponses];
 
 export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceData = {
     body?: never;
