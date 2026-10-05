@@ -10,6 +10,7 @@ import msgspec
 class ProjectCreate(msgspec.Struct, frozen=True):
     name: str
     client_name: str
+    client_id: uuid.UUID | None = None
     description: str | None = None
     status: str = "planning"
     value_ugx: float = 0
@@ -26,6 +27,7 @@ class ProjectCreate(msgspec.Struct, frozen=True):
 class ProjectUpdate(msgspec.Struct, frozen=True):
     name: str | None = None
     client_name: str | None = None
+    client_id: uuid.UUID | None = None
     description: str | None = None
     status: str | None = None
     value_ugx: float | None = None
@@ -44,6 +46,7 @@ class ProjectRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
     name: str
     client_name: str
+    client_id: uuid.UUID | None
     description: str | None
     status: str
     value_ugx: float
@@ -145,6 +148,8 @@ class DocumentCreate(msgspec.Struct, frozen=True):
     size_bytes: int
     storage_key: str
     project_id: uuid.UUID | None = None
+    client_id: uuid.UUID | None = None
+    supplier_id: uuid.UUID | None = None
     ocr_status: str = "not_requested"
     review_status: str = "not_reviewed"
     related_record_type: str | None = None
@@ -157,6 +162,8 @@ class DocumentUpdate(msgspec.Struct, frozen=True):
     title: str | None = None
     category: str | None = None
     project_id: uuid.UUID | None = None
+    client_id: uuid.UUID | None = None
+    supplier_id: uuid.UUID | None = None
     ocr_status: str | None = None
     review_status: str | None = None
     related_record_type: str | None = None
@@ -168,6 +175,8 @@ class DocumentUpdate(msgspec.Struct, frozen=True):
 class DocumentRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
     project_id: uuid.UUID | None
+    client_id: uuid.UUID | None
+    supplier_id: uuid.UUID | None
     title: str
     original_filename: str
     category: str

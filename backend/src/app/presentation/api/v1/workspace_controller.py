@@ -16,7 +16,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.storage import delete_object, presign_download, presign_upload, storage_configured
 from app.domain.audit.models import AuditLog
-from app.domain.business.models import Expense, Invoice, Payment, PurchaseOrder, Quotation
+from app.domain.business.models import (
+    Client,
+    Expense,
+    Invoice,
+    Payment,
+    PurchaseOrder,
+    Quotation,
+    Supplier,
+)
 from app.domain.workspace.models import Document, Project, ProjectTask
 from app.domain.workspace.schemas import (
     DocumentCreate,
@@ -60,6 +68,7 @@ def _project_read(item: Project) -> ProjectRead:
         id=item.id,
         name=item.name,
         client_name=item.client_name,
+        client_id=item.client_id,
         description=item.description,
         status=item.status,
         value_ugx=float(item.value_ugx or 0),
@@ -100,6 +109,8 @@ def _document_read(item: Document) -> DocumentRead:
     return DocumentRead(
         id=item.id,
         project_id=item.project_id,
+        client_id=item.client_id,
+        supplier_id=item.supplier_id,
         title=item.title,
         original_filename=item.original_filename,
         category=item.category,
@@ -387,12 +398,17 @@ class ProjectsController(Controller):
         data: ProjectCreate,
         db_session: AsyncSession,
     ) -> ProjectRead:
-        if not data.name.strip() or not data.client_name.strip():
+        client = await db_session.get(Client, data.client_id) if data.client_id else None
+        if data.client_id and client is None:
+            raise NotFoundException(detail="Client not found.")
+        client_name = client.name if client else data.client_name.strip()
+        if not data.name.strip() or not client_name:
             raise ClientException(detail="Project name and client are required.", status_code=400)
         progress = max(0, min(100, data.progress))
         item = Project(
             name=data.name.strip(),
-            client_name=data.client_name.strip(),
+            client_id=client.id if client else None,
+            client_name=client_name,
             description=data.description,
             status=data.status,
             value_ugx=Decimal(str(max(0, data.value_ugx))),
@@ -660,6 +676,12 @@ class ProjectsController(Controller):
         item = await db_session.get(Project, project_id)
         if item is None:
             raise NotFoundException(detail="Project not found.")
+        if data.client_id is not None:
+            client = await db_session.get(Client, data.client_id)
+            if client is None:
+                raise NotFoundException(detail="Client not found.")
+            item.client_id = client.id
+            item.client_name = client.name
         for field in (
             "name",
             "client_name",
@@ -722,6 +744,7 @@ class ProjectsController(Controller):
 
         item = Project(
             name=f"{source.name} — Copy",
+            client_id=source.client_id,
             client_name=source.client_name,
             description=source.description,
             status="planning",
@@ -996,11 +1019,17 @@ class DocumentsController(Controller):
         self,
         db_session: AsyncSession,
         project_id: uuid.UUID | None = None,
+        client_id: uuid.UUID | None = None,
+        supplier_id: uuid.UUID | None = None,
         q: str | None = None,
     ) -> list[DocumentRead]:
         stmt = select(Document).order_by(Document.created_at.desc())
         if project_id:
             stmt = stmt.where(Document.project_id == project_id)
+        if client_id:
+            stmt = stmt.where(Document.client_id == client_id)
+        if supplier_id:
+            stmt = stmt.where(Document.supplier_id == supplier_id)
         if q:
             term = f"%{q.strip()}%"
             stmt = stmt.where(
@@ -1037,12 +1066,23 @@ class DocumentsController(Controller):
         data: DocumentCreate,
         db_session: AsyncSession,
     ) -> DocumentRead:
-        if data.project_id and await db_session.get(Project, data.project_id) is None:
+        project = await db_session.get(Project, data.project_id) if data.project_id else None
+        if data.project_id and project is None:
             raise NotFoundException(detail="Project not found.")
+        if data.client_id and await db_session.get(Client, data.client_id) is None:
+            raise NotFoundException(detail="Client not found.")
+        if data.supplier_id and await db_session.get(Supplier, data.supplier_id) is None:
+            raise NotFoundException(detail="Supplier not found.")
+        if project and data.client_id and project.client_id and project.client_id != data.client_id:
+            raise ClientException(
+                detail="Document client does not match project client.", status_code=409
+            )
         if not data.storage_key.startswith("documents/"):
             raise ClientException(detail="Invalid document storage key.", status_code=400)
         item = Document(
             project_id=data.project_id,
+            client_id=data.client_id or (project.client_id if project else None),
+            supplier_id=data.supplier_id,
             title=data.title.strip() or data.original_filename,
             original_filename=data.original_filename,
             category=data.category,
@@ -1072,10 +1112,21 @@ class DocumentsController(Controller):
         item = await db_session.get(Document, document_id)
         if item is None:
             raise NotFoundException(detail="Document not found.")
+        if data.client_id is not None and await db_session.get(Client, data.client_id) is None:
+            raise NotFoundException(detail="Client not found.")
+        if (
+            data.supplier_id is not None
+            and await db_session.get(Supplier, data.supplier_id) is None
+        ):
+            raise NotFoundException(detail="Supplier not found.")
+        if data.project_id is not None and await db_session.get(Project, data.project_id) is None:
+            raise NotFoundException(detail="Project not found.")
         for field in (
             "title",
             "category",
             "project_id",
+            "client_id",
+            "supplier_id",
             "ocr_status",
             "review_status",
             "ocr_text",

@@ -1,4 +1,4 @@
-﻿"""business_2_0_foundation
+"""business_2_0_foundation
 
 Revision ID: 0009
 Revises: 0008
@@ -19,29 +19,52 @@ depends_on = None
 def upgrade() -> None:
     op.add_column("projects", sa.Column("client_id", postgresql.UUID(as_uuid=True), nullable=True))
     op.create_foreign_key(
-        "fk_projects_client_id_clients", "projects", "clients", ["client_id"], ["id"], ondelete="SET NULL"
+        "fk_projects_client_id_clients",
+        "projects",
+        "clients",
+        ["client_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
     op.create_index("ix_projects_client_id", "projects", ["client_id"])
 
     op.add_column("documents", sa.Column("client_id", postgresql.UUID(as_uuid=True), nullable=True))
-    op.add_column("documents", sa.Column("supplier_id", postgresql.UUID(as_uuid=True), nullable=True))
-    op.create_foreign_key(
-        "fk_documents_client_id_clients", "documents", "clients", ["client_id"], ["id"], ondelete="SET NULL"
+    op.add_column(
+        "documents", sa.Column("supplier_id", postgresql.UUID(as_uuid=True), nullable=True)
     )
     op.create_foreign_key(
-        "fk_documents_supplier_id_suppliers", "documents", "suppliers", ["supplier_id"], ["id"], ondelete="SET NULL"
+        "fk_documents_client_id_clients",
+        "documents",
+        "clients",
+        ["client_id"],
+        ["id"],
+        ondelete="SET NULL",
+    )
+    op.create_foreign_key(
+        "fk_documents_supplier_id_suppliers",
+        "documents",
+        "suppliers",
+        ["supplier_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
     op.create_index("ix_documents_client_id", "documents", ["client_id"])
     op.create_index("ix_documents_supplier_id", "documents", ["supplier_id"])
 
     op.add_column("payments", sa.Column("client_id", postgresql.UUID(as_uuid=True), nullable=True))
     op.create_foreign_key(
-        "fk_payments_client_id_clients", "payments", "clients", ["client_id"], ["id"], ondelete="SET NULL"
+        "fk_payments_client_id_clients",
+        "payments",
+        "clients",
+        ["client_id"],
+        ["id"],
+        ondelete="SET NULL",
     )
     op.create_index("ix_payments_client_id", "payments", ["client_id"])
 
     op.add_column(
-        "expenses", sa.Column("supporting_document_id", postgresql.UUID(as_uuid=True), nullable=True)
+        "expenses",
+        sa.Column("supporting_document_id", postgresql.UUID(as_uuid=True), nullable=True),
     )
     op.create_foreign_key(
         "fk_expenses_supporting_document_id_documents",
@@ -124,7 +147,9 @@ def downgrade() -> None:
     op.execute("UPDATE invoices SET status = 'partial' WHERE status = 'partially_paid'")
 
     op.drop_index("ix_expenses_supporting_document_id", table_name="expenses")
-    op.drop_constraint("fk_expenses_supporting_document_id_documents", "expenses", type_="foreignkey")
+    op.drop_constraint(
+        "fk_expenses_supporting_document_id_documents", "expenses", type_="foreignkey"
+    )
     op.drop_column("expenses", "supporting_document_id")
 
     op.drop_index("ix_payments_client_id", table_name="payments")

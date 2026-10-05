@@ -18,8 +18,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
           <div className="pointer-events-none absolute right-[-120px] bottom-[-40px] h-96 w-96 rounded-full bg-[#2f78b4]/14 blur-3xl" />
 
           <div className="relative z-10">
-            <div className="inline-flex rounded-[24px] bg-white px-5 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
-              <Logo variant="full" className="h-11 w-44" />
+            <div className="inline-flex h-32 w-32 items-center justify-center rounded-[28px] bg-white p-3 shadow-[0_18px_50px_rgba(0,0,0,0.14)]">
+              <Logo variant="full" className="h-full w-full" />
             </div>
           </div>
 
@@ -28,8 +28,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
               <div className="bertcom-gradient-word text-[clamp(58px,6vw,86px)] font-semibold leading-none tracking-[-0.055em]">
                 BERTCOM
               </div>
-              <div className="mt-4 text-[clamp(22px,2vw,32px)] font-medium uppercase tracking-[0.24em] text-white/88">
-                Operating System
+              <div className="mt-4 text-[clamp(20px,2vw,30px)] font-medium uppercase tracking-[0.16em] text-white/88">
+                Africa Operating System
               </div>
             </div>
           </div>

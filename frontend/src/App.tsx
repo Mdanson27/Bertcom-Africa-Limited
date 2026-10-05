@@ -15,7 +15,7 @@ import { TasksPage } from "@/pages/TasksPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { TelemetryStream } from "@/features/dashboard/TelemetryStream";
 import { SystemHealthProvider, useSystemHealth } from "@/features/dashboard/SystemHealthContext";
-import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { BrandedLoadingScreen } from "@/components/common/BrandedLoadingScreen";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -60,7 +60,7 @@ const AuthenticatedApp: React.FC = () => {
     setCurrentTab(tab);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><LoadingSpinner label="Opening Bertcom..." /></div>;
+  if (isLoading) return <BrandedLoadingScreen />;
   if (!isAuthenticated) return <LoginPage />;
 
   const handleRefresh = async () => {

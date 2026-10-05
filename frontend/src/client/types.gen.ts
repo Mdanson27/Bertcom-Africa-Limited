@@ -5,14 +5,34 @@ export type ClientOptions = {
 };
 
 /**
+ * ActivityItem
+ */
+export type ActivityItem = {
+    detail: string | null;
+    kind: string;
+    label: string;
+    occurred_at: string;
+    record_id: string;
+};
+
+/**
  * BusinessSummary
  */
 export type BusinessSummary = {
+    active_clients: number;
+    active_suppliers: number;
     clients: number;
+    expenses_month_ugx: number;
     expenses_ugx: number;
     invoice_outstanding_ugx: number;
+    outstanding_invoices: number;
+    purchase_orders_open: number;
     quotations_open: number;
+    receipts_month_ugx: number;
+    receivables_ugx: number;
     suppliers: number;
+    total_clients: number;
+    total_suppliers: number;
 };
 
 /**
@@ -44,10 +64,49 @@ export type ClientRead = {
 };
 
 /**
+ * ClientStatementSummary
+ */
+export type ClientStatementSummary = {
+    client_id: string;
+    client_name: string;
+    invoiced_ugx: number;
+    outstanding_ugx: number;
+    paid_ugx: number;
+};
+
+/**
+ * ClientUpdate
+ */
+export type ClientUpdate = {
+    address?: string | null;
+    contact_person?: string | null;
+    email?: string | null;
+    is_active?: boolean | null;
+    name?: string | null;
+    notes?: string | null;
+    phone?: string | null;
+};
+
+/**
+ * ClientWorkspace
+ */
+export type ClientWorkspace = {
+    activity: Array<ActivityItem>;
+    client: ClientRead;
+    documents: Array<PartyDocumentItem>;
+    invoices: Array<InvoiceRead>;
+    outstanding_balance_ugx: number;
+    projects: Array<PartyProjectItem>;
+    quotations: Array<QuotationRead>;
+    receipts: Array<ReceiptRead>;
+};
+
+/**
  * DocumentCreate
  */
 export type DocumentCreate = {
     category: string;
+    client_id?: string | null;
     content_type: string;
     extracted_fields?: {
         [key: string]: unknown;
@@ -61,6 +120,7 @@ export type DocumentCreate = {
     review_status?: string;
     size_bytes: number;
     storage_key: string;
+    supplier_id?: string | null;
     title: string;
 };
 
@@ -87,6 +147,7 @@ export type DocumentPresignResponse = {
  */
 export type DocumentRead = {
     category: string;
+    client_id: string | null;
     content_type: string;
     created_at: string;
     extracted_fields: {
@@ -102,6 +163,7 @@ export type DocumentRead = {
     review_status: string;
     size_bytes: number;
     storage_key: string;
+    supplier_id: string | null;
     title: string;
     updated_at: string;
     uploaded_by_email: string;
@@ -112,6 +174,7 @@ export type DocumentRead = {
  */
 export type DocumentUpdate = {
     category?: string | null;
+    client_id?: string | null;
     extracted_fields?: {
         [key: string]: unknown;
     } | null;
@@ -121,6 +184,7 @@ export type DocumentUpdate = {
     related_record_id?: string | null;
     related_record_type?: string | null;
     review_status?: string | null;
+    supplier_id?: string | null;
     title?: string | null;
 };
 
@@ -142,6 +206,7 @@ export type ExpenseCreate = {
     project_id?: string | null;
     reference?: string | null;
     supplier_id?: string | null;
+    supporting_document_id?: string | null;
 };
 
 /**
@@ -157,6 +222,7 @@ export type ExpenseRead = {
     project_id: string | null;
     reference: string | null;
     supplier_id: string | null;
+    supporting_document_id: string | null;
     updated_at: string;
 };
 
@@ -189,10 +255,25 @@ export type InvoiceRead = {
     invoice_number: string;
     issue_date: string;
     notes: string | null;
+    outstanding_amount_ugx: number;
     paid_amount_ugx: number;
     project_id: string | null;
     status: string;
     updated_at: string;
+};
+
+/**
+ * InvoiceUpdate
+ */
+export type InvoiceUpdate = {
+    amount_ugx?: number | null;
+    client_id?: string | null;
+    client_name?: string | null;
+    due_date?: string | null;
+    issue_date?: string | null;
+    notes?: string | null;
+    project_id?: string | null;
+    status?: string | null;
 };
 
 /**
@@ -203,10 +284,36 @@ export type Message = {
 };
 
 /**
+ * PartyDocumentItem
+ */
+export type PartyDocumentItem = {
+    category: string;
+    created_at: string;
+    id: string;
+    original_filename: string;
+    project_id: string | null;
+    title: string;
+};
+
+/**
+ * PartyProjectItem
+ */
+export type PartyProjectItem = {
+    amount_paid_ugx: number;
+    due_date: string | null;
+    id: string;
+    name: string;
+    progress: number;
+    status: string;
+    value_ugx: number;
+};
+
+/**
  * PaymentCreate
  */
 export type PaymentCreate = {
     amount_ugx: number;
+    client_id?: string | null;
     invoice_id?: string | null;
     method?: string;
     notes?: string | null;
@@ -220,6 +327,7 @@ export type PaymentCreate = {
  */
 export type PaymentRead = {
     amount_ugx: number;
+    client_id: string | null;
     created_at: string;
     id: string;
     invoice_id: string | null;
@@ -251,6 +359,7 @@ export type ProjectActivityItem = {
  */
 export type ProjectCreate = {
     amount_paid_ugx?: number;
+    client_id?: string | null;
     client_name: string;
     current_milestone?: string | null;
     description?: string | null;
@@ -368,6 +477,7 @@ export type ProjectQuotationItem = {
  */
 export type ProjectRead = {
     amount_paid_ugx: number;
+    client_id: string | null;
     client_name: string;
     created_at: string;
     created_by_email: string;
@@ -392,6 +502,7 @@ export type ProjectRead = {
  */
 export type ProjectUpdate = {
     amount_paid_ugx?: number | null;
+    client_id?: string | null;
     client_name?: string | null;
     current_milestone?: string | null;
     description?: string | null;
@@ -452,6 +563,20 @@ export type PurchaseOrderRead = {
 };
 
 /**
+ * PurchaseOrderUpdate
+ */
+export type PurchaseOrderUpdate = {
+    amount_ugx?: number | null;
+    expected_date?: string | null;
+    notes?: string | null;
+    order_date?: string | null;
+    project_id?: string | null;
+    status?: string | null;
+    supplier_id?: string | null;
+    supplier_name?: string | null;
+};
+
+/**
  * QuotationCreate
  */
 export type QuotationCreate = {
@@ -485,6 +610,54 @@ export type QuotationRead = {
 };
 
 /**
+ * QuotationUpdate
+ */
+export type QuotationUpdate = {
+    amount_ugx?: number | null;
+    client_id?: string | null;
+    client_name?: string | null;
+    issue_date?: string | null;
+    notes?: string | null;
+    project_id?: string | null;
+    status?: string | null;
+    valid_until?: string | null;
+};
+
+/**
+ * ReceiptRead
+ */
+export type ReceiptRead = {
+    amount_ugx: number;
+    client_id: string | null;
+    client_name: string | null;
+    created_at: string;
+    id: string;
+    invoice_id: string | null;
+    invoice_number: string | null;
+    method: string;
+    notes: string | null;
+    payment_date: string;
+    project_id: string | null;
+    receipt_reference: string;
+    recorded_by_email: string;
+    reference: string | null;
+};
+
+/**
+ * StatementEntry
+ */
+export type StatementEntry = {
+    credit_ugx: number;
+    debit_ugx: number;
+    entry_date: string;
+    kind: string;
+    record_id: string;
+    reference: string;
+    running_balance_ugx: number;
+    status?: string | null;
+};
+
+/**
  * SupplierCreate
  */
 export type SupplierCreate = {
@@ -510,6 +683,43 @@ export type SupplierRead = {
     notes: string | null;
     phone: string | null;
     updated_at: string;
+};
+
+/**
+ * SupplierStatementSummary
+ */
+export type SupplierStatementSummary = {
+    expenses_ugx: number;
+    purchase_orders_ugx: number;
+    supplier_id: string;
+    supplier_name: string;
+};
+
+/**
+ * SupplierUpdate
+ */
+export type SupplierUpdate = {
+    address?: string | null;
+    contact_person?: string | null;
+    email?: string | null;
+    is_active?: boolean | null;
+    name?: string | null;
+    notes?: string | null;
+    phone?: string | null;
+};
+
+/**
+ * SupplierWorkspace
+ */
+export type SupplierWorkspace = {
+    activity: Array<ActivityItem>;
+    documents: Array<PartyDocumentItem>;
+    expenses: Array<ExpenseRead>;
+    expenses_total_ugx: number;
+    projects: Array<PartyProjectItem>;
+    purchase_orders: Array<PurchaseOrderRead>;
+    purchase_orders_total_ugx: number;
+    supplier: SupplierRead;
 };
 
 /**
@@ -727,9 +937,26 @@ export type ApiV1AuthTokenTokenResponse = ApiV1AuthTokenTokenResponses[keyof Api
 export type ApiV1BusinessClientsClientsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        include_inactive?: boolean;
+    };
     url: '/api/v1/business/clients';
 };
+
+export type ApiV1BusinessClientsClientsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsClientsError = ApiV1BusinessClientsClientsErrors[keyof ApiV1BusinessClientsClientsErrors];
 
 export type ApiV1BusinessClientsClientsResponses = {
     /**
@@ -771,12 +998,129 @@ export type ApiV1BusinessClientsCreateClientResponses = {
 
 export type ApiV1BusinessClientsCreateClientResponse = ApiV1BusinessClientsCreateClientResponses[keyof ApiV1BusinessClientsCreateClientResponses];
 
+export type ApiV1BusinessClientsClientIdUpdateClientData = {
+    body: ClientUpdate;
+    path: {
+        client_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/clients/{client_id}';
+};
+
+export type ApiV1BusinessClientsClientIdUpdateClientErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsClientIdUpdateClientError = ApiV1BusinessClientsClientIdUpdateClientErrors[keyof ApiV1BusinessClientsClientIdUpdateClientErrors];
+
+export type ApiV1BusinessClientsClientIdUpdateClientResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ClientRead;
+};
+
+export type ApiV1BusinessClientsClientIdUpdateClientResponse = ApiV1BusinessClientsClientIdUpdateClientResponses[keyof ApiV1BusinessClientsClientIdUpdateClientResponses];
+
+export type ApiV1BusinessClientsClientIdStatementClientStatementData = {
+    body?: never;
+    path: {
+        client_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/clients/{client_id}/statement';
+};
+
+export type ApiV1BusinessClientsClientIdStatementClientStatementErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsClientIdStatementClientStatementError = ApiV1BusinessClientsClientIdStatementClientStatementErrors[keyof ApiV1BusinessClientsClientIdStatementClientStatementErrors];
+
+export type ApiV1BusinessClientsClientIdStatementClientStatementResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<StatementEntry>;
+};
+
+export type ApiV1BusinessClientsClientIdStatementClientStatementResponse = ApiV1BusinessClientsClientIdStatementClientStatementResponses[keyof ApiV1BusinessClientsClientIdStatementClientStatementResponses];
+
+export type ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceData = {
+    body?: never;
+    path: {
+        client_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/clients/{client_id}/workspace';
+};
+
+export type ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceError = ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors[keyof ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors];
+
+export type ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ClientWorkspace;
+};
+
+export type ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponse = ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses[keyof ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses];
+
 export type ApiV1BusinessExpensesExpensesData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        supplier_id?: string | null;
+        project_id?: string | null;
+    };
     url: '/api/v1/business/expenses';
 };
+
+export type ApiV1BusinessExpensesExpensesErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessExpensesExpensesError = ApiV1BusinessExpensesExpensesErrors[keyof ApiV1BusinessExpensesExpensesErrors];
 
 export type ApiV1BusinessExpensesExpensesResponses = {
     /**
@@ -821,9 +1165,27 @@ export type ApiV1BusinessExpensesCreateExpenseResponse = ApiV1BusinessExpensesCr
 export type ApiV1BusinessInvoicesInvoicesData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        client_id?: string | null;
+        project_id?: string | null;
+    };
     url: '/api/v1/business/invoices';
 };
+
+export type ApiV1BusinessInvoicesInvoicesErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessInvoicesInvoicesError = ApiV1BusinessInvoicesInvoicesErrors[keyof ApiV1BusinessInvoicesInvoicesErrors];
 
 export type ApiV1BusinessInvoicesInvoicesResponses = {
     /**
@@ -865,10 +1227,44 @@ export type ApiV1BusinessInvoicesCreateInvoiceResponses = {
 
 export type ApiV1BusinessInvoicesCreateInvoiceResponse = ApiV1BusinessInvoicesCreateInvoiceResponses[keyof ApiV1BusinessInvoicesCreateInvoiceResponses];
 
+export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceData = {
+    body: InvoiceUpdate;
+    path: {
+        invoice_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/invoices/{invoice_id}';
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceError = ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors[keyof ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors];
+
+export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: InvoiceRead;
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponse = ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses[keyof ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses];
+
 export type ApiV1BusinessPaymentsPaymentsData = {
     body?: never;
     path?: never;
     query?: {
+        client_id?: string | null;
         project_id?: string | null;
         invoice_id?: string | null;
     };
@@ -933,9 +1329,27 @@ export type ApiV1BusinessPaymentsCreatePaymentResponse = ApiV1BusinessPaymentsCr
 export type ApiV1BusinessPurchaseOrdersPurchaseOrdersData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        supplier_id?: string | null;
+        project_id?: string | null;
+    };
     url: '/api/v1/business/purchase-orders';
 };
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrdersError = ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors[keyof ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors];
 
 export type ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses = {
     /**
@@ -977,12 +1391,63 @@ export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses = {
 
 export type ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponse = ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses[keyof ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses];
 
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderData = {
+    body: PurchaseOrderUpdate;
+    path: {
+        purchase_order_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/purchase-orders/{purchase_order_id}';
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderError = ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors];
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: PurchaseOrderRead;
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponse = ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses];
+
 export type ApiV1BusinessQuotationsQuotationsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        client_id?: string | null;
+        project_id?: string | null;
+    };
     url: '/api/v1/business/quotations';
 };
+
+export type ApiV1BusinessQuotationsQuotationsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessQuotationsQuotationsError = ApiV1BusinessQuotationsQuotationsErrors[keyof ApiV1BusinessQuotationsQuotationsErrors];
 
 export type ApiV1BusinessQuotationsQuotationsResponses = {
     /**
@@ -1024,6 +1489,105 @@ export type ApiV1BusinessQuotationsCreateQuotationResponses = {
 
 export type ApiV1BusinessQuotationsCreateQuotationResponse = ApiV1BusinessQuotationsCreateQuotationResponses[keyof ApiV1BusinessQuotationsCreateQuotationResponses];
 
+export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationData = {
+    body: QuotationUpdate;
+    path: {
+        quotation_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/quotations/{quotation_id}';
+};
+
+export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationError = ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors[keyof ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors];
+
+export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: QuotationRead;
+};
+
+export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponse = ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses[keyof ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses];
+
+export type ApiV1BusinessReceiptsReceiptsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        client_id?: string | null;
+        project_id?: string | null;
+    };
+    url: '/api/v1/business/receipts';
+};
+
+export type ApiV1BusinessReceiptsReceiptsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessReceiptsReceiptsError = ApiV1BusinessReceiptsReceiptsErrors[keyof ApiV1BusinessReceiptsReceiptsErrors];
+
+export type ApiV1BusinessReceiptsReceiptsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<ReceiptRead>;
+};
+
+export type ApiV1BusinessReceiptsReceiptsResponse = ApiV1BusinessReceiptsReceiptsResponses[keyof ApiV1BusinessReceiptsReceiptsResponses];
+
+export type ApiV1BusinessStatementsClientsClientStatementSummariesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/statements/clients';
+};
+
+export type ApiV1BusinessStatementsClientsClientStatementSummariesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<ClientStatementSummary>;
+};
+
+export type ApiV1BusinessStatementsClientsClientStatementSummariesResponse = ApiV1BusinessStatementsClientsClientStatementSummariesResponses[keyof ApiV1BusinessStatementsClientsClientStatementSummariesResponses];
+
+export type ApiV1BusinessStatementsSuppliersSupplierStatementSummariesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/business/statements/suppliers';
+};
+
+export type ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<SupplierStatementSummary>;
+};
+
+export type ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponse = ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses[keyof ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses];
+
 export type ApiV1BusinessSummarySummaryData = {
     body?: never;
     path?: never;
@@ -1043,9 +1607,26 @@ export type ApiV1BusinessSummarySummaryResponse = ApiV1BusinessSummarySummaryRes
 export type ApiV1BusinessSuppliersSuppliersData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        include_inactive?: boolean;
+    };
     url: '/api/v1/business/suppliers';
 };
+
+export type ApiV1BusinessSuppliersSuppliersErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessSuppliersSuppliersError = ApiV1BusinessSuppliersSuppliersErrors[keyof ApiV1BusinessSuppliersSuppliersErrors];
 
 export type ApiV1BusinessSuppliersSuppliersResponses = {
     /**
@@ -1087,11 +1668,79 @@ export type ApiV1BusinessSuppliersCreateSupplierResponses = {
 
 export type ApiV1BusinessSuppliersCreateSupplierResponse = ApiV1BusinessSuppliersCreateSupplierResponses[keyof ApiV1BusinessSuppliersCreateSupplierResponses];
 
+export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierData = {
+    body: SupplierUpdate;
+    path: {
+        supplier_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/suppliers/{supplier_id}';
+};
+
+export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierError = ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors[keyof ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors];
+
+export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: SupplierRead;
+};
+
+export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponse = ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses[keyof ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses];
+
+export type ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceData = {
+    body?: never;
+    path: {
+        supplier_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/suppliers/{supplier_id}/workspace';
+};
+
+export type ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceError = ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors[keyof ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors];
+
+export type ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: SupplierWorkspace;
+};
+
+export type ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponse = ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses[keyof ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses];
+
 export type ApiV1DocumentsListDocumentsData = {
     body?: never;
     path?: never;
     query?: {
         project_id?: string | null;
+        client_id?: string | null;
+        supplier_id?: string | null;
         q?: string | null;
     };
     url: '/api/v1/documents';
