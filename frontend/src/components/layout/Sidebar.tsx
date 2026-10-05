@@ -87,8 +87,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpe
       "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-200",
       isOpen ? "w-64" : "w-20",
     )}>
-      <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
-        <Logo variant={isOpen ? "full" : "icon"} className="h-6 w-auto" />
+      <div className={cn("flex h-24 shrink-0 items-center border-b border-sidebar-border", isOpen ? "justify-start px-5" : "justify-center px-2")}>
+        <Logo variant={isOpen ? "responsive" : "icon"} className={cn(isOpen ? "h-16 w-16" : "h-12 w-12")} />
+        {isOpen && (
+          <div className="ml-3 min-w-0">
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">Bertcom Africa</p>
+            <p className="truncate text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Operating System</p>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">

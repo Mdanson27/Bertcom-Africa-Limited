@@ -92,6 +92,9 @@ class Invoice(AuditBase):
 class Payment(AuditBase):
     __tablename__ = "payments"
 
+    client_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     project_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -141,6 +144,9 @@ class Expense(AuditBase):
     )
     supplier_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    supporting_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True, index=True
     )
     category: Mapped[str] = mapped_column(
         String(64), nullable=False, default="general", server_default="general", index=True

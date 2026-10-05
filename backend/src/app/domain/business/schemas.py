@@ -15,6 +15,16 @@ class ClientCreate(msgspec.Struct, frozen=True):
     notes: str | None = None
 
 
+class ClientUpdate(msgspec.Struct, frozen=True):
+    name: str | None = None
+    contact_person: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    is_active: bool | None = None
+
+
 class ClientRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
     name: str
@@ -35,6 +45,16 @@ class SupplierCreate(msgspec.Struct, frozen=True):
     email: str | None = None
     address: str | None = None
     notes: str | None = None
+
+
+class SupplierUpdate(msgspec.Struct, frozen=True):
+    name: str | None = None
+    contact_person: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    address: str | None = None
+    notes: str | None = None
+    is_active: bool | None = None
 
 
 class SupplierRead(msgspec.Struct, frozen=True):
@@ -58,6 +78,17 @@ class QuotationCreate(msgspec.Struct, frozen=True):
     client_id: uuid.UUID | None = None
     project_id: uuid.UUID | None = None
     status: str = "draft"
+    valid_until: date | None = None
+    notes: str | None = None
+
+
+class QuotationUpdate(msgspec.Struct, frozen=True):
+    client_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    client_name: str | None = None
+    amount_ugx: float | None = None
+    status: str | None = None
+    issue_date: date | None = None
     valid_until: date | None = None
     notes: str | None = None
 
@@ -90,6 +121,17 @@ class InvoiceCreate(msgspec.Struct, frozen=True):
     notes: str | None = None
 
 
+class InvoiceUpdate(msgspec.Struct, frozen=True):
+    client_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    client_name: str | None = None
+    amount_ugx: float | None = None
+    status: str | None = None
+    issue_date: date | None = None
+    due_date: date | None = None
+    notes: str | None = None
+
+
 class InvoiceRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
     invoice_number: str
@@ -98,6 +140,7 @@ class InvoiceRead(msgspec.Struct, frozen=True):
     client_name: str
     amount_ugx: float
     paid_amount_ugx: float
+    outstanding_amount_ugx: float
     status: str
     issue_date: date
     due_date: date | None
@@ -109,6 +152,7 @@ class InvoiceRead(msgspec.Struct, frozen=True):
 class PaymentCreate(msgspec.Struct, frozen=True):
     amount_ugx: float
     payment_date: date
+    client_id: uuid.UUID | None = None
     project_id: uuid.UUID | None = None
     invoice_id: uuid.UUID | None = None
     method: str = "bank"
@@ -118,6 +162,7 @@ class PaymentCreate(msgspec.Struct, frozen=True):
 
 class PaymentRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
+    client_id: uuid.UUID | None
     project_id: uuid.UUID | None
     invoice_id: uuid.UUID | None
     amount_ugx: float
@@ -130,6 +175,23 @@ class PaymentRead(msgspec.Struct, frozen=True):
     updated_at: datetime
 
 
+class ReceiptRead(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    receipt_reference: str
+    client_id: uuid.UUID | None
+    client_name: str | None
+    project_id: uuid.UUID | None
+    invoice_id: uuid.UUID | None
+    invoice_number: str | None
+    amount_ugx: float
+    payment_date: date
+    method: str
+    reference: str | None
+    notes: str | None
+    recorded_by_email: str
+    created_at: datetime
+
+
 class PurchaseOrderCreate(msgspec.Struct, frozen=True):
     po_number: str
     supplier_name: str
@@ -138,6 +200,17 @@ class PurchaseOrderCreate(msgspec.Struct, frozen=True):
     supplier_id: uuid.UUID | None = None
     project_id: uuid.UUID | None = None
     status: str = "draft"
+    expected_date: date | None = None
+    notes: str | None = None
+
+
+class PurchaseOrderUpdate(msgspec.Struct, frozen=True):
+    supplier_id: uuid.UUID | None = None
+    project_id: uuid.UUID | None = None
+    supplier_name: str | None = None
+    amount_ugx: float | None = None
+    status: str | None = None
+    order_date: date | None = None
     expected_date: date | None = None
     notes: str | None = None
 
@@ -163,6 +236,7 @@ class ExpenseCreate(msgspec.Struct, frozen=True):
     expense_date: date
     project_id: uuid.UUID | None = None
     supplier_id: uuid.UUID | None = None
+    supporting_document_id: uuid.UUID | None = None
     category: str = "general"
     reference: str | None = None
 
@@ -171,6 +245,7 @@ class ExpenseRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
     project_id: uuid.UUID | None
     supplier_id: uuid.UUID | None
+    supporting_document_id: uuid.UUID | None
     category: str
     description: str
     amount_ugx: float
@@ -181,8 +256,92 @@ class ExpenseRead(msgspec.Struct, frozen=True):
 
 
 class BusinessSummary(msgspec.Struct, frozen=True):
+    total_clients: int
+    active_clients: int
+    total_suppliers: int
+    active_suppliers: int
+    quotations_open: int
+    outstanding_invoices: int
+    receivables_ugx: float
+    purchase_orders_open: int
+    expenses_month_ugx: float
+    receipts_month_ugx: float
     clients: int
     suppliers: int
-    quotations_open: int
     invoice_outstanding_ugx: float
     expenses_ugx: float
+
+
+class PartyProjectItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    name: str
+    status: str
+    value_ugx: float
+    amount_paid_ugx: float
+    progress: int
+    due_date: date | None
+
+
+class PartyDocumentItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    project_id: uuid.UUID | None
+    title: str
+    original_filename: str
+    category: str
+    created_at: datetime
+
+
+class ActivityItem(msgspec.Struct, frozen=True):
+    record_id: uuid.UUID
+    kind: str
+    label: str
+    detail: str | None
+    occurred_at: datetime
+
+
+class ClientWorkspace(msgspec.Struct, frozen=True):
+    client: ClientRead
+    projects: list[PartyProjectItem]
+    quotations: list[QuotationRead]
+    invoices: list[InvoiceRead]
+    receipts: list[ReceiptRead]
+    documents: list[PartyDocumentItem]
+    outstanding_balance_ugx: float
+    activity: list[ActivityItem]
+
+
+class SupplierWorkspace(msgspec.Struct, frozen=True):
+    supplier: SupplierRead
+    projects: list[PartyProjectItem]
+    purchase_orders: list[PurchaseOrderRead]
+    expenses: list[ExpenseRead]
+    documents: list[PartyDocumentItem]
+    purchase_orders_total_ugx: float
+    expenses_total_ugx: float
+    activity: list[ActivityItem]
+
+
+class ClientStatementSummary(msgspec.Struct, frozen=True):
+    client_id: uuid.UUID
+    client_name: str
+    invoiced_ugx: float
+    paid_ugx: float
+    outstanding_ugx: float
+
+
+class SupplierStatementSummary(msgspec.Struct, frozen=True):
+    supplier_id: uuid.UUID
+    supplier_name: str
+    purchase_orders_ugx: float
+    expenses_ugx: float
+
+
+class StatementEntry(msgspec.Struct, frozen=True):
+    record_id: uuid.UUID
+    kind: str
+    reference: str
+    entry_date: date
+    debit_ugx: float
+    credit_ugx: float
+    running_balance_ugx: float
+    status: str | None = None

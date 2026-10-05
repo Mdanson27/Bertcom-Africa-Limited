@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApiV1AuthLoginLoginData, ApiV1AuthLoginLoginResponses, ApiV1AuthLogoutLogoutData, ApiV1AuthLogoutLogoutResponses, ApiV1AuthTokenTokenData, ApiV1AuthTokenTokenResponses, ApiV1BusinessClientsClientsData, ApiV1BusinessClientsClientsResponses, ApiV1BusinessClientsCreateClientData, ApiV1BusinessClientsCreateClientErrors, ApiV1BusinessClientsCreateClientResponses, ApiV1BusinessExpensesCreateExpenseData, ApiV1BusinessExpensesCreateExpenseErrors, ApiV1BusinessExpensesCreateExpenseResponses, ApiV1BusinessExpensesExpensesData, ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessInvoicesCreateInvoiceData, ApiV1BusinessInvoicesCreateInvoiceErrors, ApiV1BusinessInvoicesCreateInvoiceResponses, ApiV1BusinessInvoicesInvoicesData, ApiV1BusinessInvoicesInvoicesResponses, ApiV1BusinessPaymentsCreatePaymentData, ApiV1BusinessPaymentsCreatePaymentErrors, ApiV1BusinessPaymentsCreatePaymentResponses, ApiV1BusinessPaymentsPaymentsData, ApiV1BusinessPaymentsPaymentsErrors, ApiV1BusinessPaymentsPaymentsResponses, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderData, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrdersData, ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, ApiV1BusinessQuotationsCreateQuotationData, ApiV1BusinessQuotationsCreateQuotationErrors, ApiV1BusinessQuotationsCreateQuotationResponses, ApiV1BusinessQuotationsQuotationsData, ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessSummarySummaryData, ApiV1BusinessSummarySummaryResponses, ApiV1BusinessSuppliersCreateSupplierData, ApiV1BusinessSuppliersCreateSupplierErrors, ApiV1BusinessSuppliersCreateSupplierResponses, ApiV1BusinessSuppliersSuppliersData, ApiV1BusinessSuppliersSuppliersResponses, ApiV1DocumentsCreateDocumentData, ApiV1DocumentsCreateDocumentErrors, ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentData, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdUpdateDocumentData, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsListDocumentsData, ApiV1DocumentsListDocumentsErrors, ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsPresignCreateUploadUrlData, ApiV1DocumentsPresignCreateUploadUrlErrors, ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1ProjectsCreateProjectData, ApiV1ProjectsCreateProjectErrors, ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsDashboardDashboardData, ApiV1ProjectsDashboardDashboardResponses, ApiV1ProjectsListProjectsData, ApiV1ProjectsListProjectsErrors, ApiV1ProjectsListProjectsResponses, ApiV1ProjectsProjectIdArchiveProjectData, ApiV1ProjectsProjectIdArchiveProjectErrors, ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdDuplicateDuplicateProjectData, ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors, ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses, ApiV1ProjectsProjectIdGetProjectData, ApiV1ProjectsProjectIdGetProjectErrors, ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdRestoreRestoreProjectData, ApiV1ProjectsProjectIdRestoreRestoreProjectErrors, ApiV1ProjectsProjectIdRestoreRestoreProjectResponses, ApiV1ProjectsProjectIdUpdateProjectData, ApiV1ProjectsProjectIdUpdateProjectErrors, ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceData, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses, ApiV1TasksCreateTaskData, ApiV1TasksCreateTaskErrors, ApiV1TasksCreateTaskResponses, ApiV1TasksDashboardDashboardData, ApiV1TasksDashboardDashboardResponses, ApiV1TasksListTasksData, ApiV1TasksListTasksErrors, ApiV1TasksListTasksResponses, ApiV1TasksTaskIdDeleteTaskData, ApiV1TasksTaskIdDeleteTaskErrors, ApiV1TasksTaskIdDeleteTaskResponses, ApiV1TasksTaskIdUpdateTaskData, ApiV1TasksTaskIdUpdateTaskErrors, ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TelemetryIngestIngestData, ApiV1TelemetryIngestIngestErrors, ApiV1TelemetryIngestIngestResponses, ApiV1UsersCreateUserAdminData, ApiV1UsersCreateUserAdminErrors, ApiV1UsersCreateUserAdminResponses, ApiV1UsersListUsersData, ApiV1UsersListUsersErrors, ApiV1UsersListUsersResponses, ApiV1UsersMeDeleteMeData, ApiV1UsersMeDeleteMeResponses, ApiV1UsersMeGetMeData, ApiV1UsersMeGetMeResponses, ApiV1UsersMePasswordUpdatePasswordMeData, ApiV1UsersMePasswordUpdatePasswordMeErrors, ApiV1UsersMePasswordUpdatePasswordMeResponses, ApiV1UsersMeUpdateMeData, ApiV1UsersMeUpdateMeErrors, ApiV1UsersMeUpdateMeResponses, ApiV1UsersRegisterRegisterData, ApiV1UsersRegisterRegisterErrors, ApiV1UsersRegisterRegisterResponses, ApiV1UsersSignupSignupData, ApiV1UsersSignupSignupErrors, ApiV1UsersSignupSignupResponses, ApiV1UsersUserIdDeleteUserData, ApiV1UsersUserIdDeleteUserErrors, ApiV1UsersUserIdDeleteUserResponses, ApiV1UsersUserIdGetUserByIdData, ApiV1UsersUserIdGetUserByIdErrors, ApiV1UsersUserIdGetUserByIdResponses, ApiV1UsersUserIdRoleUpdateUserRoleAdminData, ApiV1UsersUserIdRoleUpdateUserRoleAdminErrors, ApiV1UsersUserIdRoleUpdateUserRoleAdminResponses, ApiV1UsersUserIdUpdateUserAdminData, ApiV1UsersUserIdUpdateUserAdminErrors, ApiV1UsersUserIdUpdateUserAdminResponses, ApiV1UtilsHealthCheckHealthCheckData, ApiV1UtilsHealthCheckHealthCheckResponses, ApiV1UtilsTestEmailTestEmailData, ApiV1UtilsTestEmailTestEmailErrors, ApiV1UtilsTestEmailTestEmailResponses, ApiV1WorkspaceSummarySummaryData, ApiV1WorkspaceSummarySummaryResponses, HealthGetHealthData, HealthGetHealthResponses, HealthLiveGetLivenessData, HealthLiveGetLivenessResponses, HealthReadyGetReadinessData, HealthReadyGetReadinessResponses, HealthStartupGetStartupData, HealthStartupGetStartupResponses, MetricsMetricsEndpointData, MetricsMetricsEndpointResponses } from './types.gen';
+import type { ApiV1AuthLoginLoginData, ApiV1AuthLoginLoginResponses, ApiV1AuthLogoutLogoutData, ApiV1AuthLogoutLogoutResponses, ApiV1AuthTokenTokenData, ApiV1AuthTokenTokenResponses, ApiV1BusinessClientsClientIdStatementClientStatementData, ApiV1BusinessClientsClientIdStatementClientStatementErrors, ApiV1BusinessClientsClientIdStatementClientStatementResponses, ApiV1BusinessClientsClientIdUpdateClientData, ApiV1BusinessClientsClientIdUpdateClientErrors, ApiV1BusinessClientsClientIdUpdateClientResponses, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceData, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses, ApiV1BusinessClientsClientsData, ApiV1BusinessClientsClientsErrors, ApiV1BusinessClientsClientsResponses, ApiV1BusinessClientsCreateClientData, ApiV1BusinessClientsCreateClientErrors, ApiV1BusinessClientsCreateClientResponses, ApiV1BusinessExpensesCreateExpenseData, ApiV1BusinessExpensesCreateExpenseErrors, ApiV1BusinessExpensesCreateExpenseResponses, ApiV1BusinessExpensesExpensesData, ApiV1BusinessExpensesExpensesErrors, ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessInvoicesCreateInvoiceData, ApiV1BusinessInvoicesCreateInvoiceErrors, ApiV1BusinessInvoicesCreateInvoiceResponses, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceData, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses, ApiV1BusinessInvoicesInvoicesData, ApiV1BusinessInvoicesInvoicesErrors, ApiV1BusinessInvoicesInvoicesResponses, ApiV1BusinessPaymentsCreatePaymentData, ApiV1BusinessPaymentsCreatePaymentErrors, ApiV1BusinessPaymentsCreatePaymentResponses, ApiV1BusinessPaymentsPaymentsData, ApiV1BusinessPaymentsPaymentsErrors, ApiV1BusinessPaymentsPaymentsResponses, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderData, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrdersData, ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors, ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, ApiV1BusinessQuotationsCreateQuotationData, ApiV1BusinessQuotationsCreateQuotationErrors, ApiV1BusinessQuotationsCreateQuotationResponses, ApiV1BusinessQuotationsQuotationIdUpdateQuotationData, ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors, ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses, ApiV1BusinessQuotationsQuotationsData, ApiV1BusinessQuotationsQuotationsErrors, ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessReceiptsReceiptsData, ApiV1BusinessReceiptsReceiptsErrors, ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessStatementsClientsClientStatementSummariesData, ApiV1BusinessStatementsClientsClientStatementSummariesResponses, ApiV1BusinessStatementsSuppliersSupplierStatementSummariesData, ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses, ApiV1BusinessSummarySummaryData, ApiV1BusinessSummarySummaryResponses, ApiV1BusinessSuppliersCreateSupplierData, ApiV1BusinessSuppliersCreateSupplierErrors, ApiV1BusinessSuppliersCreateSupplierResponses, ApiV1BusinessSuppliersSupplierIdUpdateSupplierData, ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors, ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceData, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses, ApiV1BusinessSuppliersSuppliersData, ApiV1BusinessSuppliersSuppliersErrors, ApiV1BusinessSuppliersSuppliersResponses, ApiV1DocumentsCreateDocumentData, ApiV1DocumentsCreateDocumentErrors, ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentData, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdUpdateDocumentData, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsListDocumentsData, ApiV1DocumentsListDocumentsErrors, ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsPresignCreateUploadUrlData, ApiV1DocumentsPresignCreateUploadUrlErrors, ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1ProjectsCreateProjectData, ApiV1ProjectsCreateProjectErrors, ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsDashboardDashboardData, ApiV1ProjectsDashboardDashboardResponses, ApiV1ProjectsListProjectsData, ApiV1ProjectsListProjectsErrors, ApiV1ProjectsListProjectsResponses, ApiV1ProjectsProjectIdArchiveProjectData, ApiV1ProjectsProjectIdArchiveProjectErrors, ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdDuplicateDuplicateProjectData, ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors, ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses, ApiV1ProjectsProjectIdGetProjectData, ApiV1ProjectsProjectIdGetProjectErrors, ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdRestoreRestoreProjectData, ApiV1ProjectsProjectIdRestoreRestoreProjectErrors, ApiV1ProjectsProjectIdRestoreRestoreProjectResponses, ApiV1ProjectsProjectIdUpdateProjectData, ApiV1ProjectsProjectIdUpdateProjectErrors, ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceData, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses, ApiV1TasksCreateTaskData, ApiV1TasksCreateTaskErrors, ApiV1TasksCreateTaskResponses, ApiV1TasksDashboardDashboardData, ApiV1TasksDashboardDashboardResponses, ApiV1TasksListTasksData, ApiV1TasksListTasksErrors, ApiV1TasksListTasksResponses, ApiV1TasksTaskIdDeleteTaskData, ApiV1TasksTaskIdDeleteTaskErrors, ApiV1TasksTaskIdDeleteTaskResponses, ApiV1TasksTaskIdUpdateTaskData, ApiV1TasksTaskIdUpdateTaskErrors, ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TelemetryIngestIngestData, ApiV1TelemetryIngestIngestErrors, ApiV1TelemetryIngestIngestResponses, ApiV1UsersCreateUserAdminData, ApiV1UsersCreateUserAdminErrors, ApiV1UsersCreateUserAdminResponses, ApiV1UsersListUsersData, ApiV1UsersListUsersErrors, ApiV1UsersListUsersResponses, ApiV1UsersMeDeleteMeData, ApiV1UsersMeDeleteMeResponses, ApiV1UsersMeGetMeData, ApiV1UsersMeGetMeResponses, ApiV1UsersMePasswordUpdatePasswordMeData, ApiV1UsersMePasswordUpdatePasswordMeErrors, ApiV1UsersMePasswordUpdatePasswordMeResponses, ApiV1UsersMeUpdateMeData, ApiV1UsersMeUpdateMeErrors, ApiV1UsersMeUpdateMeResponses, ApiV1UsersRegisterRegisterData, ApiV1UsersRegisterRegisterErrors, ApiV1UsersRegisterRegisterResponses, ApiV1UsersSignupSignupData, ApiV1UsersSignupSignupErrors, ApiV1UsersSignupSignupResponses, ApiV1UsersUserIdDeleteUserData, ApiV1UsersUserIdDeleteUserErrors, ApiV1UsersUserIdDeleteUserResponses, ApiV1UsersUserIdGetUserByIdData, ApiV1UsersUserIdGetUserByIdErrors, ApiV1UsersUserIdGetUserByIdResponses, ApiV1UsersUserIdRoleUpdateUserRoleAdminData, ApiV1UsersUserIdRoleUpdateUserRoleAdminErrors, ApiV1UsersUserIdRoleUpdateUserRoleAdminResponses, ApiV1UsersUserIdUpdateUserAdminData, ApiV1UsersUserIdUpdateUserAdminErrors, ApiV1UsersUserIdUpdateUserAdminResponses, ApiV1UtilsHealthCheckHealthCheckData, ApiV1UtilsHealthCheckHealthCheckResponses, ApiV1UtilsTestEmailTestEmailData, ApiV1UtilsTestEmailTestEmailErrors, ApiV1UtilsTestEmailTestEmailResponses, ApiV1WorkspaceSummarySummaryData, ApiV1WorkspaceSummarySummaryResponses, HealthGetHealthData, HealthGetHealthResponses, HealthLiveGetLivenessData, HealthLiveGetLivenessResponses, HealthReadyGetReadinessData, HealthReadyGetReadinessResponses, HealthStartupGetStartupData, HealthStartupGetStartupResponses, MetricsMetricsEndpointData, MetricsMetricsEndpointResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -78,7 +78,7 @@ export const apiV1AuthTokenToken = <ThrowOnError extends boolean = false>(option
 /**
  * Clients
  */
-export const apiV1BusinessClientsClients = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessClientsClientsData, ThrowOnError>): RequestResult<ApiV1BusinessClientsClientsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessClientsClientsResponses, unknown, ThrowOnError>({
+export const apiV1BusinessClientsClients = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessClientsClientsData, ThrowOnError>): RequestResult<ApiV1BusinessClientsClientsResponses, ApiV1BusinessClientsClientsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessClientsClientsResponses, ApiV1BusinessClientsClientsErrors, ThrowOnError>({
     security: [{
             key: 'BearerAuth',
             scheme: 'bearer',
@@ -114,9 +114,64 @@ export const apiV1BusinessClientsCreateClient = <ThrowOnError extends boolean = 
 });
 
 /**
+ * UpdateClient
+ */
+export const apiV1BusinessClientsClientIdUpdateClient = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessClientsClientIdUpdateClientData, ThrowOnError>): RequestResult<ApiV1BusinessClientsClientIdUpdateClientResponses, ApiV1BusinessClientsClientIdUpdateClientErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1BusinessClientsClientIdUpdateClientResponses, ApiV1BusinessClientsClientIdUpdateClientErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/clients/{client_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * ClientStatement
+ */
+export const apiV1BusinessClientsClientIdStatementClientStatement = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessClientsClientIdStatementClientStatementData, ThrowOnError>): RequestResult<ApiV1BusinessClientsClientIdStatementClientStatementResponses, ApiV1BusinessClientsClientIdStatementClientStatementErrors, ThrowOnError> => (options.client ?? client).get<ApiV1BusinessClientsClientIdStatementClientStatementResponses, ApiV1BusinessClientsClientIdStatementClientStatementErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/clients/{client_id}/statement',
+    ...options
+});
+
+/**
+ * ClientWorkspace
+ */
+export const apiV1BusinessClientsClientIdWorkspaceClientWorkspace = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceData, ThrowOnError>): RequestResult<ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors, ThrowOnError> => (options.client ?? client).get<ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/clients/{client_id}/workspace',
+    ...options
+});
+
+/**
  * Expenses
  */
-export const apiV1BusinessExpensesExpenses = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessExpensesExpensesData, ThrowOnError>): RequestResult<ApiV1BusinessExpensesExpensesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessExpensesExpensesResponses, unknown, ThrowOnError>({
+export const apiV1BusinessExpensesExpenses = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessExpensesExpensesData, ThrowOnError>): RequestResult<ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessExpensesExpensesErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessExpensesExpensesErrors, ThrowOnError>({
     security: [{
             key: 'BearerAuth',
             scheme: 'bearer',
@@ -154,7 +209,7 @@ export const apiV1BusinessExpensesCreateExpense = <ThrowOnError extends boolean 
 /**
  * Invoices
  */
-export const apiV1BusinessInvoicesInvoices = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessInvoicesInvoicesData, ThrowOnError>): RequestResult<ApiV1BusinessInvoicesInvoicesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessInvoicesInvoicesResponses, unknown, ThrowOnError>({
+export const apiV1BusinessInvoicesInvoices = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessInvoicesInvoicesData, ThrowOnError>): RequestResult<ApiV1BusinessInvoicesInvoicesResponses, ApiV1BusinessInvoicesInvoicesErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessInvoicesInvoicesResponses, ApiV1BusinessInvoicesInvoicesErrors, ThrowOnError>({
     security: [{
             key: 'BearerAuth',
             scheme: 'bearer',
@@ -182,6 +237,27 @@ export const apiV1BusinessInvoicesCreateInvoice = <ThrowOnError extends boolean 
             type: 'http'
         }],
     url: '/api/v1/business/invoices',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * UpdateInvoice
+ */
+export const apiV1BusinessInvoicesInvoiceIdUpdateInvoice = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceData, ThrowOnError>): RequestResult<ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/invoices/{invoice_id}',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -230,7 +306,7 @@ export const apiV1BusinessPaymentsCreatePayment = <ThrowOnError extends boolean 
 /**
  * PurchaseOrders
  */
-export const apiV1BusinessPurchaseOrdersPurchaseOrders = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessPurchaseOrdersPurchaseOrdersData, ThrowOnError>): RequestResult<ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, unknown, ThrowOnError>({
+export const apiV1BusinessPurchaseOrdersPurchaseOrders = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessPurchaseOrdersPurchaseOrdersData, ThrowOnError>): RequestResult<ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors, ThrowOnError>({
     security: [{
             key: 'BearerAuth',
             scheme: 'bearer',
@@ -266,9 +342,30 @@ export const apiV1BusinessPurchaseOrdersCreatePurchaseOrder = <ThrowOnError exte
 });
 
 /**
+ * UpdatePurchaseOrder
+ */
+export const apiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrder = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderData, ThrowOnError>): RequestResult<ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/purchase-orders/{purchase_order_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Quotations
  */
-export const apiV1BusinessQuotationsQuotations = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessQuotationsQuotationsData, ThrowOnError>): RequestResult<ApiV1BusinessQuotationsQuotationsResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessQuotationsQuotationsResponses, unknown, ThrowOnError>({
+export const apiV1BusinessQuotationsQuotations = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessQuotationsQuotationsData, ThrowOnError>): RequestResult<ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessQuotationsQuotationsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessQuotationsQuotationsErrors, ThrowOnError>({
     security: [{
             key: 'BearerAuth',
             scheme: 'bearer',
@@ -304,6 +401,78 @@ export const apiV1BusinessQuotationsCreateQuotation = <ThrowOnError extends bool
 });
 
 /**
+ * UpdateQuotation
+ */
+export const apiV1BusinessQuotationsQuotationIdUpdateQuotation = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessQuotationsQuotationIdUpdateQuotationData, ThrowOnError>): RequestResult<ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses, ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses, ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/quotations/{quotation_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Receipts
+ */
+export const apiV1BusinessReceiptsReceipts = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessReceiptsReceiptsData, ThrowOnError>): RequestResult<ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessReceiptsReceiptsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessReceiptsReceiptsErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/receipts',
+    ...options
+});
+
+/**
+ * ClientStatementSummaries
+ */
+export const apiV1BusinessStatementsClientsClientStatementSummaries = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessStatementsClientsClientStatementSummariesData, ThrowOnError>): RequestResult<ApiV1BusinessStatementsClientsClientStatementSummariesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessStatementsClientsClientStatementSummariesResponses, unknown, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/statements/clients',
+    ...options
+});
+
+/**
+ * SupplierStatementSummaries
+ */
+export const apiV1BusinessStatementsSuppliersSupplierStatementSummaries = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessStatementsSuppliersSupplierStatementSummariesData, ThrowOnError>): RequestResult<ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses, unknown, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/statements/suppliers',
+    ...options
+});
+
+/**
  * Summary
  */
 export const apiV1BusinessSummarySummary = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessSummarySummaryData, ThrowOnError>): RequestResult<ApiV1BusinessSummarySummaryResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessSummarySummaryResponses, unknown, ThrowOnError>({
@@ -323,7 +492,7 @@ export const apiV1BusinessSummarySummary = <ThrowOnError extends boolean = false
 /**
  * Suppliers
  */
-export const apiV1BusinessSuppliersSuppliers = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessSuppliersSuppliersData, ThrowOnError>): RequestResult<ApiV1BusinessSuppliersSuppliersResponses, unknown, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessSuppliersSuppliersResponses, unknown, ThrowOnError>({
+export const apiV1BusinessSuppliersSuppliers = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessSuppliersSuppliersData, ThrowOnError>): RequestResult<ApiV1BusinessSuppliersSuppliersResponses, ApiV1BusinessSuppliersSuppliersErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessSuppliersSuppliersResponses, ApiV1BusinessSuppliersSuppliersErrors, ThrowOnError>({
     security: [{
             key: 'BearerAuth',
             scheme: 'bearer',
@@ -356,6 +525,44 @@ export const apiV1BusinessSuppliersCreateSupplier = <ThrowOnError extends boolea
         'Content-Type': 'application/json',
         ...options.headers
     }
+});
+
+/**
+ * UpdateSupplier
+ */
+export const apiV1BusinessSuppliersSupplierIdUpdateSupplier = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessSuppliersSupplierIdUpdateSupplierData, ThrowOnError>): RequestResult<ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses, ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors, ThrowOnError> => (options.client ?? client).patch<ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses, ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/suppliers/{supplier_id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * SupplierWorkspace
+ */
+export const apiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspace = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceData, ThrowOnError>): RequestResult<ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors, ThrowOnError> => (options.client ?? client).get<ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/suppliers/{supplier_id}/workspace',
+    ...options
 });
 
 /**

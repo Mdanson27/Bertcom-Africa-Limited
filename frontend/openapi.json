@@ -1,10 +1,56 @@
 {
   "components": {
     "schemas": {
+      "ActivityItem": {
+        "properties": {
+          "detail": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "record_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail",
+          "kind",
+          "label",
+          "occurred_at",
+          "record_id"
+        ],
+        "title": "ActivityItem",
+        "type": "object"
+      },
       "BusinessSummary": {
         "properties": {
+          "active_clients": {
+            "type": "integer"
+          },
+          "active_suppliers": {
+            "type": "integer"
+          },
           "clients": {
             "type": "integer"
+          },
+          "expenses_month_ugx": {
+            "type": "number"
           },
           "expenses_ugx": {
             "type": "number"
@@ -12,19 +58,46 @@
           "invoice_outstanding_ugx": {
             "type": "number"
           },
+          "outstanding_invoices": {
+            "type": "integer"
+          },
+          "purchase_orders_open": {
+            "type": "integer"
+          },
           "quotations_open": {
             "type": "integer"
           },
+          "receipts_month_ugx": {
+            "type": "number"
+          },
+          "receivables_ugx": {
+            "type": "number"
+          },
           "suppliers": {
+            "type": "integer"
+          },
+          "total_clients": {
+            "type": "integer"
+          },
+          "total_suppliers": {
             "type": "integer"
           }
         },
         "required": [
+          "active_clients",
+          "active_suppliers",
           "clients",
+          "expenses_month_ugx",
           "expenses_ugx",
           "invoice_outstanding_ugx",
+          "outstanding_invoices",
+          "purchase_orders_open",
           "quotations_open",
-          "suppliers"
+          "receipts_month_ugx",
+          "receivables_ugx",
+          "suppliers",
+          "total_clients",
+          "total_suppliers"
         ],
         "title": "BusinessSummary",
         "type": "object"
@@ -177,10 +250,185 @@
         "title": "ClientRead",
         "type": "object"
       },
+      "ClientStatementSummary": {
+        "properties": {
+          "client_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "invoiced_ugx": {
+            "type": "number"
+          },
+          "outstanding_ugx": {
+            "type": "number"
+          },
+          "paid_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "client_id",
+          "client_name",
+          "invoiced_ugx",
+          "outstanding_ugx",
+          "paid_ugx"
+        ],
+        "title": "ClientStatementSummary",
+        "type": "object"
+      },
+      "ClientUpdate": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_person": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "title": "ClientUpdate",
+        "type": "object"
+      },
+      "ClientWorkspace": {
+        "properties": {
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            },
+            "type": "array"
+          },
+          "client": {
+            "$ref": "#/components/schemas/ClientRead"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/PartyDocumentItem"
+            },
+            "type": "array"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceRead"
+            },
+            "type": "array"
+          },
+          "outstanding_balance_ugx": {
+            "type": "number"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/PartyProjectItem"
+            },
+            "type": "array"
+          },
+          "quotations": {
+            "items": {
+              "$ref": "#/components/schemas/QuotationRead"
+            },
+            "type": "array"
+          },
+          "receipts": {
+            "items": {
+              "$ref": "#/components/schemas/ReceiptRead"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "activity",
+          "client",
+          "documents",
+          "invoices",
+          "outstanding_balance_ugx",
+          "projects",
+          "quotations",
+          "receipts"
+        ],
+        "title": "ClientWorkspace",
+        "type": "object"
+      },
       "DocumentCreate": {
         "properties": {
           "category": {
             "type": "string"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "content_type": {
             "type": "string"
@@ -248,6 +496,17 @@
           "storage_key": {
             "type": "string"
           },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "title": {
             "type": "string"
           }
@@ -314,6 +573,17 @@
         "properties": {
           "category": {
             "type": "string"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "content_type": {
             "type": "string"
@@ -387,6 +657,17 @@
           "storage_key": {
             "type": "string"
           },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "title": {
             "type": "string"
           },
@@ -400,6 +681,7 @@
         },
         "required": [
           "category",
+          "client_id",
           "content_type",
           "created_at",
           "extracted_fields",
@@ -413,6 +695,7 @@
           "review_status",
           "size_bytes",
           "storage_key",
+          "supplier_id",
           "title",
           "updated_at",
           "uploaded_by_email"
@@ -425,6 +708,17 @@
           "category": {
             "oneOf": [
               {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
                 "type": "string"
               },
               {
@@ -498,6 +792,17 @@
           "review_status": {
             "oneOf": [
               {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
                 "type": "string"
               },
               {
@@ -579,6 +884,17 @@
                 "type": "null"
               }
             ]
+          },
+          "supporting_document_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -644,6 +960,17 @@
               }
             ]
           },
+          "supporting_document_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "updated_at": {
             "format": "date-time",
             "type": "string"
@@ -659,6 +986,7 @@
           "project_id",
           "reference",
           "supplier_id",
+          "supporting_document_id",
           "updated_at"
         ],
         "title": "ExpenseRead",
@@ -795,6 +1123,9 @@
               }
             ]
           },
+          "outstanding_amount_ugx": {
+            "type": "number"
+          },
           "paid_amount_ugx": {
             "type": "number"
           },
@@ -827,12 +1158,104 @@
           "invoice_number",
           "issue_date",
           "notes",
+          "outstanding_amount_ugx",
           "paid_amount_ugx",
           "project_id",
           "status",
           "updated_at"
         ],
         "title": "InvoiceRead",
+        "type": "object"
+      },
+      "InvoiceUpdate": {
+        "properties": {
+          "amount_ugx": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "title": "InvoiceUpdate",
         "type": "object"
       },
       "Message": {
@@ -847,10 +1270,108 @@
         "title": "Message",
         "type": "object"
       },
+      "PartyDocumentItem": {
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "original_filename": {
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "created_at",
+          "id",
+          "original_filename",
+          "project_id",
+          "title"
+        ],
+        "title": "PartyDocumentItem",
+        "type": "object"
+      },
+      "PartyProjectItem": {
+        "properties": {
+          "amount_paid_ugx": {
+            "type": "number"
+          },
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "progress": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string"
+          },
+          "value_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amount_paid_ugx",
+          "due_date",
+          "id",
+          "name",
+          "progress",
+          "status",
+          "value_ugx"
+        ],
+        "title": "PartyProjectItem",
+        "type": "object"
+      },
       "PaymentCreate": {
         "properties": {
           "amount_ugx": {
             "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "invoice_id": {
             "oneOf": [
@@ -914,6 +1435,17 @@
         "properties": {
           "amount_ugx": {
             "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "created_at": {
             "format": "date-time",
@@ -982,6 +1514,7 @@
         },
         "required": [
           "amount_ugx",
+          "client_id",
           "created_at",
           "id",
           "invoice_id",
@@ -1051,6 +1584,17 @@
           "amount_paid_ugx": {
             "default": 0,
             "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "client_name": {
             "type": "string"
@@ -1489,6 +2033,17 @@
           "amount_paid_ugx": {
             "type": "number"
           },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "client_name": {
             "type": "string"
           },
@@ -1589,6 +2144,7 @@
         },
         "required": [
           "amount_paid_ugx",
+          "client_id",
           "client_name",
           "created_at",
           "created_by_email",
@@ -1616,6 +2172,17 @@
             "oneOf": [
               {
                 "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
               },
               {
                 "type": "null"
@@ -1965,6 +2532,97 @@
         "title": "PurchaseOrderRead",
         "type": "object"
       },
+      "PurchaseOrderUpdate": {
+        "properties": {
+          "amount_ugx": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "order_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supplier_name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "title": "PurchaseOrderUpdate",
+        "type": "object"
+      },
       "QuotationCreate": {
         "properties": {
           "amount_ugx": {
@@ -2128,6 +2786,264 @@
         "title": "QuotationRead",
         "type": "object"
       },
+      "QuotationUpdate": {
+        "properties": {
+          "amount_ugx": {
+            "oneOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "valid_until": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "title": "QuotationUpdate",
+        "type": "object"
+      },
+      "ReceiptRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "client_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "invoice_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invoice_number": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "payment_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receipt_reference": {
+            "type": "string"
+          },
+          "recorded_by_email": {
+            "type": "string"
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "client_id",
+          "client_name",
+          "created_at",
+          "id",
+          "invoice_id",
+          "invoice_number",
+          "method",
+          "notes",
+          "payment_date",
+          "project_id",
+          "receipt_reference",
+          "recorded_by_email",
+          "reference"
+        ],
+        "title": "ReceiptRead",
+        "type": "object"
+      },
+      "StatementEntry": {
+        "properties": {
+          "credit_ugx": {
+            "type": "number"
+          },
+          "debit_ugx": {
+            "type": "number"
+          },
+          "entry_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "record_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "running_balance_ugx": {
+            "type": "number"
+          },
+          "status": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "credit_ugx",
+          "debit_ugx",
+          "entry_date",
+          "kind",
+          "record_id",
+          "reference",
+          "running_balance_ugx"
+        ],
+        "title": "StatementEntry",
+        "type": "object"
+      },
       "SupplierCreate": {
         "properties": {
           "address": {
@@ -2274,6 +3190,163 @@
           "updated_at"
         ],
         "title": "SupplierRead",
+        "type": "object"
+      },
+      "SupplierStatementSummary": {
+        "properties": {
+          "expenses_ugx": {
+            "type": "number"
+          },
+          "purchase_orders_ugx": {
+            "type": "number"
+          },
+          "supplier_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "supplier_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "expenses_ugx",
+          "purchase_orders_ugx",
+          "supplier_id",
+          "supplier_name"
+        ],
+        "title": "SupplierStatementSummary",
+        "type": "object"
+      },
+      "SupplierUpdate": {
+        "properties": {
+          "address": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contact_person": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "email": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "is_active": {
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phone": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "title": "SupplierUpdate",
+        "type": "object"
+      },
+      "SupplierWorkspace": {
+        "properties": {
+          "activity": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItem"
+            },
+            "type": "array"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/PartyDocumentItem"
+            },
+            "type": "array"
+          },
+          "expenses": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseRead"
+            },
+            "type": "array"
+          },
+          "expenses_total_ugx": {
+            "type": "number"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/PartyProjectItem"
+            },
+            "type": "array"
+          },
+          "purchase_orders": {
+            "items": {
+              "$ref": "#/components/schemas/PurchaseOrderRead"
+            },
+            "type": "array"
+          },
+          "purchase_orders_total_ugx": {
+            "type": "number"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/SupplierRead"
+          }
+        },
+        "required": [
+          "activity",
+          "documents",
+          "expenses",
+          "expenses_total_ugx",
+          "projects",
+          "purchase_orders",
+          "purchase_orders_total_ugx",
+          "supplier"
+        ],
+        "title": "SupplierWorkspace",
         "type": "object"
       },
       "TaskCreate": {
@@ -2988,6 +4061,20 @@
       "get": {
         "deprecated": false,
         "operationId": "ApiV1BusinessClientsClients",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3002,6 +4089,44 @@
             },
             "description": "Request fulfilled, document follows",
             "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
           }
         },
         "summary": "Clients"
@@ -3073,10 +4198,273 @@
         "summary": "CreateClient"
       }
     },
+    "/api/v1/business/clients/{client_id}": {
+      "patch": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsClientIdUpdateClient",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "UpdateClient"
+      }
+    },
+    "/api/v1/business/clients/{client_id}/statement": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsClientIdStatementClientStatement",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StatementEntry"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ClientStatement"
+      }
+    },
+    "/api/v1/business/clients/{client_id}/workspace": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsClientIdWorkspaceClientWorkspace",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientWorkspace"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ClientWorkspace"
+      }
+    },
     "/api/v1/business/expenses": {
       "get": {
         "deprecated": false,
         "operationId": "ApiV1BusinessExpensesExpenses",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "supplier_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3091,6 +4479,44 @@
             },
             "description": "Request fulfilled, document follows",
             "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
           }
         },
         "summary": "Expenses"
@@ -3166,6 +4592,46 @@
       "get": {
         "deprecated": false,
         "operationId": "ApiV1BusinessInvoicesInvoices",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3180,6 +4646,44 @@
             },
             "description": "Request fulfilled, document follows",
             "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
           }
         },
         "summary": "Invoices"
@@ -3251,6 +4755,86 @@
         "summary": "CreateInvoice"
       }
     },
+    "/api/v1/business/invoices/{invoice_id}": {
+      "patch": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessInvoicesInvoiceIdUpdateInvoice",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "UpdateInvoice"
+      }
+    },
     "/api/v1/business/payments": {
       "get": {
         "deprecated": false,
@@ -3261,11 +4845,31 @@
             "allowReserved": false,
             "deprecated": false,
             "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
             "name": "project_id",
             "required": false,
             "schema": {
               "oneOf": [
                 {
+                  "format": "uuid",
                   "type": "string"
                 },
                 {
@@ -3284,6 +4888,7 @@
             "schema": {
               "oneOf": [
                 {
+                  "format": "uuid",
                   "type": "string"
                 },
                 {
@@ -3420,6 +5025,46 @@
       "get": {
         "deprecated": false,
         "operationId": "ApiV1BusinessPurchaseOrdersPurchaseOrders",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "supplier_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3434,6 +5079,44 @@
             },
             "description": "Request fulfilled, document follows",
             "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
           }
         },
         "summary": "PurchaseOrders"
@@ -3505,10 +5188,130 @@
         "summary": "CreatePurchaseOrder"
       }
     },
+    "/api/v1/business/purchase-orders/{purchase_order_id}": {
+      "patch": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrder",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "purchase_order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PurchaseOrderUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrderRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "UpdatePurchaseOrder"
+      }
+    },
     "/api/v1/business/quotations": {
       "get": {
         "deprecated": false,
         "operationId": "ApiV1BusinessQuotationsQuotations",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3523,6 +5326,44 @@
             },
             "description": "Request fulfilled, document follows",
             "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
           }
         },
         "summary": "Quotations"
@@ -3594,6 +5435,233 @@
         "summary": "CreateQuotation"
       }
     },
+    "/api/v1/business/quotations/{quotation_id}": {
+      "patch": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessQuotationsQuotationIdUpdateQuotation",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "quotation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuotationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuotationRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "UpdateQuotation"
+      }
+    },
+    "/api/v1/business/receipts": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessReceiptsReceipts",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ReceiptRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Receipts"
+      }
+    },
+    "/api/v1/business/statements/clients": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessStatementsClientsClientStatementSummaries",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ClientStatementSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "ClientStatementSummaries"
+      }
+    },
+    "/api/v1/business/statements/suppliers": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessStatementsSuppliersSupplierStatementSummaries",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SupplierStatementSummary"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "SupplierStatementSummaries"
+      }
+    },
     "/api/v1/business/summary": {
       "get": {
         "deprecated": false,
@@ -3618,6 +5686,20 @@
       "get": {
         "deprecated": false,
         "operationId": "ApiV1BusinessSuppliersSuppliers",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "include_inactive",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -3632,6 +5714,44 @@
             },
             "description": "Request fulfilled, document follows",
             "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
           }
         },
         "summary": "Suppliers"
@@ -3703,6 +5823,156 @@
         "summary": "CreateSupplier"
       }
     },
+    "/api/v1/business/suppliers/{supplier_id}": {
+      "patch": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSuppliersSupplierIdUpdateSupplier",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "supplier_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplierUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierRead"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "UpdateSupplier"
+      }
+    },
+    "/api/v1/business/suppliers/{supplier_id}/workspace": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspace",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "supplier_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplierWorkspace"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SupplierWorkspace"
+      }
+    },
     "/api/v1/documents": {
       "get": {
         "deprecated": false,
@@ -3714,6 +5984,44 @@
             "deprecated": false,
             "in": "query",
             "name": "project_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "client_id",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "supplier_id",
             "required": false,
             "schema": {
               "oneOf": [
