@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 import uuid
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any, ClassVar
 
@@ -38,6 +38,7 @@ from app.domain.workspace.schemas import (
     ProjectUpdate,
     ProjectWorkspaceRead,
     TaskCreate,
+    TaskDashboardSummary,
     TaskRead,
     TaskUpdate,
     WorkspaceSummary,
@@ -86,7 +87,9 @@ def _task_read(item: ProjectTask) -> TaskRead:
         assignee_email=item.assignee_email,
         status=item.status,
         priority=item.priority,
+        start_date=item.start_date,
         due_date=item.due_date,
+        related_document_id=item.related_document_id,
         completed_at=item.completed_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -744,35 +747,168 @@ class TasksController(Controller):
     path = "/tasks"
     guards: ClassVar[list[Any]] = [JWTAuthGuard()]
 
+    _statuses: ClassVar[set[str]] = {"todo", "in_progress", "review", "completed"}
+    _priorities: ClassVar[set[str]] = {"low", "normal", "high", "urgent"}
+
+    @staticmethod
+    def _status(value: str) -> str:
+        normalized = "todo" if value == "pending" else value.strip().lower()
+        if normalized not in TasksController._statuses:
+            raise ClientException(detail="Invalid task status.", status_code=400)
+        return normalized
+
+    @staticmethod
+    def _priority(value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in TasksController._priorities:
+            raise ClientException(detail="Invalid task priority.", status_code=400)
+        return normalized
+
+    @staticmethod
+    async def _project(db_session: AsyncSession, project_id: uuid.UUID) -> Project:
+        project = await db_session.get(Project, project_id)
+        if project is None:
+            raise NotFoundException(detail="Project not found.")
+        if project.is_archived:
+            raise ClientException(
+                detail="Tasks cannot be added to an archived project.", status_code=400
+            )
+        return project
+
+    @staticmethod
+    async def _document(
+        db_session: AsyncSession,
+        document_id: uuid.UUID | None,
+        project_id: uuid.UUID,
+    ) -> Document | None:
+        if document_id is None:
+            return None
+        document = await db_session.get(Document, document_id)
+        if document is None:
+            raise NotFoundException(detail="Related document not found.")
+        if document.project_id is not None and document.project_id != project_id:
+            raise ClientException(
+                detail="Related document belongs to a different project.",
+                status_code=400,
+            )
+        return document
+
+    @get(path="/dashboard")
+    async def dashboard(self, request: Request, db_session: AsyncSession) -> TaskDashboardSummary:
+        today = datetime.now(UTC).date()
+        recent_cutoff = datetime.now(UTC) - timedelta(days=7)
+        active_project = Project.is_archived.is_(False)
+        open_task = ProjectTask.status != "completed"
+        mine = ProjectTask.assignee_email == _email(request)
+
+        async def count(*conditions: Any) -> int:
+            value = await db_session.scalar(
+                select(func.count())
+                .select_from(ProjectTask)
+                .join(Project, Project.id == ProjectTask.project_id)
+                .where(active_project, *conditions)
+            )
+            return int(value or 0)
+
+        return TaskDashboardSummary(
+            due_today=await count(open_task, ProjectTask.due_date == today),
+            overdue=await count(
+                open_task,
+                ProjectTask.due_date.is_not(None),
+                ProjectTask.due_date < today,
+            ),
+            high_priority=await count(
+                open_task,
+                ProjectTask.priority.in_(["high", "urgent"]),
+            ),
+            assigned_to_me=await count(open_task, mine),
+            recently_completed=await count(
+                ProjectTask.status == "completed",
+                ProjectTask.completed_at.is_not(None),
+                ProjectTask.completed_at >= recent_cutoff,
+            ),
+        )
+
     @get()
     async def list_tasks(
         self,
+        request: Request,
         db_session: AsyncSession,
         project_id: uuid.UUID | None = None,
         status: str | None = None,
+        priority: str | None = None,
+        assignee: str | None = None,
+        mine: bool = False,
+        q: str | None = None,
+        start_from: date | None = None,
+        start_to: date | None = None,
+        due_from: date | None = None,
+        due_to: date | None = None,
+        include_archived_projects: bool = False,
     ) -> list[TaskRead]:
-        stmt = select(ProjectTask).order_by(
-            ProjectTask.due_date.asc().nullslast(), ProjectTask.created_at.desc()
+        stmt = (
+            select(ProjectTask)
+            .join(Project, Project.id == ProjectTask.project_id)
+            .order_by(ProjectTask.due_date.asc().nullslast(), ProjectTask.created_at.desc())
         )
+        if not include_archived_projects:
+            stmt = stmt.where(Project.is_archived.is_(False))
         if project_id:
             stmt = stmt.where(ProjectTask.project_id == project_id)
         if status:
-            stmt = stmt.where(ProjectTask.status == status)
+            stmt = stmt.where(ProjectTask.status == self._status(status))
+        if priority:
+            stmt = stmt.where(ProjectTask.priority == self._priority(priority))
+        if mine:
+            stmt = stmt.where(ProjectTask.assignee_email == _email(request))
+        elif assignee:
+            stmt = stmt.where(ProjectTask.assignee_email == assignee.strip().lower())
+        if start_from:
+            stmt = stmt.where(ProjectTask.start_date >= start_from)
+        if start_to:
+            stmt = stmt.where(ProjectTask.start_date <= start_to)
+        if due_from:
+            stmt = stmt.where(ProjectTask.due_date >= due_from)
+        if due_to:
+            stmt = stmt.where(ProjectTask.due_date <= due_to)
+        if q:
+            term = f"%{q.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    ProjectTask.title.ilike(term),
+                    ProjectTask.description.ilike(term),
+                    ProjectTask.assignee_email.ilike(term),
+                    Project.name.ilike(term),
+                )
+            )
         rows = (await db_session.execute(stmt)).scalars().all()
         return [_task_read(row) for row in rows]
 
     @post(status_code=HTTP_201_CREATED)
     async def create_task(self, data: TaskCreate, db_session: AsyncSession) -> TaskRead:
-        if await db_session.get(Project, data.project_id) is None:
-            raise NotFoundException(detail="Project not found.")
+        project = await self._project(db_session, data.project_id)
+        title = data.title.strip()
+        if not title:
+            raise ClientException(detail="Task title is required.", status_code=400)
+        status = self._status(data.status)
+        priority = self._priority(data.priority)
+        if data.start_date and data.due_date and data.start_date > data.due_date:
+            raise ClientException(
+                detail="Task start date cannot be after the due date.", status_code=400
+            )
+        await self._document(db_session, data.related_document_id, project.id)
+
         item = ProjectTask(
-            project_id=data.project_id,
-            title=data.title.strip(),
+            project_id=project.id,
+            title=title,
             description=data.description,
-            assignee_email=data.assignee_email.strip().lower() if data.assignee_email else None,
-            status="todo" if data.status == "pending" else data.status,
-            priority=data.priority,
+            assignee_email=(data.assignee_email or "").strip().lower() or None,
+            status=status,
+            priority=priority,
+            start_date=data.start_date,
             due_date=data.due_date,
+            related_document_id=data.related_document_id,
+            completed_at=datetime.now(UTC) if status == "completed" else None,
         )
         db_session.add(item)
         await db_session.commit()
@@ -789,17 +925,66 @@ class TasksController(Controller):
         item = await db_session.get(ProjectTask, task_id)
         if item is None:
             raise NotFoundException(detail="Task not found.")
-        for field in ("title", "description", "assignee_email", "priority", "due_date"):
-            value = getattr(data, field)
-            if value is not None:
-                setattr(item, field, value)
+
+        target_project_id = data.project_id or item.project_id
+        await self._project(db_session, target_project_id)
+
+        if data.title is not None:
+            title = data.title.strip()
+            if not title:
+                raise ClientException(detail="Task title is required.", status_code=400)
+            item.title = title
+        if data.description is not None:
+            item.description = data.description.strip() or None
+        if data.assignee_email is not None:
+            item.assignee_email = data.assignee_email.strip().lower() or None
+        if data.priority is not None:
+            item.priority = self._priority(data.priority)
+        if data.project_id is not None:
+            item.project_id = data.project_id
+
+        if data.clear_start_date:
+            item.start_date = None
+        elif data.start_date is not None:
+            item.start_date = data.start_date
+        if data.clear_due_date:
+            item.due_date = None
+        elif data.due_date is not None:
+            item.due_date = data.due_date
+
+        target_document_id = item.related_document_id
+        if data.clear_related_document:
+            target_document_id = None
+        elif data.related_document_id is not None:
+            target_document_id = data.related_document_id
+        await self._document(db_session, target_document_id, item.project_id)
+        item.related_document_id = target_document_id
+
+        if item.start_date and item.due_date and item.start_date > item.due_date:
+            raise ClientException(
+                detail="Task start date cannot be after the due date.", status_code=400
+            )
+
         if data.status is not None:
-            next_status = "todo" if data.status == "pending" else data.status
+            next_status = self._status(data.status)
+            if next_status == "completed" and item.status != "completed":
+                item.completed_at = datetime.now(UTC)
+            elif next_status != "completed":
+                item.completed_at = None
             item.status = next_status
-            item.completed_at = datetime.now(UTC) if next_status == "completed" else None
+
         await db_session.commit()
         await db_session.refresh(item)
         return _task_read(item)
+
+    @delete(path="/{task_id:uuid}", status_code=HTTP_200_OK)
+    async def delete_task(self, task_id: uuid.UUID, db_session: AsyncSession) -> dict:
+        item = await db_session.get(ProjectTask, task_id)
+        if item is None:
+            raise NotFoundException(detail="Task not found.")
+        await db_session.delete(item)
+        await db_session.commit()
+        return {"message": "Task deleted."}
 
 
 class DocumentsController(Controller):

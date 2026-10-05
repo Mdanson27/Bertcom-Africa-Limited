@@ -2317,6 +2317,28 @@
             "format": "uuid",
             "type": "string"
           },
+          "related_document_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "status": {
             "default": "todo",
             "type": "string"
@@ -2330,6 +2352,34 @@
           "title"
         ],
         "title": "TaskCreate",
+        "type": "object"
+      },
+      "TaskDashboardSummary": {
+        "properties": {
+          "assigned_to_me": {
+            "type": "integer"
+          },
+          "due_today": {
+            "type": "integer"
+          },
+          "high_priority": {
+            "type": "integer"
+          },
+          "overdue": {
+            "type": "integer"
+          },
+          "recently_completed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assigned_to_me",
+          "due_today",
+          "high_priority",
+          "overdue",
+          "recently_completed"
+        ],
+        "title": "TaskDashboardSummary",
         "type": "object"
       },
       "TaskRead": {
@@ -2391,6 +2441,28 @@
             "format": "uuid",
             "type": "string"
           },
+          "related_document_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "status": {
             "type": "string"
           },
@@ -2411,6 +2483,8 @@
           "id",
           "priority",
           "project_id",
+          "related_document_id",
+          "start_date",
           "status",
           "title",
           "updated_at"
@@ -2429,6 +2503,18 @@
                 "type": "null"
               }
             ]
+          },
+          "clear_due_date": {
+            "default": false,
+            "type": "boolean"
+          },
+          "clear_related_document": {
+            "default": false,
+            "type": "boolean"
+          },
+          "clear_start_date": {
+            "default": false,
+            "type": "boolean"
           },
           "description": {
             "oneOf": [
@@ -2454,6 +2540,39 @@
           "priority": {
             "oneOf": [
               {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "related_document_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "start_date": {
+            "oneOf": [
+              {
+                "format": "date",
                 "type": "string"
               },
               {
@@ -4902,6 +5021,160 @@
                 }
               ]
             }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "priority",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "assignee",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "start_from",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "start_to",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "due_from",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "due_to",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "include_archived_projects",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -5027,7 +5300,95 @@
         "summary": "CreateTask"
       }
     },
+    "/api/v1/tasks/dashboard": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1TasksDashboardDashboard",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskDashboardSummary"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Dashboard"
+      }
+    },
     "/api/v1/tasks/{task_id}": {
+      "delete": {
+        "deprecated": false,
+        "operationId": "ApiV1TasksTaskIdDeleteTask",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "DeleteTask"
+      },
       "patch": {
         "deprecated": false,
         "operationId": "ApiV1TasksTaskIdUpdateTask",

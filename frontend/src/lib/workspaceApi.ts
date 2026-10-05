@@ -72,10 +72,34 @@ export interface ProjectTask {
   assignee_email: string | null;
   status: string;
   priority: string;
+  start_date: string | null;
   due_date: string | null;
+  related_document_id: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface TaskDashboardSummary {
+  due_today: number;
+  overdue: number;
+  high_priority: number;
+  assigned_to_me: number;
+  recently_completed: number;
+}
+
+export interface TaskFilters {
+  project_id?: string;
+  status?: string;
+  priority?: string;
+  assignee?: string;
+  mine?: boolean;
+  q?: string;
+  start_from?: string;
+  start_to?: string;
+  due_from?: string;
+  due_to?: string;
+  include_archived_projects?: boolean;
 }
 
 export interface ProjectPayment {
@@ -300,10 +324,13 @@ export const workspaceApi = {
   duplicateProject: (id: string) =>
     request<Project>(`/projects/${id}/duplicate`, { method: "POST" }),
 
-  tasks: (projectId?: string) =>
-    request<ProjectTask[]>(
-      projectId ? `/tasks?project_id=${encodeURIComponent(projectId)}` : "/tasks",
-    ),
+  taskDashboard: () => request<TaskDashboardSummary>("/tasks/dashboard"),
+  tasks: (filters?: TaskFilters | string) => {
+    const resolved = typeof filters === "string" ? { project_id: filters } : filters;
+    return request<ProjectTask[]>(
+      `/tasks${queryString(resolved as Record<string, string | number | boolean | null | undefined>)}`,
+    );
+  },
   createTask: (body: Record<string, unknown>) =>
     request<ProjectTask>("/tasks", { method: "POST", body: JSON.stringify(body) }),
   updateTask: (id: string, body: Record<string, unknown>) =>
@@ -311,6 +338,8 @@ export const workspaceApi = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+  deleteTask: (id: string) =>
+    request<{ message: string }>(`/tasks/${id}`, { method: "DELETE" }),
 
   documents: (projectId?: string) =>
     request<DocumentRecord[]>(
