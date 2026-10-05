@@ -69,9 +69,13 @@ class ProjectTask(AuditBase):
         String(32), nullable=False, default="todo", server_default="todo", index=True
     )
     priority: Mapped[str] = mapped_column(
-        String(16), nullable=False, default="normal", server_default="normal"
+        String(16), nullable=False, default="normal", server_default="normal", index=True
     )
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    related_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 

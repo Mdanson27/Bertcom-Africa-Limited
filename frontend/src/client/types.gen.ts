@@ -521,8 +521,21 @@ export type TaskCreate = {
     due_date?: string | null;
     priority?: string;
     project_id: string;
+    related_document_id?: string | null;
+    start_date?: string | null;
     status?: string;
     title: string;
+};
+
+/**
+ * TaskDashboardSummary
+ */
+export type TaskDashboardSummary = {
+    assigned_to_me: number;
+    due_today: number;
+    high_priority: number;
+    overdue: number;
+    recently_completed: number;
 };
 
 /**
@@ -537,6 +550,8 @@ export type TaskRead = {
     id: string;
     priority: string;
     project_id: string;
+    related_document_id: string | null;
+    start_date: string | null;
     status: string;
     title: string;
     updated_at: string;
@@ -547,9 +562,15 @@ export type TaskRead = {
  */
 export type TaskUpdate = {
     assignee_email?: string | null;
+    clear_due_date?: boolean;
+    clear_related_document?: boolean;
+    clear_start_date?: boolean;
     description?: string | null;
     due_date?: string | null;
     priority?: string | null;
+    project_id?: string | null;
+    related_document_id?: string | null;
+    start_date?: string | null;
     status?: string | null;
     title?: string | null;
 };
@@ -1562,6 +1583,15 @@ export type ApiV1TasksListTasksData = {
     query?: {
         project_id?: string | null;
         status?: string | null;
+        priority?: string | null;
+        assignee?: string | null;
+        mine?: boolean;
+        q?: string | null;
+        start_from?: string | null;
+        start_to?: string | null;
+        due_from?: string | null;
+        due_to?: string | null;
+        include_archived_projects?: boolean;
     };
     url: '/api/v1/tasks';
 };
@@ -1620,6 +1650,57 @@ export type ApiV1TasksCreateTaskResponses = {
 };
 
 export type ApiV1TasksCreateTaskResponse = ApiV1TasksCreateTaskResponses[keyof ApiV1TasksCreateTaskResponses];
+
+export type ApiV1TasksDashboardDashboardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tasks/dashboard';
+};
+
+export type ApiV1TasksDashboardDashboardResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: TaskDashboardSummary;
+};
+
+export type ApiV1TasksDashboardDashboardResponse = ApiV1TasksDashboardDashboardResponses[keyof ApiV1TasksDashboardDashboardResponses];
+
+export type ApiV1TasksTaskIdDeleteTaskData = {
+    body?: never;
+    path: {
+        task_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tasks/{task_id}';
+};
+
+export type ApiV1TasksTaskIdDeleteTaskErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1TasksTaskIdDeleteTaskError = ApiV1TasksTaskIdDeleteTaskErrors[keyof ApiV1TasksTaskIdDeleteTaskErrors];
+
+export type ApiV1TasksTaskIdDeleteTaskResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ApiV1TasksTaskIdDeleteTaskResponse = ApiV1TasksTaskIdDeleteTaskResponses[keyof ApiV1TasksTaskIdDeleteTaskResponses];
 
 export type ApiV1TasksTaskIdUpdateTaskData = {
     body: TaskUpdate;

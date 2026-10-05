@@ -81,16 +81,24 @@ class TaskCreate(msgspec.Struct, frozen=True):
     assignee_email: str | None = None
     status: str = "todo"
     priority: str = "normal"
+    start_date: date | None = None
     due_date: date | None = None
+    related_document_id: uuid.UUID | None = None
 
 
 class TaskUpdate(msgspec.Struct, frozen=True):
+    project_id: uuid.UUID | None = None
     title: str | None = None
     description: str | None = None
     assignee_email: str | None = None
     status: str | None = None
     priority: str | None = None
+    start_date: date | None = None
     due_date: date | None = None
+    related_document_id: uuid.UUID | None = None
+    clear_start_date: bool = False
+    clear_due_date: bool = False
+    clear_related_document: bool = False
 
 
 class TaskRead(msgspec.Struct, frozen=True):
@@ -101,10 +109,20 @@ class TaskRead(msgspec.Struct, frozen=True):
     assignee_email: str | None
     status: str
     priority: str
+    start_date: date | None
     due_date: date | None
+    related_document_id: uuid.UUID | None
     completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class TaskDashboardSummary(msgspec.Struct, frozen=True):
+    due_today: int
+    overdue: int
+    high_priority: int
+    assigned_to_me: int
+    recently_completed: int
 
 
 class DocumentPresignRequest(msgspec.Struct, frozen=True):
