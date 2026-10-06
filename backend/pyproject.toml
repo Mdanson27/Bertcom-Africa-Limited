@@ -26,6 +26,7 @@ dependencies = [
     "prometheus-client>=0.20.0",
     "sentry-sdk[litestar,sqlalchemy]>=2.0.0",
     "boto3>=1.35.0",
+    "reportlab>=4.2.0",
 ]
 
 [project.optional-dependencies]
@@ -35,7 +36,7 @@ dev = [
     "httpx>=0.27.0",
     "ruff>=0.5.0",
     "copier>=9.2.0",
-    # Required for Alembic sync engine (env.py swaps asyncpg → psycopg2)
+    # Required for Alembic sync engine (env.py swaps asyncpg â†’ psycopg2)
     "psycopg2-binary>=2.9.0",
 ]
 
@@ -64,5 +65,5 @@ filterwarnings = [
     "ignore::litestar.exceptions.base_exceptions.LitestarDeprecationWarning",
 ]
 markers = [
-    "slow: marks tests as slow (migration cycle tests — run with 'pytest -m slow')",
+    "slow: marks tests as slow (migration cycle tests â€” run with 'pytest -m slow')",
 ]

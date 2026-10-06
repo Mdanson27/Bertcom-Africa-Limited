@@ -27,6 +27,26 @@ export interface ClientRecord {
 
 export interface SupplierRecord extends ClientRecord {}
 
+export interface CommercialLineItemInput {
+  description: string;
+  quantity: number;
+  unit_price_ugx: number;
+}
+
+export interface CommercialLineItemRecord extends CommercialLineItemInput {
+  id: string;
+  position: number;
+  amount_ugx: number;
+}
+
+export interface CommercialDocumentRecord {
+  document_id: string | null;
+  document_number: string;
+  filename: string;
+  download_url: string | null;
+  stored: boolean;
+}
+
 export interface QuotationRecord {
   id: string;
   quotation_number: string;
@@ -40,6 +60,7 @@ export interface QuotationRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  items?: CommercialLineItemRecord[];
 }
 
 export interface InvoiceRecord {
@@ -57,6 +78,8 @@ export interface InvoiceRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  source_quotation_id?: string | null;
+  items?: CommercialLineItemRecord[];
 }
 
 export interface ReceiptRecord {
@@ -89,6 +112,7 @@ export interface PurchaseOrderRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  items?: CommercialLineItemRecord[];
 }
 
 export interface ExpenseRecord {
@@ -223,6 +247,10 @@ export const businessApi = {
     request<QuotationRecord>("/business/quotations", { method: "POST", body: JSON.stringify(body) }),
   updateQuotation: (id: string, body: Record<string, unknown>) =>
     request<QuotationRecord>(`/business/quotations/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  convertQuotation: (id: string, body: Record<string, unknown>) =>
+    request<InvoiceRecord>(`/business/quotations/${id}/convert-to-invoice`, { method: "POST", body: JSON.stringify(body) }),
+  quotationDocument: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/quotations/${id}/document`, { method: "POST" }),
 
   invoices: (filters?: { client_id?: string; project_id?: string }) =>
     request<InvoiceRecord[]>(`/business/invoices${queryString(filters)}`),
@@ -230,11 +258,15 @@ export const businessApi = {
     request<InvoiceRecord>("/business/invoices", { method: "POST", body: JSON.stringify(body) }),
   updateInvoice: (id: string, body: Record<string, unknown>) =>
     request<InvoiceRecord>(`/business/invoices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  invoiceDocument: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/invoices/${id}/document`, { method: "POST" }),
 
   receipts: (filters?: { client_id?: string; project_id?: string }) =>
     request<ReceiptRecord[]>(`/business/receipts${queryString(filters)}`),
   createPayment: (body: Record<string, unknown>) =>
     request<Record<string, unknown>>("/business/payments", { method: "POST", body: JSON.stringify(body) }),
+  receiptDocument: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/receipts/${id}/document`, { method: "POST" }),
 
   purchaseOrders: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<PurchaseOrderRecord[]>(`/business/purchase-orders${queryString(filters)}`),
@@ -242,6 +274,8 @@ export const businessApi = {
     request<PurchaseOrderRecord>("/business/purchase-orders", { method: "POST", body: JSON.stringify(body) }),
   updatePurchaseOrder: (id: string, body: Record<string, unknown>) =>
     request<PurchaseOrderRecord>(`/business/purchase-orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  purchaseOrderDocument: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/purchase-orders/${id}/document`, { method: "POST" }),
 
   expenses: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<ExpenseRecord[]>(`/business/expenses${queryString(filters)}`),
@@ -254,6 +288,10 @@ export const businessApi = {
     request<SupplierStatementSummary[]>("/business/statements/suppliers"),
   clientStatement: (id: string) =>
     request<StatementEntry[]>(`/business/clients/${id}/statement`),
+  clientStatementDocument: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/clients/${id}/statement/document`, { method: "POST" }),
+  supplierStatementDocument: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/suppliers/${id}/statement/document`, { method: "POST" }),
 
   projects: () => request<ProjectOption[]>("/projects"),
   documents: () => request<DocumentOption[]>("/documents"),

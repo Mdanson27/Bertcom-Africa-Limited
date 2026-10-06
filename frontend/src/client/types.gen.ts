@@ -102,6 +102,38 @@ export type ClientWorkspace = {
 };
 
 /**
+ * CommercialDocumentRead
+ */
+export type CommercialDocumentRead = {
+    document_id: string | null;
+    document_number: string;
+    download_url: string | null;
+    filename: string;
+    stored: boolean;
+};
+
+/**
+ * CommercialLineItemInput
+ */
+export type CommercialLineItemInput = {
+    description: string;
+    quantity?: number;
+    unit_price_ugx?: number;
+};
+
+/**
+ * CommercialLineItemRead
+ */
+export type CommercialLineItemRead = {
+    amount_ugx: number;
+    description: string;
+    id: string;
+    position: number;
+    quantity: number;
+    unit_price_ugx: number;
+};
+
+/**
  * DocumentCreate
  */
 export type DocumentCreate = {
@@ -236,6 +268,7 @@ export type InvoiceCreate = {
     due_date?: string | null;
     invoice_number: string;
     issue_date: string;
+    items?: Array<CommercialLineItemInput>;
     notes?: string | null;
     paid_amount_ugx?: number;
     project_id?: string | null;
@@ -254,10 +287,12 @@ export type InvoiceRead = {
     id: string;
     invoice_number: string;
     issue_date: string;
+    items?: Array<CommercialLineItemRead>;
     notes: string | null;
     outstanding_amount_ugx: number;
     paid_amount_ugx: number;
     project_id: string | null;
+    source_quotation_id?: string | null;
     status: string;
     updated_at: string;
 };
@@ -271,6 +306,7 @@ export type InvoiceUpdate = {
     client_name?: string | null;
     due_date?: string | null;
     issue_date?: string | null;
+    items?: Array<CommercialLineItemInput>;
     notes?: string | null;
     project_id?: string | null;
     status?: string | null;
@@ -335,6 +371,7 @@ export type PaymentRead = {
     notes: string | null;
     payment_date: string;
     project_id: string | null;
+    receipt_number: string | null;
     recorded_by_email: string;
     reference: string | null;
     updated_at: string;
@@ -535,6 +572,7 @@ export type ProjectWorkspaceRead = {
 export type PurchaseOrderCreate = {
     amount_ugx: number;
     expected_date?: string | null;
+    items?: Array<CommercialLineItemInput>;
     notes?: string | null;
     order_date: string;
     po_number: string;
@@ -552,6 +590,7 @@ export type PurchaseOrderRead = {
     created_at: string;
     expected_date: string | null;
     id: string;
+    items?: Array<CommercialLineItemRead>;
     notes: string | null;
     order_date: string;
     po_number: string;
@@ -568,12 +607,22 @@ export type PurchaseOrderRead = {
 export type PurchaseOrderUpdate = {
     amount_ugx?: number | null;
     expected_date?: string | null;
+    items?: Array<CommercialLineItemInput>;
     notes?: string | null;
     order_date?: string | null;
     project_id?: string | null;
     status?: string | null;
     supplier_id?: string | null;
     supplier_name?: string | null;
+};
+
+/**
+ * QuotationConvertRequest
+ */
+export type QuotationConvertRequest = {
+    due_date?: string | null;
+    issue_date: string;
+    notes?: string | null;
 };
 
 /**
@@ -584,6 +633,7 @@ export type QuotationCreate = {
     client_id?: string | null;
     client_name: string;
     issue_date: string;
+    items?: Array<CommercialLineItemInput>;
     notes?: string | null;
     project_id?: string | null;
     quotation_number: string;
@@ -601,6 +651,7 @@ export type QuotationRead = {
     created_at: string;
     id: string;
     issue_date: string;
+    items?: Array<CommercialLineItemRead>;
     notes: string | null;
     project_id: string | null;
     quotation_number: string;
@@ -617,6 +668,7 @@ export type QuotationUpdate = {
     client_id?: string | null;
     client_name?: string | null;
     issue_date?: string | null;
+    items?: Array<CommercialLineItemInput>;
     notes?: string | null;
     project_id?: string | null;
     status?: string | null;
@@ -1064,6 +1116,72 @@ export type ApiV1BusinessClientsClientIdStatementClientStatementResponses = {
 
 export type ApiV1BusinessClientsClientIdStatementClientStatementResponse = ApiV1BusinessClientsClientIdStatementClientStatementResponses[keyof ApiV1BusinessClientsClientIdStatementClientStatementResponses];
 
+export type ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentData = {
+    body?: never;
+    path: {
+        client_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/clients/{client_id}/statement/document';
+};
+
+export type ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentError = ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentErrors[keyof ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentErrors];
+
+export type ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CommercialDocumentRead;
+};
+
+export type ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentResponse = ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentResponses[keyof ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentResponses];
+
+export type ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadData = {
+    body?: never;
+    path: {
+        client_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/clients/{client_id}/statement/pdf';
+};
+
+export type ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadError = ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadErrors[keyof ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadErrors];
+
+export type ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: string;
+};
+
+export type ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadResponse = ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadResponses[keyof ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadResponses];
+
 export type ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceData = {
     body?: never;
     path: {
@@ -1260,6 +1378,72 @@ export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses = {
 
 export type ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponse = ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses[keyof ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses];
 
+export type ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentData = {
+    body?: never;
+    path: {
+        invoice_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/invoices/{invoice_id}/document';
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentError = ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentErrors[keyof ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentErrors];
+
+export type ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CommercialDocumentRead;
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentResponse = ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentResponses[keyof ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentResponses];
+
+export type ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadData = {
+    body?: never;
+    path: {
+        invoice_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/invoices/{invoice_id}/pdf';
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadError = ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadErrors[keyof ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadErrors];
+
+export type ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: string;
+};
+
+export type ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadResponse = ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadResponses[keyof ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadResponses];
+
 export type ApiV1BusinessPaymentsPaymentsData = {
     body?: never;
     path?: never;
@@ -1424,6 +1608,72 @@ export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderRespons
 
 export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponse = ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses];
 
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentData = {
+    body?: never;
+    path: {
+        purchase_order_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/purchase-orders/{purchase_order_id}/document';
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentError = ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentErrors[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentErrors];
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CommercialDocumentRead;
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentResponse = ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentResponses[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentResponses];
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadData = {
+    body?: never;
+    path: {
+        purchase_order_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/purchase-orders/{purchase_order_id}/pdf';
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadError = ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadErrors[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadErrors];
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: string;
+};
+
+export type ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadResponse = ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadResponses[keyof ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadResponses];
+
 export type ApiV1BusinessQuotationsQuotationsData = {
     body?: never;
     path?: never;
@@ -1522,6 +1772,105 @@ export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses = {
 
 export type ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponse = ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses[keyof ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses];
 
+export type ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceData = {
+    body: QuotationConvertRequest;
+    path: {
+        quotation_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/quotations/{quotation_id}/convert-to-invoice';
+};
+
+export type ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceError = ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceErrors[keyof ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceErrors];
+
+export type ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: InvoiceRead;
+};
+
+export type ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceResponse = ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceResponses[keyof ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceResponses];
+
+export type ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentData = {
+    body?: never;
+    path: {
+        quotation_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/quotations/{quotation_id}/document';
+};
+
+export type ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentError = ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentErrors[keyof ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentErrors];
+
+export type ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CommercialDocumentRead;
+};
+
+export type ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentResponse = ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentResponses[keyof ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentResponses];
+
+export type ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadData = {
+    body?: never;
+    path: {
+        quotation_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/quotations/{quotation_id}/pdf';
+};
+
+export type ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadError = ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadErrors[keyof ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadErrors];
+
+export type ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: string;
+};
+
+export type ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadResponse = ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadResponses[keyof ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadResponses];
+
 export type ApiV1BusinessReceiptsReceiptsData = {
     body?: never;
     path?: never;
@@ -1555,6 +1904,72 @@ export type ApiV1BusinessReceiptsReceiptsResponses = {
 };
 
 export type ApiV1BusinessReceiptsReceiptsResponse = ApiV1BusinessReceiptsReceiptsResponses[keyof ApiV1BusinessReceiptsReceiptsResponses];
+
+export type ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentData = {
+    body?: never;
+    path: {
+        payment_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/receipts/{payment_id}/document';
+};
+
+export type ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentError = ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentErrors[keyof ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentErrors];
+
+export type ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CommercialDocumentRead;
+};
+
+export type ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentResponse = ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentResponses[keyof ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentResponses];
+
+export type ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadData = {
+    body?: never;
+    path: {
+        payment_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/receipts/{payment_id}/pdf';
+};
+
+export type ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadError = ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadErrors[keyof ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadErrors];
+
+export type ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: string;
+};
+
+export type ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadResponse = ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadResponses[keyof ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadResponses];
 
 export type ApiV1BusinessStatementsClientsClientStatementSummariesData = {
     body?: never;
@@ -1700,6 +2115,72 @@ export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses = {
 };
 
 export type ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponse = ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses[keyof ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses];
+
+export type ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentData = {
+    body?: never;
+    path: {
+        supplier_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/suppliers/{supplier_id}/statement/document';
+};
+
+export type ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentError = ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentErrors[keyof ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentErrors];
+
+export type ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CommercialDocumentRead;
+};
+
+export type ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentResponse = ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentResponses[keyof ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentResponses];
+
+export type ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadData = {
+    body?: never;
+    path: {
+        supplier_id: string;
+    };
+    query?: never;
+    url: '/api/v1/business/suppliers/{supplier_id}/statement/pdf';
+};
+
+export type ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadError = ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadErrors[keyof ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadErrors];
+
+export type ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: string;
+};
+
+export type ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadResponse = ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadResponses[keyof ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadResponses];
 
 export type ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceData = {
     body?: never;

@@ -50,3 +50,12 @@ def presign_download(storage_key: str, expires: int = 900) -> str:
 
 def delete_object(storage_key: str) -> None:
     get_storage_client().delete_object(Bucket=settings.DOCUMENTS_BUCKET, Key=storage_key)
+
+
+def put_object_bytes(storage_key: str, content: bytes, content_type: str) -> None:
+    get_storage_client().put_object(
+        Bucket=settings.DOCUMENTS_BUCKET,
+        Key=storage_key,
+        Body=content,
+        ContentType=content_type,
+    )

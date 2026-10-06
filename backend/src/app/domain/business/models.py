@@ -4,7 +4,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, Text
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.base import AuditBase
@@ -73,6 +73,9 @@ class Invoice(AuditBase):
     project_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    source_quotation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("quotations.id", ondelete="SET NULL"), nullable=True, unique=True, index=True
+    )
     client_name: Mapped[str] = mapped_column(String(255), nullable=False)
     amount_ugx: Mapped[Decimal] = mapped_column(
         Numeric(18, 2), nullable=False, default=0, server_default="0"
@@ -92,6 +95,9 @@ class Invoice(AuditBase):
 class Payment(AuditBase):
     __tablename__ = "payments"
 
+    receipt_number: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, unique=True, index=True
+    )
     client_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -158,3 +164,62 @@ class Expense(AuditBase):
     expense_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_by_email: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class BusinessNumberCounter(AuditBase):
+    __tablename__ = "business_number_counters"
+    __table_args__ = (
+        UniqueConstraint("document_type", "year", name="uq_business_number_type_year"),
+    )
+
+    document_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    last_value: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+
+
+class QuotationLineItem(AuditBase):
+    __tablename__ = "quotation_line_items"
+
+    quotation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("quotations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    description: Mapped[str] = mapped_column(String(512), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(14, 3), nullable=False, default=1, server_default="1"
+    )
+    unit_price_ugx: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=0, server_default="0"
+    )
+
+
+class InvoiceLineItem(AuditBase):
+    __tablename__ = "invoice_line_items"
+
+    invoice_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("invoices.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    description: Mapped[str] = mapped_column(String(512), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(14, 3), nullable=False, default=1, server_default="1"
+    )
+    unit_price_ugx: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=0, server_default="0"
+    )
+
+
+class PurchaseOrderLineItem(AuditBase):
+    __tablename__ = "purchase_order_line_items"
+
+    purchase_order_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    description: Mapped[str] = mapped_column(String(512), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(14, 3), nullable=False, default=1, server_default="1"
+    )
+    unit_price_ugx: Mapped[Decimal] = mapped_column(
+        Numeric(18, 2), nullable=False, default=0, server_default="0"
+    )
