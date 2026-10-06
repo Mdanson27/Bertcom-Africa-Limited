@@ -414,6 +414,102 @@
         "title": "ClientWorkspace",
         "type": "object"
       },
+      "CommercialDocumentRead": {
+        "properties": {
+          "document_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "document_number": {
+            "type": "string"
+          },
+          "download_url": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "filename": {
+            "type": "string"
+          },
+          "stored": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "document_id",
+          "document_number",
+          "download_url",
+          "filename",
+          "stored"
+        ],
+        "title": "CommercialDocumentRead",
+        "type": "object"
+      },
+      "CommercialLineItemInput": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "default": 1,
+            "type": "number"
+          },
+          "unit_price_ugx": {
+            "default": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "description"
+        ],
+        "title": "CommercialLineItemInput",
+        "type": "object"
+      },
+      "CommercialLineItemRead": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "position": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "description",
+          "id",
+          "position",
+          "quantity",
+          "unit_price_ugx"
+        ],
+        "title": "CommercialLineItemRead",
+        "type": "object"
+      },
       "DocumentCreate": {
         "properties": {
           "category": {
@@ -1029,6 +1125,12 @@
             "format": "date",
             "type": "string"
           },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemInput"
+            },
+            "type": "array"
+          },
           "notes": {
             "oneOf": [
               {
@@ -1113,6 +1215,12 @@
             "format": "date",
             "type": "string"
           },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemRead"
+            },
+            "type": "array"
+          },
           "notes": {
             "oneOf": [
               {
@@ -1130,6 +1238,17 @@
             "type": "number"
           },
           "project_id": {
+            "oneOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_quotation_id": {
             "oneOf": [
               {
                 "format": "uuid",
@@ -1221,6 +1340,12 @@
                 "type": "null"
               }
             ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemInput"
+            },
+            "type": "array"
           },
           "notes": {
             "oneOf": [
@@ -1494,6 +1619,16 @@
               }
             ]
           },
+          "receipt_number": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "recorded_by_email": {
             "type": "string"
           },
@@ -1522,6 +1657,7 @@
           "notes",
           "payment_date",
           "project_id",
+          "receipt_number",
           "recorded_by_email",
           "reference",
           "updated_at"
@@ -2385,6 +2521,12 @@
               }
             ]
           },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemInput"
+            },
+            "type": "array"
+          },
           "notes": {
             "oneOf": [
               {
@@ -2464,6 +2606,12 @@
           "id": {
             "format": "uuid",
             "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemRead"
+            },
+            "type": "array"
           },
           "notes": {
             "oneOf": [
@@ -2555,6 +2703,12 @@
               }
             ]
           },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemInput"
+            },
+            "type": "array"
+          },
           "notes": {
             "oneOf": [
               {
@@ -2623,6 +2777,40 @@
         "title": "PurchaseOrderUpdate",
         "type": "object"
       },
+      "QuotationConvertRequest": {
+        "properties": {
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "issue_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "notes": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "issue_date"
+        ],
+        "title": "QuotationConvertRequest",
+        "type": "object"
+      },
       "QuotationCreate": {
         "properties": {
           "amount_ugx": {
@@ -2645,6 +2833,12 @@
           "issue_date": {
             "format": "date",
             "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemInput"
+            },
+            "type": "array"
           },
           "notes": {
             "oneOf": [
@@ -2725,6 +2919,12 @@
           "issue_date": {
             "format": "date",
             "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemRead"
+            },
+            "type": "array"
           },
           "notes": {
             "oneOf": [
@@ -2829,6 +3029,12 @@
                 "type": "null"
               }
             ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialLineItemInput"
+            },
+            "type": "array"
           },
           "notes": {
             "oneOf": [
@@ -4351,6 +4557,146 @@
         "summary": "ClientStatement"
       }
     },
+    "/api/v1/business/clients/{client_id}/statement/document": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocument",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialDocumentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GenerateClientStatementDocument"
+      }
+    },
+    "/api/v1/business/clients/{client_id}/statement/pdf": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownload",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ClientStatementPdfDownload"
+      }
+    },
     "/api/v1/business/clients/{client_id}/workspace": {
       "get": {
         "deprecated": false,
@@ -4835,6 +5181,146 @@
         "summary": "UpdateInvoice"
       }
     },
+    "/api/v1/business/invoices/{invoice_id}/document": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocument",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialDocumentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GenerateInvoiceDocument"
+      }
+    },
+    "/api/v1/business/invoices/{invoice_id}/pdf": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownload",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "invoice_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "InvoicePdfDownload"
+      }
+    },
     "/api/v1/business/payments": {
       "get": {
         "deprecated": false,
@@ -5268,6 +5754,146 @@
         "summary": "UpdatePurchaseOrder"
       }
     },
+    "/api/v1/business/purchase-orders/{purchase_order_id}/document": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocument",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "purchase_order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialDocumentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GeneratePurchaseOrderDocument"
+      }
+    },
+    "/api/v1/business/purchase-orders/{purchase_order_id}/pdf": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownload",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "purchase_order_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "PurchaseOrderPdfDownload"
+      }
+    },
     "/api/v1/business/quotations": {
       "get": {
         "deprecated": false,
@@ -5515,6 +6141,226 @@
         "summary": "UpdateQuotation"
       }
     },
+    "/api/v1/business/quotations/{quotation_id}/convert-to-invoice": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoice",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "quotation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuotationConvertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ConvertQuotationToInvoice"
+      }
+    },
+    "/api/v1/business/quotations/{quotation_id}/document": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocument",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "quotation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialDocumentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GenerateQuotationDocument"
+      }
+    },
+    "/api/v1/business/quotations/{quotation_id}/pdf": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownload",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "quotation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "QuotationPdfDownload"
+      }
+    },
     "/api/v1/business/receipts": {
       "get": {
         "deprecated": false,
@@ -5614,6 +6460,146 @@
           }
         },
         "summary": "Receipts"
+      }
+    },
+    "/api/v1/business/receipts/{payment_id}/document": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocument",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialDocumentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GenerateReceiptDocument"
+      }
+    },
+    "/api/v1/business/receipts/{payment_id}/pdf": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownload",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "payment_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ReceiptPdfDownload"
       }
     },
     "/api/v1/business/statements/clients": {
@@ -5901,6 +6887,146 @@
           }
         },
         "summary": "UpdateSupplier"
+      }
+    },
+    "/api/v1/business/suppliers/{supplier_id}/statement/document": {
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocument",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "supplier_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommercialDocumentRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "GenerateSupplierStatementDocument"
+      }
+    },
+    "/api/v1/business/suppliers/{supplier_id}/statement/pdf": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownload",
+        "parameters": [
+          {
+            "deprecated": false,
+            "in": "path",
+            "name": "supplier_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "SupplierStatementPdfDownload"
       }
     },
     "/api/v1/business/suppliers/{supplier_id}/workspace": {
