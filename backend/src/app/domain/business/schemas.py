@@ -70,6 +70,21 @@ class SupplierRead(msgspec.Struct, frozen=True):
     updated_at: datetime
 
 
+class CommercialLineItemInput(msgspec.Struct, frozen=True):
+    description: str
+    quantity: float = 1
+    unit_price_ugx: float = 0
+
+
+class CommercialLineItemRead(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    position: int
+    description: str
+    quantity: float
+    unit_price_ugx: float
+    amount_ugx: float
+
+
 class QuotationCreate(msgspec.Struct, frozen=True):
     quotation_number: str
     client_name: str
@@ -80,6 +95,7 @@ class QuotationCreate(msgspec.Struct, frozen=True):
     status: str = "draft"
     valid_until: date | None = None
     notes: str | None = None
+    items: list[CommercialLineItemInput] = msgspec.field(default_factory=list)
 
 
 class QuotationUpdate(msgspec.Struct, frozen=True):
@@ -91,6 +107,7 @@ class QuotationUpdate(msgspec.Struct, frozen=True):
     issue_date: date | None = None
     valid_until: date | None = None
     notes: str | None = None
+    items: list[CommercialLineItemInput] = msgspec.field(default_factory=list)
 
 
 class QuotationRead(msgspec.Struct, frozen=True):
@@ -106,6 +123,7 @@ class QuotationRead(msgspec.Struct, frozen=True):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+    items: list[CommercialLineItemRead] = msgspec.field(default_factory=list)
 
 
 class InvoiceCreate(msgspec.Struct, frozen=True):
@@ -119,6 +137,7 @@ class InvoiceCreate(msgspec.Struct, frozen=True):
     status: str = "draft"
     due_date: date | None = None
     notes: str | None = None
+    items: list[CommercialLineItemInput] = msgspec.field(default_factory=list)
 
 
 class InvoiceUpdate(msgspec.Struct, frozen=True):
@@ -130,6 +149,7 @@ class InvoiceUpdate(msgspec.Struct, frozen=True):
     issue_date: date | None = None
     due_date: date | None = None
     notes: str | None = None
+    items: list[CommercialLineItemInput] = msgspec.field(default_factory=list)
 
 
 class InvoiceRead(msgspec.Struct, frozen=True):
@@ -147,6 +167,14 @@ class InvoiceRead(msgspec.Struct, frozen=True):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+    source_quotation_id: uuid.UUID | None = None
+    items: list[CommercialLineItemRead] = msgspec.field(default_factory=list)
+
+
+class QuotationConvertRequest(msgspec.Struct, frozen=True):
+    issue_date: date
+    due_date: date | None = None
+    notes: str | None = None
 
 
 class PaymentCreate(msgspec.Struct, frozen=True):
@@ -162,6 +190,7 @@ class PaymentCreate(msgspec.Struct, frozen=True):
 
 class PaymentRead(msgspec.Struct, frozen=True):
     id: uuid.UUID
+    receipt_number: str | None
     client_id: uuid.UUID | None
     project_id: uuid.UUID | None
     invoice_id: uuid.UUID | None
@@ -202,6 +231,7 @@ class PurchaseOrderCreate(msgspec.Struct, frozen=True):
     status: str = "draft"
     expected_date: date | None = None
     notes: str | None = None
+    items: list[CommercialLineItemInput] = msgspec.field(default_factory=list)
 
 
 class PurchaseOrderUpdate(msgspec.Struct, frozen=True):
@@ -213,6 +243,7 @@ class PurchaseOrderUpdate(msgspec.Struct, frozen=True):
     order_date: date | None = None
     expected_date: date | None = None
     notes: str | None = None
+    items: list[CommercialLineItemInput] = msgspec.field(default_factory=list)
 
 
 class PurchaseOrderRead(msgspec.Struct, frozen=True):
@@ -228,6 +259,15 @@ class PurchaseOrderRead(msgspec.Struct, frozen=True):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+    items: list[CommercialLineItemRead] = msgspec.field(default_factory=list)
+
+
+class CommercialDocumentRead(msgspec.Struct, frozen=True):
+    document_id: uuid.UUID | None
+    document_number: str
+    filename: str
+    download_url: str | None
+    stored: bool
 
 
 class ExpenseCreate(msgspec.Struct, frozen=True):

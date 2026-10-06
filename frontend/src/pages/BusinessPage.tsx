@@ -2,11 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Banknote,
   Building2,
+  ArrowRight,
+  Download,
   FileText,
   Landmark,
   Plus,
   ReceiptText,
   ShoppingCart,
+  Trash2,
   UsersRound,
   WalletCards,
 } from "lucide-react";
@@ -58,6 +61,14 @@ type CreateKind =
   | "purchase_order"
   | "expense";
 
+type DraftLineItem = {
+  description: string;
+  quantity: string;
+  unit_price_ugx: string;
+};
+
+const blankLineItem = (): DraftLineItem => ({ description: "", quantity: "1", unit_price_ugx: "" });
+
 const money = (value: number) =>
   new Intl.NumberFormat("en-UG", {
     style: "currency",
@@ -73,6 +84,20 @@ const labelStatus = (value: string) =>
   value
     .replaceAll("_", " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const quotationStatuses = (current: string) =>
+  current === "draft" ? ["draft", "sent"] :
+  current === "sent" ? ["sent", "accepted", "rejected", "expired"] : [current];
+
+const invoiceStatuses = (current: string) =>
+  current === "draft" ? ["draft", "sent"] :
+  current === "sent" ? ["sent", "overdue"] :
+  current === "partially_paid" ? ["partially_paid", "overdue"] : [current];
+
+const purchaseOrderStatuses = (current: string) =>
+  current === "draft" ? ["draft", "issued"] :
+  current === "issued" ? ["issued", "received"] :
+  current === "received" ? ["received", "closed"] : [current];
 
 const StatusPill: React.FC<{ value: string }> = ({ value }) => (
   <span className="inline-flex rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground">
@@ -164,6 +189,7 @@ export const BusinessPage: React.FC = () => {
 
   const [createKind, setCreateKind] = useState<CreateKind | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [lineItems, setLineItems] = useState<DraftLineItem[]>([]);
   const [saving, setSaving] = useState(false);
 
   const [clientWorkspace, setClientWorkspace] = useState<ClientWorkspace | null>(null);
@@ -172,7 +198,10 @@ export const BusinessPage: React.FC = () => {
   const [statementTitle, setStatementTitle] = useState("");
   const [statementRows, setStatementRows] = useState<StatementEntry[] | null>(null);
 
-  const formDirty = Boolean(createKind) && Object.values(form).some((value) => value.trim());
+  const formDirty = Boolean(createKind) && (
+    Object.values(form).some((value) => value.trim()) ||
+    lineItems.some((item) => item.description.trim() || item.unit_price_ugx.trim())
+  );
   useUnsavedChanges(Boolean(formDirty));
 
   const load = useCallback(async (showLoading = true) => {
@@ -249,6 +278,7 @@ export const BusinessPage: React.FC = () => {
     if (kind === "purchase_order") dates.order_date = today();
     if (kind === "expense") dates.expense_date = today();
     setForm({ ...dates, ...defaults });
+    setLineItems(["quotation", "invoice", "purchase_order"].includes(kind) ? [blankLineItem()] : []);
     setCreateKind(kind);
   };
 
@@ -257,11 +287,19 @@ export const BusinessPage: React.FC = () => {
     if (!confirmDiscardChanges(Boolean(formDirty), "Discard this unsaved business record?")) return;
     setCreateKind(null);
     setForm({});
+    setLineItems([]);
   };
 
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!createKind) return;
+    const commercialItems = lineItems
+      .filter((item) => item.description.trim())
+      .map((item) => ({
+        description: item.description.trim(),
+        quantity: Number(item.quantity || 0),
+        unit_price_ugx: Number(item.unit_price_ugx || 0),
+      }));
     setSaving(true);
     try {
       if (createKind === "client") {
@@ -285,11 +323,12 @@ export const BusinessPage: React.FC = () => {
       } else if (createKind === "quotation") {
         const client = clients.find((item) => item.id === form.client_id);
         await businessApi.createQuotation({
-          quotation_number: form.quotation_number,
+          quotation_number: "AUTO",
           client_id: form.client_id,
           client_name: client?.name || "",
           project_id: form.project_id || null,
-          amount_ugx: Number(form.amount_ugx || 0),
+          amount_ugx: 0,
+          items: commercialItems,
           status: "draft",
           issue_date: form.issue_date,
           valid_until: form.valid_until || null,
@@ -298,11 +337,12 @@ export const BusinessPage: React.FC = () => {
       } else if (createKind === "invoice") {
         const client = clients.find((item) => item.id === form.client_id);
         await businessApi.createInvoice({
-          invoice_number: form.invoice_number,
+          invoice_number: "AUTO",
           client_id: form.client_id,
           client_name: client?.name || "",
           project_id: form.project_id || null,
-          amount_ugx: Number(form.amount_ugx || 0),
+          amount_ugx: 0,
+          items: commercialItems,
           status: "draft",
           issue_date: form.issue_date,
           due_date: form.due_date || null,
@@ -320,11 +360,12 @@ export const BusinessPage: React.FC = () => {
       } else if (createKind === "purchase_order") {
         const supplier = suppliers.find((item) => item.id === form.supplier_id);
         await businessApi.createPurchaseOrder({
-          po_number: form.po_number,
+          po_number: "AUTO",
           supplier_id: form.supplier_id,
           supplier_name: supplier?.name || "",
           project_id: form.project_id || null,
-          amount_ugx: Number(form.amount_ugx || 0),
+          amount_ugx: 0,
+          items: commercialItems,
           status: "draft",
           order_date: form.order_date,
           expected_date: form.expected_date || null,
@@ -345,6 +386,7 @@ export const BusinessPage: React.FC = () => {
       showSuccessToast("Business record saved.");
       setCreateKind(null);
       setForm({});
+      setLineItems([]);
       await load(false);
     } catch (error) {
       showErrorToast(getErrorMessage(error, "The business record could not be saved."));
@@ -366,6 +408,32 @@ export const BusinessPage: React.FC = () => {
       await load(false);
     } catch (error) {
       showErrorToast(getErrorMessage(error, "The status could not be updated."));
+    }
+  };
+
+  const openDocument = async (loader: () => Promise<{ download_url: string | null; filename: string }>) => {
+    const popup = window.open("about:blank", "_blank");
+    try {
+      const document = await loader();
+      if (!document.download_url) {
+        popup?.close();
+        throw new Error("Document storage is not configured, so the PDF could not be opened from the archive.");
+      }
+      if (popup) popup.location.href = document.download_url;
+      else window.location.assign(document.download_url);
+    } catch (error) {
+      popup?.close();
+      showErrorToast(getErrorMessage(error, "The PDF could not be opened."));
+    }
+  };
+
+  const convertQuotation = async (quotation: QuotationRecord) => {
+    try {
+      await businessApi.convertQuotation(quotation.id, { issue_date: today(), due_date: null });
+      showSuccessToast(`${quotation.quotation_number} converted to a draft invoice.`);
+      await load(false);
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The quotation could not be converted."));
     }
   };
 
@@ -455,10 +523,10 @@ export const BusinessPage: React.FC = () => {
             <p className="mt-1 text-xs text-muted-foreground">Business records now stay connected to their client, supplier, project and supporting documents.</p>
             <div className="mt-4 grid gap-2 text-xs sm:grid-cols-4">
               {[
-                "Client → Project → Quotation",
-                "Quotation → Invoice",
-                "Invoice → Payment → Receipt",
-                "Supplier → Purchase Order → Expense",
+                "Client â†’ Project â†’ Quotation",
+                "Quotation â†’ Invoice",
+                "Invoice â†’ Payment â†’ Receipt",
+                "Supplier â†’ Purchase Order â†’ Expense",
               ].map((item) => (
                 <div key={item} className="rounded-lg border border-border bg-muted/30 px-3 py-3 text-foreground">{item}</div>
               ))}
@@ -510,40 +578,53 @@ export const BusinessPage: React.FC = () => {
       )}
 
       {tab === "quotations" && (
-        <RecordSection title="Quotations" subtitle="Draft, send, accept, reject or expire commercial quotations." onAdd={() => openCreate("quotation")} addLabel="New quotation">
+        <RecordSection title="Quotations" subtitle="Create itemized quotations, move them through approval, download the branded PDF, then convert accepted quotations into invoices." onAdd={() => openCreate("quotation")} addLabel="New quotation">
           {quotes.length === 0 ? <EmptyState text="No quotations yet." /> : (
-            <RecordsTable headers={["Quotation", "Client", "Amount", "Issued", "Status"]}>
-              {quotes.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.quotation_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.issue_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-32`} value={item.status} onChange={(e) => void updateStatus("quotation", item.id, e.target.value)}>{["draft","sent","accepted","rejected","expired"].map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell></tr>)}
+            <RecordsTable headers={["Quotation", "Client", "Amount", "Issued", "Status", "Document", "Workflow"]}>
+              {quotes.map((item) => {
+                const converted = invoices.some((invoice) => invoice.source_quotation_id === item.id);
+                return <tr key={item.id} className="border-t border-border">
+                  <Cell strong>{item.quotation_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.issue_date}</Cell>
+                  <Cell><select className={`${selectClass} h-8 min-w-32`} value={item.status} onChange={(e) => void updateStatus("quotation", item.id, e.target.value)}>{quotationStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
+                  <Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.quotationDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell>
+                  <Cell>{item.status === "accepted" ? converted ? <span className="text-xs font-medium text-muted-foreground">Invoiced</span> : <Button size="sm" onClick={() => void convertQuotation(item)}><ArrowRight className="mr-1.5 h-3.5 w-3.5" />Convert to invoice</Button> : <span className="text-xs text-muted-foreground">{item.status === "draft" ? "Send first" : "?"}</span>}</Cell>
+                </tr>;
+              })}
             </RecordsTable>
           )}
         </RecordSection>
       )}
 
       {tab === "invoices" && (
-        <RecordSection title="Invoices" subtitle="Outstanding balances update automatically as payments are recorded." onAdd={() => openCreate("invoice")} addLabel="New invoice">
+        <RecordSection title="Invoices" subtitle="Invoice balances and payment states are calculated from confirmed receipts." onAdd={() => openCreate("invoice")} addLabel="New invoice">
           {invoices.length === 0 ? <EmptyState text="No invoices yet." /> : (
-            <RecordsTable headers={["Invoice", "Client", "Total", "Paid", "Outstanding", "Status", ""]}>
-              {invoices.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.invoice_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{money(item.paid_amount_ugx)}</Cell><Cell>{money(item.outstanding_amount_ugx)}</Cell><Cell><select className={`${selectClass} h-8 min-w-36`} value={item.status} disabled={item.status === "paid"} onChange={(e) => void updateStatus("invoice", item.id, e.target.value)}>{["draft","sent","partially_paid","paid","overdue"].map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell><Cell>{item.outstanding_amount_ugx > 0 && <Button variant="outline" size="sm" onClick={() => openCreate("payment", { invoice_id: item.id, amount_ugx: String(item.outstanding_amount_ugx) })}>Record payment</Button>}</Cell></tr>)}
+            <RecordsTable headers={["Invoice", "Client", "Total", "Paid", "Outstanding", "Status", "Document", "Payment"]}>
+              {invoices.map((item) => <tr key={item.id} className="border-t border-border">
+                <Cell strong>{item.invoice_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{money(item.paid_amount_ugx)}</Cell><Cell>{money(item.outstanding_amount_ugx)}</Cell>
+                <Cell><select className={`${selectClass} h-8 min-w-36`} value={item.status} disabled={item.status === "paid" || item.status === "overdue" || item.status === "partially_paid"} onChange={(e) => void updateStatus("invoice", item.id, e.target.value)}>{invoiceStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
+                <Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.invoiceDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell>
+                <Cell>{item.outstanding_amount_ugx > 0 && <Button variant="outline" size="sm" onClick={() => openCreate("payment", { invoice_id: item.id, amount_ugx: String(item.outstanding_amount_ugx) })}>Record payment</Button>}</Cell>
+              </tr>)}
             </RecordsTable>
           )}
         </RecordSection>
       )}
 
       {tab === "receipts" && (
-        <RecordSection title="Receipts" subtitle="Each payment appears here as the accounting source for a receipt. Branded PDF generation comes in Step 2.">
+        <RecordSection title="Receipts" subtitle="Every confirmed payment receives a backend-controlled receipt number and a branded Bertcom PDF.">
           {receipts.length === 0 ? <EmptyState text="No receipts yet. Record a payment against an invoice to create one." /> : (
-            <RecordsTable headers={["Receipt ref", "Client", "Invoice", "Amount", "Date", "Method", "Reference"]}>
-              {receipts.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.receipt_reference}</Cell><Cell>{item.client_name || "—"}</Cell><Cell>{item.invoice_number || "—"}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.payment_date}</Cell><Cell>{labelStatus(item.method)}</Cell><Cell>{item.reference || "—"}</Cell></tr>)}
+            <RecordsTable headers={["Receipt", "Client", "Invoice", "Amount", "Date", "Method", "Reference", "Document"]}>
+              {receipts.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.receipt_reference}</Cell><Cell>{item.client_name || "?"}</Cell><Cell>{item.invoice_number || "?"}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.payment_date}</Cell><Cell>{labelStatus(item.method)}</Cell><Cell>{item.reference || "?"}</Cell><Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.receiptDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
       )}
 
       {tab === "purchase_orders" && (
-        <RecordSection title="Purchase Orders" subtitle="Supplier purchasing workflow from draft through closure." onAdd={() => openCreate("purchase_order")} addLabel="New purchase order">
+        <RecordSection title="Purchase Orders" subtitle="Itemized purchase orders follow Draft ? Issued ? Received ? Closed and generate branded PDFs." onAdd={() => openCreate("purchase_order")} addLabel="New purchase order">
           {purchaseOrders.length === 0 ? <EmptyState text="No purchase orders yet." /> : (
-            <RecordsTable headers={["PO", "Supplier", "Amount", "Order date", "Status"]}>
-              {purchaseOrders.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.po_number}</Cell><Cell>{item.supplier_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.order_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-28`} value={item.status} onChange={(e) => void updateStatus("purchase_order", item.id, e.target.value)}>{["draft","issued","received","closed"].map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell></tr>)}
+            <RecordsTable headers={["PO", "Supplier", "Amount", "Order date", "Status", "Document"]}>
+              {purchaseOrders.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.po_number}</Cell><Cell>{item.supplier_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.order_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-28`} value={item.status} onChange={(e) => void updateStatus("purchase_order", item.id, e.target.value)}>{purchaseOrderStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell><Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.purchaseOrderDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
@@ -553,7 +634,7 @@ export const BusinessPage: React.FC = () => {
         <RecordSection title="Expenses" subtitle="Expenses can link to a project, supplier and supporting document." onAdd={() => openCreate("expense")} addLabel="New expense">
           {expenses.length === 0 ? <EmptyState text="No expenses yet." /> : (
             <RecordsTable headers={["Description", "Category", "Amount", "Date", "Reference", "Document"]}>
-              {expenses.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.description}</Cell><Cell>{labelStatus(item.category)}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.expense_date}</Cell><Cell>{item.reference || "—"}</Cell><Cell>{item.supporting_document_id ? "Linked" : "—"}</Cell></tr>)}
+              {expenses.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.description}</Cell><Cell>{labelStatus(item.category)}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.expense_date}</Cell><Cell>{item.reference || "â€”"}</Cell><Cell>{item.supporting_document_id ? "Linked" : "â€”"}</Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
@@ -567,7 +648,7 @@ export const BusinessPage: React.FC = () => {
             <div className="mt-4 space-y-2">
               {clientStatements.length === 0 ? <EmptyState text="No client statement activity yet." /> : clientStatements.map((item) => (
                 <button key={item.client_id} type="button" onClick={() => void openStatement(item)} className="flex w-full items-center justify-between gap-3 rounded-lg border border-border p-3 text-left hover:bg-accent/50">
-                  <div><p className="text-sm font-medium">{item.client_name}</p><p className="text-xs text-muted-foreground">Invoiced {money(item.invoiced_ugx)} · Paid {money(item.paid_ugx)}</p></div>
+                  <div><p className="text-sm font-medium">{item.client_name}</p><p className="text-xs text-muted-foreground">Invoiced {money(item.invoiced_ugx)} Â· Paid {money(item.paid_ugx)}</p></div>
                   <div className="text-right"><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-sm font-semibold">{money(item.outstanding_ugx)}</p></div>
                 </button>
               ))}
@@ -578,9 +659,9 @@ export const BusinessPage: React.FC = () => {
             <p className="mt-1 text-xs text-muted-foreground">Purchase orders and recorded supplier expenses.</p>
             <div className="mt-4 space-y-2">
               {supplierStatements.length === 0 ? <EmptyState text="No supplier statement activity yet." /> : supplierStatements.map((item) => (
-                <div key={item.supplier_id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
-                  <div><p className="text-sm font-medium">{item.supplier_name}</p><p className="text-xs text-muted-foreground">Purchase orders {money(item.purchase_orders_ugx)}</p></div>
-                  <div className="text-right"><p className="text-xs text-muted-foreground">Expenses</p><p className="text-sm font-semibold">{money(item.expenses_ugx)}</p></div>
+                <div key={item.supplier_id} className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div><p className="text-sm font-medium">{item.supplier_name}</p><p className="text-xs text-muted-foreground">Purchase orders {money(item.purchase_orders_ugx)} ? Expenses {money(item.expenses_ugx)}</p></div>
+                  <Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.supplierStatementDocument(item.supplier_id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button>
                 </div>
               ))}
             </div>
@@ -599,16 +680,18 @@ export const BusinessPage: React.FC = () => {
           </>}
 
           {(createKind === "quotation" || createKind === "invoice") && <>
-            <Field label={createKind === "quotation" ? "Quotation number" : "Invoice number"} value={form[createKind === "quotation" ? "quotation_number" : "invoice_number"] || ""} onChange={(v) => set(createKind === "quotation" ? "quotation_number" : "invoice_number", v)} required />
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              {createKind === "quotation" ? "Quotation" : "Invoice"} number is assigned automatically by Bertcom when you save.
+            </div>
             <SelectField label="Client" value={form.client_id || ""} onChange={(v) => { set("client_id", v); set("project_id", ""); }} required><option value="">Select client</option>{clients.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</SelectField>
             <SelectField label="Project" value={form.project_id || ""} onChange={(v) => set("project_id", v)}><option value="">No project</option>{filteredProjects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</SelectField>
-            <Field label="Amount (UGX)" type="number" value={form.amount_ugx || ""} onChange={(v) => set("amount_ugx", v)} required />
+            <LineItemsEditor rows={lineItems} onChange={setLineItems} />
             <div className="grid gap-3 sm:grid-cols-2"><Field label="Issue date" type="date" value={form.issue_date || ""} onChange={(v) => set("issue_date", v)} required /><Field label={createKind === "quotation" ? "Valid until" : "Due date"} type="date" value={form[createKind === "quotation" ? "valid_until" : "due_date"] || ""} onChange={(v) => set(createKind === "quotation" ? "valid_until" : "due_date", v)} /></div>
-            <Field label="Notes" value={form.notes || ""} onChange={(v) => set("notes", v)} />
+            <Field label="Notes / terms" value={form.notes || ""} onChange={(v) => set("notes", v)} />
           </>}
 
           {createKind === "payment" && <>
-            <SelectField label="Invoice" value={form.invoice_id || ""} onChange={(v) => set("invoice_id", v)} required><option value="">Select invoice</option>{invoices.filter((item) => item.outstanding_amount_ugx > 0).map((item) => <option key={item.id} value={item.id}>{item.invoice_number} · {item.client_name} · {money(item.outstanding_amount_ugx)}</option>)}</SelectField>
+            <SelectField label="Invoice" value={form.invoice_id || ""} onChange={(v) => set("invoice_id", v)} required><option value="">Select invoice</option>{invoices.filter((item) => item.outstanding_amount_ugx > 0).map((item) => <option key={item.id} value={item.id}>{item.invoice_number} Â· {item.client_name} Â· {money(item.outstanding_amount_ugx)}</option>)}</SelectField>
             <Field label="Amount received (UGX)" type="number" value={form.amount_ugx || ""} onChange={(v) => set("amount_ugx", v)} required />
             <Field label="Payment date" type="date" value={form.payment_date || ""} onChange={(v) => set("payment_date", v)} required />
             <SelectField label="Payment method" value={form.method || "bank"} onChange={(v) => set("method", v)}><option value="bank">Bank</option><option value="cash">Cash</option><option value="mobile_money">Mobile Money</option><option value="cheque">Cheque</option><option value="other">Other</option></SelectField>
@@ -617,12 +700,14 @@ export const BusinessPage: React.FC = () => {
           </>}
 
           {createKind === "purchase_order" && <>
-            <Field label="Purchase order number" value={form.po_number || ""} onChange={(v) => set("po_number", v)} required />
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              Purchase order number is assigned automatically by Bertcom when you save.
+            </div>
             <SelectField label="Supplier" value={form.supplier_id || ""} onChange={(v) => set("supplier_id", v)} required><option value="">Select supplier</option>{suppliers.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</SelectField>
             <SelectField label="Project" value={form.project_id || ""} onChange={(v) => set("project_id", v)}><option value="">No project</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</SelectField>
-            <Field label="Amount (UGX)" type="number" value={form.amount_ugx || ""} onChange={(v) => set("amount_ugx", v)} required />
+            <LineItemsEditor rows={lineItems} onChange={setLineItems} />
             <div className="grid gap-3 sm:grid-cols-2"><Field label="Order date" type="date" value={form.order_date || ""} onChange={(v) => set("order_date", v)} required /><Field label="Expected date" type="date" value={form.expected_date || ""} onChange={(v) => set("expected_date", v)} /></div>
-            <Field label="Notes" value={form.notes || ""} onChange={(v) => set("notes", v)} />
+            <Field label="Notes / delivery instructions" value={form.notes || ""} onChange={(v) => set("notes", v)} />
           </>}
 
           {createKind === "expense" && <>
@@ -648,8 +733,28 @@ export const BusinessPage: React.FC = () => {
       </Modal>
 
       <Modal isOpen={Boolean(statementTitle)} onClose={() => { setStatementTitle(""); setStatementRows(null); }} title={statementTitle || "Client statement"} description="Running invoice and payment balance." className="max-w-4xl">
-        {statementRows === null ? <PageLoading label="Loading statement..." /> : statementRows.length === 0 ? <EmptyState text="No statement entries yet." /> : <RecordsTable headers={["Date", "Type", "Reference", "Debit", "Credit", "Balance"]}>{statementRows.map((item) => <tr key={`${item.kind}-${item.record_id}`} className="border-t border-border"><Cell>{item.entry_date}</Cell><Cell><StatusPill value={item.kind} /></Cell><Cell strong>{item.reference}</Cell><Cell>{item.debit_ugx ? money(item.debit_ugx) : "—"}</Cell><Cell>{item.credit_ugx ? money(item.credit_ugx) : "—"}</Cell><Cell>{money(item.running_balance_ugx)}</Cell></tr>)}</RecordsTable>}
+        {statementRows === null ? <PageLoading label="Loading statement..." /> : statementRows.length === 0 ? <EmptyState text="No statement entries yet." /> : <RecordsTable headers={["Date", "Type", "Reference", "Debit", "Credit", "Balance"]}>{statementRows.map((item) => <tr key={`${item.kind}-${item.record_id}`} className="border-t border-border"><Cell>{item.entry_date}</Cell><Cell><StatusPill value={item.kind} /></Cell><Cell strong>{item.reference}</Cell><Cell>{item.debit_ugx ? money(item.debit_ugx) : "â€”"}</Cell><Cell>{item.credit_ugx ? money(item.credit_ugx) : "â€”"}</Cell><Cell>{money(item.running_balance_ugx)}</Cell></tr>)}</RecordsTable>}
       </Modal>
+    </div>
+  );
+};
+
+const LineItemsEditor: React.FC<{ rows: DraftLineItem[]; onChange: (rows: DraftLineItem[]) => void }> = ({ rows, onChange }) => {
+  const total = rows.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price_ugx || 0), 0);
+  const update = (index: number, field: keyof DraftLineItem, value: string) =>
+    onChange(rows.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
+  return (
+    <div className="space-y-2 rounded-xl border border-border p-3">
+      <div className="flex items-center justify-between gap-3"><div><p className="text-xs font-semibold text-foreground">Line items</p><p className="text-[11px] text-muted-foreground">The document total is calculated from these items.</p></div><Button type="button" variant="outline" size="sm" onClick={() => onChange([...rows, blankLineItem()])}><Plus className="mr-1 h-3.5 w-3.5" />Add item</Button></div>
+      {rows.map((item, index) => (
+        <div key={index} className="grid gap-2 rounded-lg bg-muted/30 p-2 sm:grid-cols-[1fr_90px_130px_36px]">
+          <Input value={item.description} onChange={(event) => update(index, "description", event.target.value)} placeholder="Description of goods or service" required />
+          <Input type="number" min="0.001" step="0.001" value={item.quantity} onChange={(event) => update(index, "quantity", event.target.value)} placeholder="Qty" required />
+          <Input type="number" min="0" step="1" value={item.unit_price_ugx} onChange={(event) => update(index, "unit_price_ugx", event.target.value)} placeholder="Unit price" required />
+          <Button type="button" variant="ghost" size="sm" disabled={rows.length === 1} onClick={() => onChange(rows.filter((_, rowIndex) => rowIndex !== index))} aria-label="Remove line item"><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      ))}
+      <div className="flex justify-end border-t border-border pt-2 text-sm font-semibold text-foreground">Total: {money(total)}</div>
     </div>
   );
 };
@@ -667,10 +772,10 @@ const Cell: React.FC<{ children: React.ReactNode; strong?: boolean }> = ({ child
 const ClientWorkspaceView: React.FC<{ workspace: ClientWorkspace }> = ({ workspace }) => (
   <div className="space-y-5">
     <div className="grid gap-3 sm:grid-cols-3"><MetricCard label="Projects" value={workspace.projects.length} icon={<Building2 className="h-5 w-5" />} /><MetricCard label="Invoices" value={workspace.invoices.length} icon={<WalletCards className="h-5 w-5" />} /><MetricCard label="Outstanding balance" value={money(workspace.outstanding_balance_ugx)} icon={<Landmark className="h-5 w-5" />} /></div>
-    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Profile"><p>{workspace.client.contact_person || "No contact person"}</p><p>{workspace.client.email || "No email"}</p><p>{workspace.client.phone || "No phone"}</p><p>{workspace.client.address || "No address"}</p></WorkspaceBox><WorkspaceBox title="Projects">{workspace.projects.length ? workspace.projects.map((item) => <WorkspaceRow key={item.id} primary={item.name} secondary={`${labelStatus(item.status)} · ${item.progress}% complete`} />) : <p>No projects linked.</p>}</WorkspaceBox></div>
-    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Quotations">{workspace.quotations.length ? workspace.quotations.map((item) => <WorkspaceRow key={item.id} primary={item.quotation_number} secondary={`${money(item.amount_ugx)} · ${labelStatus(item.status)}`} />) : <p>No quotations.</p>}</WorkspaceBox><WorkspaceBox title="Invoices">{workspace.invoices.length ? workspace.invoices.map((item) => <WorkspaceRow key={item.id} primary={item.invoice_number} secondary={`${money(item.outstanding_amount_ugx)} outstanding · ${labelStatus(item.status)}`} />) : <p>No invoices.</p>}</WorkspaceBox></div>
-    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Receipts">{workspace.receipts.length ? workspace.receipts.map((item) => <WorkspaceRow key={item.id} primary={item.receipt_reference} secondary={`${money(item.amount_ugx)} · ${item.payment_date}`} />) : <p>No receipts.</p>}</WorkspaceBox><WorkspaceBox title="Documents">{workspace.documents.length ? workspace.documents.map((item) => <WorkspaceRow key={item.id} primary={item.title} secondary={labelStatus(item.category)} />) : <p>No documents.</p>}</WorkspaceBox></div>
-    <WorkspaceBox title="Activity">{workspace.activity.length ? workspace.activity.slice(0, 12).map((item) => <WorkspaceRow key={`${item.kind}-${item.record_id}-${item.occurred_at}`} primary={item.label} secondary={`${labelStatus(item.kind)} · ${item.detail || "Updated"}`} />) : <p>No activity yet.</p>}</WorkspaceBox>
+    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Profile"><p>{workspace.client.contact_person || "No contact person"}</p><p>{workspace.client.email || "No email"}</p><p>{workspace.client.phone || "No phone"}</p><p>{workspace.client.address || "No address"}</p></WorkspaceBox><WorkspaceBox title="Projects">{workspace.projects.length ? workspace.projects.map((item) => <WorkspaceRow key={item.id} primary={item.name} secondary={`${labelStatus(item.status)} Â· ${item.progress}% complete`} />) : <p>No projects linked.</p>}</WorkspaceBox></div>
+    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Quotations">{workspace.quotations.length ? workspace.quotations.map((item) => <WorkspaceRow key={item.id} primary={item.quotation_number} secondary={`${money(item.amount_ugx)} Â· ${labelStatus(item.status)}`} />) : <p>No quotations.</p>}</WorkspaceBox><WorkspaceBox title="Invoices">{workspace.invoices.length ? workspace.invoices.map((item) => <WorkspaceRow key={item.id} primary={item.invoice_number} secondary={`${money(item.outstanding_amount_ugx)} outstanding Â· ${labelStatus(item.status)}`} />) : <p>No invoices.</p>}</WorkspaceBox></div>
+    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Receipts">{workspace.receipts.length ? workspace.receipts.map((item) => <WorkspaceRow key={item.id} primary={item.receipt_reference} secondary={`${money(item.amount_ugx)} Â· ${item.payment_date}`} />) : <p>No receipts.</p>}</WorkspaceBox><WorkspaceBox title="Documents">{workspace.documents.length ? workspace.documents.map((item) => <WorkspaceRow key={item.id} primary={item.title} secondary={labelStatus(item.category)} />) : <p>No documents.</p>}</WorkspaceBox></div>
+    <WorkspaceBox title="Activity">{workspace.activity.length ? workspace.activity.slice(0, 12).map((item) => <WorkspaceRow key={`${item.kind}-${item.record_id}-${item.occurred_at}`} primary={item.label} secondary={`${labelStatus(item.kind)} Â· ${item.detail || "Updated"}`} />) : <p>No activity yet.</p>}</WorkspaceBox>
   </div>
 );
 
@@ -678,8 +783,8 @@ const SupplierWorkspaceView: React.FC<{ workspace: SupplierWorkspace }> = ({ wor
   <div className="space-y-5">
     <div className="grid gap-3 sm:grid-cols-3"><MetricCard label="Projects supplied" value={workspace.projects.length} icon={<Building2 className="h-5 w-5" />} /><MetricCard label="Purchase orders" value={money(workspace.purchase_orders_total_ugx)} icon={<ShoppingCart className="h-5 w-5" />} /><MetricCard label="Expenses" value={money(workspace.expenses_total_ugx)} icon={<Banknote className="h-5 w-5" />} /></div>
     <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Profile"><p>{workspace.supplier.contact_person || "No contact person"}</p><p>{workspace.supplier.email || "No email"}</p><p>{workspace.supplier.phone || "No phone"}</p><p>{workspace.supplier.address || "No address"}</p></WorkspaceBox><WorkspaceBox title="Projects supplied">{workspace.projects.length ? workspace.projects.map((item) => <WorkspaceRow key={item.id} primary={item.name} secondary={labelStatus(item.status)} />) : <p>No linked projects.</p>}</WorkspaceBox></div>
-    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Purchase Orders">{workspace.purchase_orders.length ? workspace.purchase_orders.map((item) => <WorkspaceRow key={item.id} primary={item.po_number} secondary={`${money(item.amount_ugx)} · ${labelStatus(item.status)}`} />) : <p>No purchase orders.</p>}</WorkspaceBox><WorkspaceBox title="Expenses">{workspace.expenses.length ? workspace.expenses.map((item) => <WorkspaceRow key={item.id} primary={item.description} secondary={`${money(item.amount_ugx)} · ${labelStatus(item.category)}`} />) : <p>No expenses.</p>}</WorkspaceBox></div>
-    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Documents">{workspace.documents.length ? workspace.documents.map((item) => <WorkspaceRow key={item.id} primary={item.title} secondary={labelStatus(item.category)} />) : <p>No documents.</p>}</WorkspaceBox><WorkspaceBox title="Activity">{workspace.activity.length ? workspace.activity.slice(0, 12).map((item) => <WorkspaceRow key={`${item.kind}-${item.record_id}-${item.occurred_at}`} primary={item.label} secondary={`${labelStatus(item.kind)} · ${item.detail || "Updated"}`} />) : <p>No activity yet.</p>}</WorkspaceBox></div>
+    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Purchase Orders">{workspace.purchase_orders.length ? workspace.purchase_orders.map((item) => <WorkspaceRow key={item.id} primary={item.po_number} secondary={`${money(item.amount_ugx)} Â· ${labelStatus(item.status)}`} />) : <p>No purchase orders.</p>}</WorkspaceBox><WorkspaceBox title="Expenses">{workspace.expenses.length ? workspace.expenses.map((item) => <WorkspaceRow key={item.id} primary={item.description} secondary={`${money(item.amount_ugx)} Â· ${labelStatus(item.category)}`} />) : <p>No expenses.</p>}</WorkspaceBox></div>
+    <div className="grid gap-4 lg:grid-cols-2"><WorkspaceBox title="Documents">{workspace.documents.length ? workspace.documents.map((item) => <WorkspaceRow key={item.id} primary={item.title} secondary={labelStatus(item.category)} />) : <p>No documents.</p>}</WorkspaceBox><WorkspaceBox title="Activity">{workspace.activity.length ? workspace.activity.slice(0, 12).map((item) => <WorkspaceRow key={`${item.kind}-${item.record_id}-${item.occurred_at}`} primary={item.label} secondary={`${labelStatus(item.kind)} Â· ${item.detail || "Updated"}`} />) : <p>No activity yet.</p>}</WorkspaceBox></div>
   </div>
 );
 

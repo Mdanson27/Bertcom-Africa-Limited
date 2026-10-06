@@ -11,13 +11,22 @@ from litestar.status_codes import HTTP_201_CREATED
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.business.document_service import (
+    ensure_invoice_document,
+    ensure_purchase_order_document,
+    ensure_quotation_document,
+    ensure_receipt_document,
+)
 from app.domain.business.models import (
     Client,
     Expense,
     Invoice,
+    InvoiceLineItem,
     Payment,
     PurchaseOrder,
+    PurchaseOrderLineItem,
     Quotation,
+    QuotationLineItem,
     Supplier,
 )
 from app.domain.business.schemas import (
@@ -51,12 +60,37 @@ from app.domain.business.schemas import (
     SupplierUpdate,
     SupplierWorkspace,
 )
+from app.domain.business.services import (
+    next_business_number,
+    normalize_line_items,
+    replace_line_items,
+)
 from app.domain.workspace.models import Document, Project
 from app.presentation.guards.auth_guard import JWTAuthGuard
 
 QUOTATION_STATUSES = {"draft", "sent", "accepted", "rejected", "expired"}
 INVOICE_STATUSES = {"draft", "sent", "partially_paid", "paid", "overdue"}
 PO_STATUSES = {"draft", "issued", "received", "closed"}
+QUOTATION_TRANSITIONS = {
+    "draft": {"draft", "sent"},
+    "sent": {"sent", "accepted", "rejected", "expired"},
+    "accepted": {"accepted"},
+    "rejected": {"rejected"},
+    "expired": {"expired"},
+}
+INVOICE_TRANSITIONS = {
+    "draft": {"draft", "sent"},
+    "sent": {"sent", "overdue"},
+    "partially_paid": {"partially_paid", "overdue"},
+    "overdue": {"overdue"},
+    "paid": {"paid"},
+}
+PO_TRANSITIONS = {
+    "draft": {"draft", "issued"},
+    "issued": {"issued", "received"},
+    "received": {"received", "closed"},
+    "closed": {"closed"},
+}
 
 
 def _email(request: Request) -> str:
@@ -76,6 +110,17 @@ def _status(value: str, allowed: set[str], label: str) -> str:
             status_code=400,
         )
     return normalized
+
+
+def _transition(current: str, requested: str, transitions: dict[str, set[str]], label: str) -> str:
+    target = requested.strip().lower().replace(" ", "_")
+    allowed = transitions.get(current, {current})
+    if target not in allowed:
+        raise ClientException(
+            detail=f"Invalid {label.lower()} workflow transition: {current} ? {target}.",
+            status_code=409,
+        )
+    return target
 
 
 def _client_read(item: Client) -> ClientRead:
@@ -159,12 +204,14 @@ def _invoice_read(item: Invoice) -> InvoiceRead:
         notes=item.notes,
         created_at=item.created_at,
         updated_at=item.updated_at,
+        source_quotation_id=item.source_quotation_id,
     )
 
 
 def _payment_read(item: Payment) -> PaymentRead:
     return PaymentRead(
         id=item.id,
+        receipt_number=item.receipt_number,
         client_id=item.client_id,
         project_id=item.project_id,
         invoice_id=item.invoice_id,
@@ -380,17 +427,24 @@ class BusinessController(Controller):
     async def create_quotation(
         self, request: Request, data: QuotationCreate, db_session: AsyncSession
     ) -> QuotationRead:
-        if not data.quotation_number.strip():
-            raise ClientException(detail="Quotation number is required.", status_code=400)
         _, _, client_name, client_id = await self._client_and_project(
             db_session, data.client_id, data.project_id, data.client_name
         )
+        try:
+            lines, total = normalize_line_items(
+                data.items,
+                fallback_amount=data.amount_ugx,
+                fallback_description="Commercial goods / services",
+            )
+        except ValueError as exc:
+            raise ClientException(detail=str(exc), status_code=400) from exc
+        number = await next_business_number(db_session, "quotation", data.issue_date)
         item = Quotation(
-            quotation_number=data.quotation_number.strip(),
+            quotation_number=number,
             client_id=client_id,
             project_id=data.project_id,
             client_name=client_name,
-            amount_ugx=Decimal(str(max(0, data.amount_ugx))),
+            amount_ugx=total,
             status=_status(data.status, QUOTATION_STATUSES, "Quotation"),
             issue_date=data.issue_date,
             valid_until=data.valid_until,
@@ -398,8 +452,12 @@ class BusinessController(Controller):
             created_by_email=_email(request),
         )
         db_session.add(item)
+        await db_session.flush()
+        await replace_line_items(db_session, QuotationLineItem, "quotation_id", item.id, lines)
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_quotation_document(db_session, item, _email(request))
+        await db_session.commit()
         return _quotation_read(item)
 
     @patch(path="/quotations/{quotation_id:uuid}")
@@ -410,8 +468,17 @@ class BusinessController(Controller):
         if item is None:
             raise NotFoundException(detail="Quotation not found.")
         if data.status is not None:
-            item.status = _status(data.status, QUOTATION_STATUSES, "Quotation")
-        if data.amount_ugx is not None:
+            item.status = _transition(item.status, data.status, QUOTATION_TRANSITIONS, "Quotation")
+        if data.items:
+            try:
+                lines, total = normalize_line_items(
+                    data.items, fallback_description="Commercial goods / services"
+                )
+            except ValueError as exc:
+                raise ClientException(detail=str(exc), status_code=400) from exc
+            item.amount_ugx = total
+            await replace_line_items(db_session, QuotationLineItem, "quotation_id", item.id, lines)
+        elif data.amount_ugx is not None:
             item.amount_ugx = Decimal(str(max(0, data.amount_ugx)))
         for field in ("issue_date", "valid_until", "notes"):
             value = getattr(data, field)
@@ -433,6 +500,8 @@ class BusinessController(Controller):
             item.client_name = client_name
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_quotation_document(db_session, item, item.created_by_email)
+        await db_session.commit()
         return _quotation_read(item)
 
     @get(path="/invoices")
@@ -453,12 +522,17 @@ class BusinessController(Controller):
     async def create_invoice(
         self, request: Request, data: InvoiceCreate, db_session: AsyncSession
     ) -> InvoiceRead:
-        if not data.invoice_number.strip():
-            raise ClientException(detail="Invoice number is required.", status_code=400)
         _, _, client_name, client_id = await self._client_and_project(
             db_session, data.client_id, data.project_id, data.client_name
         )
-        amount = Decimal(str(max(0, data.amount_ugx)))
+        try:
+            lines, amount = normalize_line_items(
+                data.items,
+                fallback_amount=data.amount_ugx,
+                fallback_description="Commercial goods / services",
+            )
+        except ValueError as exc:
+            raise ClientException(detail=str(exc), status_code=400) from exc
         paid = Decimal(str(max(0, data.paid_amount_ugx)))
         if paid > amount > 0:
             raise ClientException(
@@ -469,8 +543,9 @@ class BusinessController(Controller):
             status = "paid"
         elif paid > 0:
             status = "partially_paid"
+        number = await next_business_number(db_session, "invoice", data.issue_date)
         item = Invoice(
-            invoice_number=data.invoice_number.strip(),
+            invoice_number=number,
             client_id=client_id,
             project_id=data.project_id,
             client_name=client_name,
@@ -483,8 +558,12 @@ class BusinessController(Controller):
             created_by_email=_email(request),
         )
         db_session.add(item)
+        await db_session.flush()
+        await replace_line_items(db_session, InvoiceLineItem, "invoice_id", item.id, lines)
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_invoice_document(db_session, item, _email(request))
+        await db_session.commit()
         return _invoice_read(item)
 
     @patch(path="/invoices/{invoice_id:uuid}")
@@ -494,7 +573,20 @@ class BusinessController(Controller):
         item = await db_session.get(Invoice, invoice_id)
         if item is None:
             raise NotFoundException(detail="Invoice not found.")
-        if data.amount_ugx is not None:
+        if data.items:
+            try:
+                lines, new_amount = normalize_line_items(
+                    data.items, fallback_description="Commercial goods / services"
+                )
+            except ValueError as exc:
+                raise ClientException(detail=str(exc), status_code=400) from exc
+            if new_amount < (item.paid_amount_ugx or Decimal()):
+                raise ClientException(
+                    detail="Invoice amount cannot be lower than payments received.", status_code=409
+                )
+            item.amount_ugx = new_amount
+            await replace_line_items(db_session, InvoiceLineItem, "invoice_id", item.id, lines)
+        elif data.amount_ugx is not None:
             new_amount = Decimal(str(max(0, data.amount_ugx)))
             if new_amount < (item.paid_amount_ugx or Decimal()):
                 raise ClientException(
@@ -503,7 +595,7 @@ class BusinessController(Controller):
                 )
             item.amount_ugx = new_amount
         if data.status is not None:
-            item.status = _status(data.status, INVOICE_STATUSES, "Invoice")
+            item.status = _transition(item.status, data.status, INVOICE_TRANSITIONS, "Invoice")
         for field in ("issue_date", "due_date", "notes"):
             value = getattr(data, field)
             if value is not None:
@@ -530,6 +622,8 @@ class BusinessController(Controller):
             item.status = "partially_paid"
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_invoice_document(db_session, item, item.created_by_email)
+        await db_session.commit()
         return _invoice_read(item)
 
     @get(path="/payments")
@@ -595,7 +689,9 @@ class BusinessController(Controller):
                     status_code=409,
                 )
 
+        receipt_number = await next_business_number(db_session, "receipt", data.payment_date)
         item = Payment(
+            receipt_number=receipt_number,
             client_id=client_id,
             project_id=project_id,
             invoice_id=data.invoice_id,
@@ -621,6 +717,8 @@ class BusinessController(Controller):
             )
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_receipt_document(db_session, item, _email(request))
+        await db_session.commit()
         return _payment_read(item)
 
     async def _receipt_read(self, db_session: AsyncSession, item: Payment) -> ReceiptRead:
@@ -628,7 +726,7 @@ class BusinessController(Controller):
         client = await db_session.get(Client, item.client_id) if item.client_id else None
         return ReceiptRead(
             id=item.id,
-            receipt_reference=f"PAY-{str(item.id).split('-')[0].upper()}",
+            receipt_reference=item.receipt_number or f"PAY-{str(item.id).split('-')[0].upper()}",
             client_id=item.client_id,
             client_name=client.name if client else (invoice.client_name if invoice else None),
             project_id=item.project_id,
@@ -682,17 +780,23 @@ class BusinessController(Controller):
         if data.project_id and await db_session.get(Project, data.project_id) is None:
             raise NotFoundException(detail="Project not found.")
         supplier_name = supplier.name if supplier else data.supplier_name.strip()
-        if not data.po_number.strip() or not supplier_name:
-            raise ClientException(
-                detail="Purchase order number and supplier are required.",
-                status_code=400,
+        if not supplier_name:
+            raise ClientException(detail="Supplier is required.", status_code=400)
+        try:
+            lines, total = normalize_line_items(
+                data.items,
+                fallback_amount=data.amount_ugx,
+                fallback_description="Goods / services ordered",
             )
+        except ValueError as exc:
+            raise ClientException(detail=str(exc), status_code=400) from exc
+        number = await next_business_number(db_session, "purchase_order", data.order_date)
         item = PurchaseOrder(
-            po_number=data.po_number.strip(),
+            po_number=number,
             supplier_id=data.supplier_id,
             project_id=data.project_id,
             supplier_name=supplier_name,
-            amount_ugx=Decimal(str(max(0, data.amount_ugx))),
+            amount_ugx=total,
             status=_status(data.status, PO_STATUSES, "Purchase order"),
             order_date=data.order_date,
             expected_date=data.expected_date,
@@ -700,8 +804,14 @@ class BusinessController(Controller):
             created_by_email=_email(request),
         )
         db_session.add(item)
+        await db_session.flush()
+        await replace_line_items(
+            db_session, PurchaseOrderLineItem, "purchase_order_id", item.id, lines
+        )
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_purchase_order_document(db_session, item, _email(request))
+        await db_session.commit()
         return _po_read(item)
 
     @patch(path="/purchase-orders/{purchase_order_id:uuid}")
@@ -715,8 +825,19 @@ class BusinessController(Controller):
         if item is None:
             raise NotFoundException(detail="Purchase order not found.")
         if data.status is not None:
-            item.status = _status(data.status, PO_STATUSES, "Purchase order")
-        if data.amount_ugx is not None:
+            item.status = _transition(item.status, data.status, PO_TRANSITIONS, "Purchase order")
+        if data.items:
+            try:
+                lines, total = normalize_line_items(
+                    data.items, fallback_description="Goods / services ordered"
+                )
+            except ValueError as exc:
+                raise ClientException(detail=str(exc), status_code=400) from exc
+            item.amount_ugx = total
+            await replace_line_items(
+                db_session, PurchaseOrderLineItem, "purchase_order_id", item.id, lines
+            )
+        elif data.amount_ugx is not None:
             item.amount_ugx = Decimal(str(max(0, data.amount_ugx)))
         if data.supplier_id is not None:
             supplier = await db_session.get(Supplier, data.supplier_id)
@@ -736,6 +857,8 @@ class BusinessController(Controller):
                 setattr(item, field, value)
         await db_session.commit()
         await db_session.refresh(item)
+        await ensure_purchase_order_document(db_session, item, item.created_by_email)
+        await db_session.commit()
         return _po_read(item)
 
     @get(path="/expenses")
