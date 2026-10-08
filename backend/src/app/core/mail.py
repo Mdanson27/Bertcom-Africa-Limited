@@ -43,8 +43,9 @@ from __future__ import annotations
 import asyncio
 import re
 import smtplib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
+from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -103,6 +104,13 @@ def _html_to_text(html: str) -> str:
 
 
 @dataclass
+class EmailAttachment:
+    filename: str
+    content: bytes
+    content_type: str = "application/pdf"
+
+
+@dataclass
 class EmailMessage:
     to_address: str
     subject: str
@@ -110,6 +118,7 @@ class EmailMessage:
     text_body: str | None = None  # auto-generated from html_body if None
     from_address: str | None = None  # falls back to settings.EMAILS_FROM_ADDRESS
     reply_to: str | None = None
+    attachments: list[EmailAttachment] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.text_body is None:
@@ -132,15 +141,22 @@ async def _send_smtp(msg: EmailMessage) -> None:
     asyncio.get_running_loop().run_in_executor with smtplib — synchronous but
     non-blocking from the event loop's perspective.
     """
-    mime = MIMEMultipart("alternative")
+    mime = MIMEMultipart("mixed")
     mime["Subject"] = msg.subject
     mime["From"] = msg.from_address or settings.EMAILS_FROM_ADDRESS
     mime["To"] = msg.to_address
     if msg.reply_to:
         mime["Reply-To"] = msg.reply_to
 
-    mime.attach(MIMEText(msg.text_body or "", "plain", "utf-8"))
-    mime.attach(MIMEText(msg.html_body, "html", "utf-8"))
+    alternative = MIMEMultipart("alternative")
+    alternative.attach(MIMEText(msg.text_body or "", "plain", "utf-8"))
+    alternative.attach(MIMEText(msg.html_body, "html", "utf-8"))
+    mime.attach(alternative)
+    for attachment in msg.attachments:
+        subtype = attachment.content_type.split("/", 1)[-1] or "octet-stream"
+        part = MIMEApplication(attachment.content, _subtype=subtype)
+        part.add_header("Content-Disposition", "attachment", filename=attachment.filename)
+        mime.attach(part)
 
     try:
         import aiosmtplib  # optional dep
@@ -177,6 +193,7 @@ async def _send_mock(msg: EmailMessage) -> None:
         text_preview=((msg.text_body or "")[:200] + "…")
         if len(msg.text_body or "") > 200
         else msg.text_body,
+        attachments=[attachment.filename for attachment in msg.attachments],
     )
 
 
@@ -202,6 +219,10 @@ class MailService:
             await _send_smtp(msg)
         else:
             await _send_mock(msg)
+
+    async def send_message(self, msg: EmailMessage) -> None:
+        """Dispatch a caller-supplied message and wait for delivery/mock confirmation."""
+        await self._dispatch(msg)
 
     def send_in_background(self, msg: EmailMessage) -> asyncio.Task:
         """

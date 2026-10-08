@@ -188,6 +188,15 @@ class DocumentRead(msgspec.Struct, frozen=True):
     review_status: str
     related_record_type: str | None
     related_record_id: uuid.UUID | None
+    document_type: str | None
+    document_number: str | None
+    version: int
+    is_current: bool
+    is_deleted: bool
+    deleted_at: datetime | None
+    deleted_by_email: str | None
+    supersedes_document_id: uuid.UUID | None
+    content_hash: str | None
     ocr_text: str | None
     extracted_fields: dict[str, Any]
     created_at: datetime

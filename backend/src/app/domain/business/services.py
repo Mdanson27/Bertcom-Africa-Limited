@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 import uuid
 from collections.abc import Iterable
 from datetime import date
 from decimal import Decimal
 from typing import Any, TypeVar
 
-from sqlalchemy import delete, select, text
+from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.storage import presign_download, put_object_bytes, storage_configured
-from app.domain.business.models import BusinessNumberCounter
+from app.domain.business.models import BusinessDocumentEvent, BusinessNumberCounter
 from app.domain.business.schemas import CommercialLineItemRead
 from app.domain.workspace.models import Document
 
@@ -135,6 +136,116 @@ async def next_business_number(
     return f"{PREFIXES[document_type]}-{year}-{counter.last_value:04d}"
 
 
+async def record_document_event(
+    db_session: AsyncSession,
+    document: Document,
+    action: str,
+    actor_email: str,
+    details: dict[str, Any] | None = None,
+) -> BusinessDocumentEvent:
+    event = BusinessDocumentEvent(
+        document_id=document.id,
+        action=action.strip().lower(),
+        actor_email=actor_email.strip().lower(),
+        details=details or {},
+    )
+    db_session.add(event)
+    await db_session.flush()
+    return event
+
+
+async def current_generated_document(
+    db_session: AsyncSession, related_record_type: str, related_record_id: uuid.UUID
+) -> Document | None:
+    return (
+        (
+            await db_session.execute(
+                select(Document)
+                .where(
+                    Document.category == "generated_commercial",
+                    Document.related_record_type == related_record_type,
+                    Document.related_record_id == related_record_id,
+                    Document.is_current.is_(True),
+                    Document.is_deleted.is_(False),
+                )
+                .order_by(Document.version.desc(), Document.created_at.desc())
+            )
+        )
+        .scalars()
+        .first()
+    )
+
+
+async def latest_generated_version(
+    db_session: AsyncSession, related_record_type: str, related_record_id: uuid.UUID
+) -> int:
+    value = await db_session.scalar(
+        select(func.max(Document.version)).where(
+            Document.category == "generated_commercial",
+            Document.related_record_type == related_record_type,
+            Document.related_record_id == related_record_id,
+        )
+    )
+    return int(value or 0)
+
+
+async def has_current_preview(
+    db_session: AsyncSession, related_record_type: str, related_record_id: uuid.UUID
+) -> bool:
+    document = await current_generated_document(db_session, related_record_type, related_record_id)
+    if document is None:
+        return False
+    event_id = await db_session.scalar(
+        select(BusinessDocumentEvent.id)
+        .where(
+            BusinessDocumentEvent.document_id == document.id,
+            BusinessDocumentEvent.action == "previewed",
+        )
+        .limit(1)
+    )
+    return event_id is not None
+
+
+async def current_document_has_action(
+    db_session: AsyncSession,
+    related_record_type: str,
+    related_record_id: uuid.UUID,
+    actions: set[str],
+) -> bool:
+    document = await current_generated_document(db_session, related_record_type, related_record_id)
+    if document is None:
+        return False
+    event_id = await db_session.scalar(
+        select(BusinessDocumentEvent.id)
+        .where(
+            BusinessDocumentEvent.document_id == document.id,
+            BusinessDocumentEvent.action.in_(sorted(actions)),
+        )
+        .limit(1)
+    )
+    return event_id is not None
+
+
+async def require_current_preview(
+    db_session: AsyncSession, related_record_type: str, related_record_id: uuid.UUID
+) -> None:
+    if not await current_document_has_action(
+        db_session, related_record_type, related_record_id, {"previewed"}
+    ):
+        raise ValueError("Preview the current document version before issuing or sending it.")
+
+
+async def require_current_reviewed_version(
+    db_session: AsyncSession, related_record_type: str, related_record_id: uuid.UUID
+) -> None:
+    if not await current_document_has_action(
+        db_session, related_record_type, related_record_id, {"previewed", "sent", "issued"}
+    ):
+        raise ValueError(
+            "Preview the revised current document version before continuing its workflow."
+        )
+
+
 async def upsert_generated_document(
     db_session: AsyncSession,
     *,
@@ -147,46 +258,72 @@ async def upsert_generated_document(
     project_id: uuid.UUID | None = None,
     client_id: uuid.UUID | None = None,
     supplier_id: uuid.UUID | None = None,
+    force_new_version: bool = False,
 ) -> tuple[Document | None, str | None]:
     if not storage_configured():
         return None, None
-    storage_key = f"documents/generated/{related_record_type}/{related_record_id}.pdf"
+
+    actor = uploaded_by_email.strip().lower()
+    content_hash = hashlib.sha256(pdf_bytes).hexdigest()
+    current = await current_generated_document(db_session, related_record_type, related_record_id)
+
+    if current is not None and current.content_hash == content_hash and not force_new_version:
+        current.project_id = project_id
+        current.client_id = client_id
+        current.supplier_id = supplier_id
+        current.title = title
+        current.original_filename = filename
+        current.uploaded_by_email = actor
+        await db_session.flush()
+        return current, presign_download(current.storage_key)
+
+    next_version = (
+        await latest_generated_version(db_session, related_record_type, related_record_id) + 1
+    )
+    if current is not None:
+        current.is_current = False
+
+    safe_filename = filename.replace("/", "-").replace("\\", "-")
+    storage_key = (
+        f"documents/generated/{related_record_type}/{related_record_id}/"
+        f"v{next_version}/{safe_filename}"
+    )
     put_object_bytes(storage_key, pdf_bytes, "application/pdf")
-    document = (
-        await db_session.execute(
-            select(Document).where(
-                Document.related_record_type == related_record_type,
-                Document.related_record_id == related_record_id,
-                Document.category == "generated_commercial",
-            )
-        )
-    ).scalar_one_or_none()
-    if document is None:
-        document = Document(
-            project_id=project_id,
-            client_id=client_id,
-            supplier_id=supplier_id,
-            title=title,
-            original_filename=filename,
-            category="generated_commercial",
-            content_type="application/pdf",
-            size_bytes=len(pdf_bytes),
-            storage_key=storage_key,
-            uploaded_by_email=uploaded_by_email,
-            ocr_status="not_requested",
-            review_status="not_reviewed",
-            related_record_type=related_record_type,
-            related_record_id=related_record_id,
-        )
-        db_session.add(document)
-    else:
-        document.project_id = project_id
-        document.client_id = client_id
-        document.supplier_id = supplier_id
-        document.title = title
-        document.original_filename = filename
-        document.size_bytes = len(pdf_bytes)
-        document.storage_key = storage_key
-        document.uploaded_by_email = uploaded_by_email
+
+    document_number = filename.removesuffix(".pdf")
+    document = Document(
+        project_id=project_id,
+        client_id=client_id,
+        supplier_id=supplier_id,
+        title=title,
+        original_filename=filename,
+        category="generated_commercial",
+        content_type="application/pdf",
+        size_bytes=len(pdf_bytes),
+        storage_key=storage_key,
+        uploaded_by_email=actor,
+        ocr_status="not_requested",
+        review_status="not_reviewed",
+        related_record_type=related_record_type,
+        related_record_id=related_record_id,
+        document_type=related_record_type,
+        document_number=document_number,
+        version=next_version,
+        is_current=True,
+        is_deleted=False,
+        supersedes_document_id=current.id if current else None,
+        content_hash=content_hash,
+    )
+    db_session.add(document)
     await db_session.flush()
+    await record_document_event(
+        db_session,
+        document,
+        "generated" if current is None else "revised",
+        actor,
+        {
+            "version": next_version,
+            "supersedes_document_id": str(current.id) if current else None,
+        },
+    )
     return document, presign_download(storage_key)

@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { ApiV1AuthLoginLoginData, ApiV1AuthLoginLoginResponses, ApiV1AuthLogoutLogoutData, ApiV1AuthLogoutLogoutResponses, ApiV1AuthTokenTokenData, ApiV1AuthTokenTokenResponses, ApiV1BusinessClientsClientIdStatementClientStatementData, ApiV1BusinessClientsClientIdStatementClientStatementErrors, ApiV1BusinessClientsClientIdStatementClientStatementResponses, ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentData, ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentErrors, ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentResponses, ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadData, ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadErrors, ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadResponses, ApiV1BusinessClientsClientIdUpdateClientData, ApiV1BusinessClientsClientIdUpdateClientErrors, ApiV1BusinessClientsClientIdUpdateClientResponses, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceData, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses, ApiV1BusinessClientsClientsData, ApiV1BusinessClientsClientsErrors, ApiV1BusinessClientsClientsResponses, ApiV1BusinessClientsCreateClientData, ApiV1BusinessClientsCreateClientErrors, ApiV1BusinessClientsCreateClientResponses, ApiV1BusinessExpensesCreateExpenseData, ApiV1BusinessExpensesCreateExpenseErrors, ApiV1BusinessExpensesCreateExpenseResponses, ApiV1BusinessExpensesExpensesData, ApiV1BusinessExpensesExpensesErrors, ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessInvoicesCreateInvoiceData, ApiV1BusinessInvoicesCreateInvoiceErrors, ApiV1BusinessInvoicesCreateInvoiceResponses, ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentData, ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentErrors, ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentResponses, ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadData, ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadErrors, ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadResponses, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceData, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses, ApiV1BusinessInvoicesInvoicesData, ApiV1BusinessInvoicesInvoicesErrors, ApiV1BusinessInvoicesInvoicesResponses, ApiV1BusinessPaymentsCreatePaymentData, ApiV1BusinessPaymentsCreatePaymentErrors, ApiV1BusinessPaymentsCreatePaymentResponses, ApiV1BusinessPaymentsPaymentsData, ApiV1BusinessPaymentsPaymentsErrors, ApiV1BusinessPaymentsPaymentsResponses, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderData, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrdersData, ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors, ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, ApiV1BusinessQuotationsCreateQuotationData, ApiV1BusinessQuotationsCreateQuotationErrors, ApiV1BusinessQuotationsCreateQuotationResponses, ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceData, ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceErrors, ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceResponses, ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentData, ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentErrors, ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentResponses, ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadData, ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadErrors, ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadResponses, ApiV1BusinessQuotationsQuotationIdUpdateQuotationData, ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors, ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses, ApiV1BusinessQuotationsQuotationsData, ApiV1BusinessQuotationsQuotationsErrors, ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentData, ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentErrors, ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentResponses, ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadData, ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadErrors, ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadResponses, ApiV1BusinessReceiptsReceiptsData, ApiV1BusinessReceiptsReceiptsErrors, ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessStatementsClientsClientStatementSummariesData, ApiV1BusinessStatementsClientsClientStatementSummariesResponses, ApiV1BusinessStatementsSuppliersSupplierStatementSummariesData, ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses, ApiV1BusinessSummarySummaryData, ApiV1BusinessSummarySummaryResponses, ApiV1BusinessSuppliersCreateSupplierData, ApiV1BusinessSuppliersCreateSupplierErrors, ApiV1BusinessSuppliersCreateSupplierResponses, ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentData, ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentErrors, ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentResponses, ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadData, ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadErrors, ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadResponses, ApiV1BusinessSuppliersSupplierIdUpdateSupplierData, ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors, ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceData, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses, ApiV1BusinessSuppliersSuppliersData, ApiV1BusinessSuppliersSuppliersErrors, ApiV1BusinessSuppliersSuppliersResponses, ApiV1DocumentsCreateDocumentData, ApiV1DocumentsCreateDocumentErrors, ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentData, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdUpdateDocumentData, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsListDocumentsData, ApiV1DocumentsListDocumentsErrors, ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsPresignCreateUploadUrlData, ApiV1DocumentsPresignCreateUploadUrlErrors, ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1ProjectsCreateProjectData, ApiV1ProjectsCreateProjectErrors, ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsDashboardDashboardData, ApiV1ProjectsDashboardDashboardResponses, ApiV1ProjectsListProjectsData, ApiV1ProjectsListProjectsErrors, ApiV1ProjectsListProjectsResponses, ApiV1ProjectsProjectIdArchiveProjectData, ApiV1ProjectsProjectIdArchiveProjectErrors, ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdDuplicateDuplicateProjectData, ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors, ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses, ApiV1ProjectsProjectIdGetProjectData, ApiV1ProjectsProjectIdGetProjectErrors, ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdRestoreRestoreProjectData, ApiV1ProjectsProjectIdRestoreRestoreProjectErrors, ApiV1ProjectsProjectIdRestoreRestoreProjectResponses, ApiV1ProjectsProjectIdUpdateProjectData, ApiV1ProjectsProjectIdUpdateProjectErrors, ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceData, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses, ApiV1TasksCreateTaskData, ApiV1TasksCreateTaskErrors, ApiV1TasksCreateTaskResponses, ApiV1TasksDashboardDashboardData, ApiV1TasksDashboardDashboardResponses, ApiV1TasksListTasksData, ApiV1TasksListTasksErrors, ApiV1TasksListTasksResponses, ApiV1TasksTaskIdDeleteTaskData, ApiV1TasksTaskIdDeleteTaskErrors, ApiV1TasksTaskIdDeleteTaskResponses, ApiV1TasksTaskIdUpdateTaskData, ApiV1TasksTaskIdUpdateTaskErrors, ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TelemetryIngestIngestData, ApiV1TelemetryIngestIngestErrors, ApiV1TelemetryIngestIngestResponses, ApiV1UsersCreateUserAdminData, ApiV1UsersCreateUserAdminErrors, ApiV1UsersCreateUserAdminResponses, ApiV1UsersListUsersData, ApiV1UsersListUsersErrors, ApiV1UsersListUsersResponses, ApiV1UsersMeDeleteMeData, ApiV1UsersMeDeleteMeResponses, ApiV1UsersMeGetMeData, ApiV1UsersMeGetMeResponses, ApiV1UsersMePasswordUpdatePasswordMeData, ApiV1UsersMePasswordUpdatePasswordMeErrors, ApiV1UsersMePasswordUpdatePasswordMeResponses, ApiV1UsersMeUpdateMeData, ApiV1UsersMeUpdateMeErrors, ApiV1UsersMeUpdateMeResponses, ApiV1UsersRegisterRegisterData, ApiV1UsersRegisterRegisterErrors, ApiV1UsersRegisterRegisterResponses, ApiV1UsersSignupSignupData, ApiV1UsersSignupSignupErrors, ApiV1UsersSignupSignupResponses, ApiV1UsersUserIdDeleteUserData, ApiV1UsersUserIdDeleteUserErrors, ApiV1UsersUserIdDeleteUserResponses, ApiV1UsersUserIdGetUserByIdData, ApiV1UsersUserIdGetUserByIdErrors, ApiV1UsersUserIdGetUserByIdResponses, ApiV1UsersUserIdRoleUpdateUserRoleAdminData, ApiV1UsersUserIdRoleUpdateUserRoleAdminErrors, ApiV1UsersUserIdRoleUpdateUserRoleAdminResponses, ApiV1UsersUserIdUpdateUserAdminData, ApiV1UsersUserIdUpdateUserAdminErrors, ApiV1UsersUserIdUpdateUserAdminResponses, ApiV1UtilsHealthCheckHealthCheckData, ApiV1UtilsHealthCheckHealthCheckResponses, ApiV1UtilsTestEmailTestEmailData, ApiV1UtilsTestEmailTestEmailErrors, ApiV1UtilsTestEmailTestEmailResponses, ApiV1WorkspaceSummarySummaryData, ApiV1WorkspaceSummarySummaryResponses, HealthGetHealthData, HealthGetHealthResponses, HealthLiveGetLivenessData, HealthLiveGetLivenessResponses, HealthReadyGetReadinessData, HealthReadyGetReadinessResponses, HealthStartupGetStartupData, HealthStartupGetStartupResponses, MetricsMetricsEndpointData, MetricsMetricsEndpointResponses } from './types.gen';
+import type { ApiV1AuthLoginLoginData, ApiV1AuthLoginLoginResponses, ApiV1AuthLogoutLogoutData, ApiV1AuthLogoutLogoutResponses, ApiV1AuthTokenTokenData, ApiV1AuthTokenTokenResponses, ApiV1BusinessClientsClientIdStatementClientStatementData, ApiV1BusinessClientsClientIdStatementClientStatementErrors, ApiV1BusinessClientsClientIdStatementClientStatementResponses, ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentData, ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentErrors, ApiV1BusinessClientsClientIdStatementDocumentGenerateClientStatementDocumentResponses, ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadData, ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadErrors, ApiV1BusinessClientsClientIdStatementPdfClientStatementPdfDownloadResponses, ApiV1BusinessClientsClientIdUpdateClientData, ApiV1BusinessClientsClientIdUpdateClientErrors, ApiV1BusinessClientsClientIdUpdateClientResponses, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceData, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceErrors, ApiV1BusinessClientsClientIdWorkspaceClientWorkspaceResponses, ApiV1BusinessClientsClientsData, ApiV1BusinessClientsClientsErrors, ApiV1BusinessClientsClientsResponses, ApiV1BusinessClientsCreateClientData, ApiV1BusinessClientsCreateClientErrors, ApiV1BusinessClientsCreateClientResponses, ApiV1BusinessDocumentsBusinessDocumentsArchiveData, ApiV1BusinessDocumentsBusinessDocumentsArchiveErrors, ApiV1BusinessDocumentsBusinessDocumentsArchiveResponses, ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryData, ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryErrors, ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryResponses, ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentData, ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentErrors, ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentResponses, ApiV1BusinessExpensesCreateExpenseData, ApiV1BusinessExpensesCreateExpenseErrors, ApiV1BusinessExpensesCreateExpenseResponses, ApiV1BusinessExpensesExpensesData, ApiV1BusinessExpensesExpensesErrors, ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessInvoicesCreateInvoiceData, ApiV1BusinessInvoicesCreateInvoiceErrors, ApiV1BusinessInvoicesCreateInvoiceResponses, ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentData, ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentErrors, ApiV1BusinessInvoicesInvoiceIdDocumentGenerateInvoiceDocumentResponses, ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadData, ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadErrors, ApiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownloadResponses, ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentData, ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentErrors, ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentResponses, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceData, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceErrors, ApiV1BusinessInvoicesInvoiceIdUpdateInvoiceResponses, ApiV1BusinessInvoicesInvoicesData, ApiV1BusinessInvoicesInvoicesErrors, ApiV1BusinessInvoicesInvoicesResponses, ApiV1BusinessPaymentsCreatePaymentData, ApiV1BusinessPaymentsCreatePaymentErrors, ApiV1BusinessPaymentsCreatePaymentResponses, ApiV1BusinessPaymentsPaymentsData, ApiV1BusinessPaymentsPaymentsErrors, ApiV1BusinessPaymentsPaymentsResponses, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderData, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersCreatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdDocumentGeneratePurchaseOrderDocumentResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownloadResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderData, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderErrors, ApiV1BusinessPurchaseOrdersPurchaseOrderIdUpdatePurchaseOrderResponses, ApiV1BusinessPurchaseOrdersPurchaseOrdersData, ApiV1BusinessPurchaseOrdersPurchaseOrdersErrors, ApiV1BusinessPurchaseOrdersPurchaseOrdersResponses, ApiV1BusinessQuotationsCreateQuotationData, ApiV1BusinessQuotationsCreateQuotationErrors, ApiV1BusinessQuotationsCreateQuotationResponses, ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceData, ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceErrors, ApiV1BusinessQuotationsQuotationIdConvertToInvoiceConvertQuotationToInvoiceResponses, ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentData, ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentErrors, ApiV1BusinessQuotationsQuotationIdDocumentGenerateQuotationDocumentResponses, ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadData, ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadErrors, ApiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownloadResponses, ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentData, ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentErrors, ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentResponses, ApiV1BusinessQuotationsQuotationIdUpdateQuotationData, ApiV1BusinessQuotationsQuotationIdUpdateQuotationErrors, ApiV1BusinessQuotationsQuotationIdUpdateQuotationResponses, ApiV1BusinessQuotationsQuotationsData, ApiV1BusinessQuotationsQuotationsErrors, ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentData, ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentErrors, ApiV1BusinessReceiptsPaymentIdDocumentGenerateReceiptDocumentResponses, ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadData, ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadErrors, ApiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownloadResponses, ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentData, ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentErrors, ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentResponses, ApiV1BusinessReceiptsReceiptsData, ApiV1BusinessReceiptsReceiptsErrors, ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessStatementsClientsClientStatementSummariesData, ApiV1BusinessStatementsClientsClientStatementSummariesResponses, ApiV1BusinessStatementsSuppliersSupplierStatementSummariesData, ApiV1BusinessStatementsSuppliersSupplierStatementSummariesResponses, ApiV1BusinessSummarySummaryData, ApiV1BusinessSummarySummaryResponses, ApiV1BusinessSuppliersCreateSupplierData, ApiV1BusinessSuppliersCreateSupplierErrors, ApiV1BusinessSuppliersCreateSupplierResponses, ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentData, ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentErrors, ApiV1BusinessSuppliersSupplierIdStatementDocumentGenerateSupplierStatementDocumentResponses, ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadData, ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadErrors, ApiV1BusinessSuppliersSupplierIdStatementPdfSupplierStatementPdfDownloadResponses, ApiV1BusinessSuppliersSupplierIdUpdateSupplierData, ApiV1BusinessSuppliersSupplierIdUpdateSupplierErrors, ApiV1BusinessSuppliersSupplierIdUpdateSupplierResponses, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceData, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceErrors, ApiV1BusinessSuppliersSupplierIdWorkspaceSupplierWorkspaceResponses, ApiV1BusinessSuppliersSuppliersData, ApiV1BusinessSuppliersSuppliersErrors, ApiV1BusinessSuppliersSuppliersResponses, ApiV1DocumentsCreateDocumentData, ApiV1DocumentsCreateDocumentErrors, ApiV1DocumentsCreateDocumentResponses, ApiV1DocumentsDocumentIdDeleteDocumentData, ApiV1DocumentsDocumentIdDeleteDocumentErrors, ApiV1DocumentsDocumentIdDeleteDocumentResponses, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlData, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlErrors, ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses, ApiV1DocumentsDocumentIdUpdateDocumentData, ApiV1DocumentsDocumentIdUpdateDocumentErrors, ApiV1DocumentsDocumentIdUpdateDocumentResponses, ApiV1DocumentsListDocumentsData, ApiV1DocumentsListDocumentsErrors, ApiV1DocumentsListDocumentsResponses, ApiV1DocumentsPresignCreateUploadUrlData, ApiV1DocumentsPresignCreateUploadUrlErrors, ApiV1DocumentsPresignCreateUploadUrlResponses, ApiV1ProjectsCreateProjectData, ApiV1ProjectsCreateProjectErrors, ApiV1ProjectsCreateProjectResponses, ApiV1ProjectsDashboardDashboardData, ApiV1ProjectsDashboardDashboardResponses, ApiV1ProjectsListProjectsData, ApiV1ProjectsListProjectsErrors, ApiV1ProjectsListProjectsResponses, ApiV1ProjectsProjectIdArchiveProjectData, ApiV1ProjectsProjectIdArchiveProjectErrors, ApiV1ProjectsProjectIdArchiveProjectResponses, ApiV1ProjectsProjectIdDuplicateDuplicateProjectData, ApiV1ProjectsProjectIdDuplicateDuplicateProjectErrors, ApiV1ProjectsProjectIdDuplicateDuplicateProjectResponses, ApiV1ProjectsProjectIdGetProjectData, ApiV1ProjectsProjectIdGetProjectErrors, ApiV1ProjectsProjectIdGetProjectResponses, ApiV1ProjectsProjectIdRestoreRestoreProjectData, ApiV1ProjectsProjectIdRestoreRestoreProjectErrors, ApiV1ProjectsProjectIdRestoreRestoreProjectResponses, ApiV1ProjectsProjectIdUpdateProjectData, ApiV1ProjectsProjectIdUpdateProjectErrors, ApiV1ProjectsProjectIdUpdateProjectResponses, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceData, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceErrors, ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses, ApiV1TasksCreateTaskData, ApiV1TasksCreateTaskErrors, ApiV1TasksCreateTaskResponses, ApiV1TasksDashboardDashboardData, ApiV1TasksDashboardDashboardResponses, ApiV1TasksListTasksData, ApiV1TasksListTasksErrors, ApiV1TasksListTasksResponses, ApiV1TasksTaskIdDeleteTaskData, ApiV1TasksTaskIdDeleteTaskErrors, ApiV1TasksTaskIdDeleteTaskResponses, ApiV1TasksTaskIdUpdateTaskData, ApiV1TasksTaskIdUpdateTaskErrors, ApiV1TasksTaskIdUpdateTaskResponses, ApiV1TelemetryIngestIngestData, ApiV1TelemetryIngestIngestErrors, ApiV1TelemetryIngestIngestResponses, ApiV1UsersCreateUserAdminData, ApiV1UsersCreateUserAdminErrors, ApiV1UsersCreateUserAdminResponses, ApiV1UsersListUsersData, ApiV1UsersListUsersErrors, ApiV1UsersListUsersResponses, ApiV1UsersMeDeleteMeData, ApiV1UsersMeDeleteMeResponses, ApiV1UsersMeGetMeData, ApiV1UsersMeGetMeResponses, ApiV1UsersMePasswordUpdatePasswordMeData, ApiV1UsersMePasswordUpdatePasswordMeErrors, ApiV1UsersMePasswordUpdatePasswordMeResponses, ApiV1UsersMeUpdateMeData, ApiV1UsersMeUpdateMeErrors, ApiV1UsersMeUpdateMeResponses, ApiV1UsersRegisterRegisterData, ApiV1UsersRegisterRegisterErrors, ApiV1UsersRegisterRegisterResponses, ApiV1UsersSignupSignupData, ApiV1UsersSignupSignupErrors, ApiV1UsersSignupSignupResponses, ApiV1UsersUserIdDeleteUserData, ApiV1UsersUserIdDeleteUserErrors, ApiV1UsersUserIdDeleteUserResponses, ApiV1UsersUserIdGetUserByIdData, ApiV1UsersUserIdGetUserByIdErrors, ApiV1UsersUserIdGetUserByIdResponses, ApiV1UsersUserIdRoleUpdateUserRoleAdminData, ApiV1UsersUserIdRoleUpdateUserRoleAdminErrors, ApiV1UsersUserIdRoleUpdateUserRoleAdminResponses, ApiV1UsersUserIdUpdateUserAdminData, ApiV1UsersUserIdUpdateUserAdminErrors, ApiV1UsersUserIdUpdateUserAdminResponses, ApiV1UtilsHealthCheckHealthCheckData, ApiV1UtilsHealthCheckHealthCheckResponses, ApiV1UtilsTestEmailTestEmailData, ApiV1UtilsTestEmailTestEmailErrors, ApiV1UtilsTestEmailTestEmailResponses, ApiV1WorkspaceSummarySummaryData, ApiV1WorkspaceSummarySummaryResponses, HealthGetHealthData, HealthGetHealthResponses, HealthLiveGetLivenessData, HealthLiveGetLivenessResponses, HealthReadyGetReadinessData, HealthReadyGetReadinessResponses, HealthStartupGetStartupData, HealthStartupGetStartupResponses, MetricsMetricsEndpointData, MetricsMetricsEndpointResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -203,6 +203,197 @@ export const apiV1BusinessClientsClientIdWorkspaceClientWorkspace = <ThrowOnErro
 });
 
 /**
+ * BusinessDocumentsArchive
+ */
+export const apiV1BusinessDocumentsBusinessDocumentsArchive = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessDocumentsBusinessDocumentsArchiveData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsBusinessDocumentsArchiveResponses, ApiV1BusinessDocumentsBusinessDocumentsArchiveErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessDocumentsBusinessDocumentsArchiveResponses, ApiV1BusinessDocumentsBusinessDocumentsArchiveErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents',
+    ...options
+});
+
+/**
+ * SoftDeleteArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).delete<ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdSoftDeleteArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}',
+    ...options
+});
+
+/**
+ * DownloadArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdDownloadDownloadArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/download',
+    ...options
+});
+
+/**
+ * EmailArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdEmailEmailArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/email',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * DocumentHistory
+ */
+export const apiV1BusinessDocumentsDocumentIdHistoryDocumentHistory = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryResponses, ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryErrors, ThrowOnError> => (options.client ?? client).get<ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryResponses, ApiV1BusinessDocumentsDocumentIdHistoryDocumentHistoryErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/history',
+    ...options
+});
+
+/**
+ * PrintArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdPrintPrintArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/print',
+    ...options
+});
+
+/**
+ * PurgeArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).delete<ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdPurgePurgeArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/purge',
+    ...options
+});
+
+/**
+ * RegenerateArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdRegenerateRegenerateArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/regenerate',
+    ...options
+});
+
+/**
+ * RestoreArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdRestoreRestoreArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/restore',
+    ...options
+});
+
+/**
+ * ShareArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdShareShareArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdShareShareArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/share',
+    ...options
+});
+
+/**
+ * ViewArchivedDocument
+ */
+export const apiV1BusinessDocumentsDocumentIdViewViewArchivedDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentResponses, ApiV1BusinessDocumentsDocumentIdViewViewArchivedDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/documents/{document_id}/view',
+    ...options
+});
+
+/**
  * Expenses
  */
 export const apiV1BusinessExpensesExpenses = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessExpensesExpensesData, ThrowOnError>): RequestResult<ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessExpensesExpensesErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessExpensesExpensesResponses, ApiV1BusinessExpensesExpensesErrors, ThrowOnError>({
@@ -330,6 +521,23 @@ export const apiV1BusinessInvoicesInvoiceIdPdfInvoicePdfDownload = <ThrowOnError
             type: 'http'
         }],
     url: '/api/v1/business/invoices/{invoice_id}/pdf',
+    ...options
+});
+
+/**
+ * PreviewInvoiceDocument
+ */
+export const apiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentResponses, ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentResponses, ApiV1BusinessInvoicesInvoiceIdPreviewPreviewInvoiceDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/invoices/{invoice_id}/preview',
     ...options
 });
 
@@ -465,6 +673,23 @@ export const apiV1BusinessPurchaseOrdersPurchaseOrderIdPdfPurchaseOrderPdfDownlo
 });
 
 /**
+ * PreviewPurchaseOrderDocument
+ */
+export const apiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentResponses, ApiV1BusinessPurchaseOrdersPurchaseOrderIdPreviewPreviewPurchaseOrderDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/purchase-orders/{purchase_order_id}/preview',
+    ...options
+});
+
+/**
  * Quotations
  */
 export const apiV1BusinessQuotationsQuotations = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessQuotationsQuotationsData, ThrowOnError>): RequestResult<ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessQuotationsQuotationsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessQuotationsQuotationsResponses, ApiV1BusinessQuotationsQuotationsErrors, ThrowOnError>({
@@ -579,6 +804,23 @@ export const apiV1BusinessQuotationsQuotationIdPdfQuotationPdfDownload = <ThrowO
 });
 
 /**
+ * PreviewQuotationDocument
+ */
+export const apiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentResponses, ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentResponses, ApiV1BusinessQuotationsQuotationIdPreviewPreviewQuotationDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/quotations/{quotation_id}/preview',
+    ...options
+});
+
+/**
  * Receipts
  */
 export const apiV1BusinessReceiptsReceipts = <ThrowOnError extends boolean = false>(options?: Options<ApiV1BusinessReceiptsReceiptsData, ThrowOnError>): RequestResult<ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessReceiptsReceiptsErrors, ThrowOnError> => (options?.client ?? client).get<ApiV1BusinessReceiptsReceiptsResponses, ApiV1BusinessReceiptsReceiptsErrors, ThrowOnError>({
@@ -626,6 +868,23 @@ export const apiV1BusinessReceiptsPaymentIdPdfReceiptPdfDownload = <ThrowOnError
             type: 'http'
         }],
     url: '/api/v1/business/receipts/{payment_id}/pdf',
+    ...options
+});
+
+/**
+ * PreviewReceiptDocument
+ */
+export const apiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocument = <ThrowOnError extends boolean = false>(options: Options<ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentData, ThrowOnError>): RequestResult<ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentResponses, ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentErrors, ThrowOnError> => (options.client ?? client).post<ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentResponses, ApiV1BusinessReceiptsPaymentIdPreviewPreviewReceiptDocumentErrors, ThrowOnError>({
+    security: [{
+            key: 'BearerAuth',
+            scheme: 'bearer',
+            type: 'http'
+        }, {
+            key: 'OAuth2Password',
+            scheme: 'bearer',
+            type: 'http'
+        }],
+    url: '/api/v1/business/receipts/{payment_id}/preview',
     ...options
 });
 

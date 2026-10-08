@@ -61,9 +61,13 @@ from app.domain.business.schemas import (
     SupplierWorkspace,
 )
 from app.domain.business.services import (
+    current_generated_document,
     next_business_number,
     normalize_line_items,
+    record_document_event,
     replace_line_items,
+    require_current_preview,
+    require_current_reviewed_version,
 )
 from app.domain.workspace.models import Document, Project
 from app.presentation.guards.auth_guard import JWTAuthGuard
@@ -438,6 +442,12 @@ class BusinessController(Controller):
             )
         except ValueError as exc:
             raise ClientException(detail=str(exc), status_code=400) from exc
+        status = _status(data.status, QUOTATION_STATUSES, "Quotation")
+        if status != "draft":
+            raise ClientException(
+                detail="Create the quotation as Draft, preview the generated PDF, then send it.",
+                status_code=409,
+            )
         number = await next_business_number(db_session, "quotation", data.issue_date)
         item = Quotation(
             quotation_number=number,
@@ -445,7 +455,7 @@ class BusinessController(Controller):
             project_id=data.project_id,
             client_name=client_name,
             amount_ugx=total,
-            status=_status(data.status, QUOTATION_STATUSES, "Quotation"),
+            status=status,
             issue_date=data.issue_date,
             valid_until=data.valid_until,
             notes=data.notes,
@@ -462,12 +472,42 @@ class BusinessController(Controller):
 
     @patch(path="/quotations/{quotation_id:uuid}")
     async def update_quotation(
-        self, quotation_id: uuid.UUID, data: QuotationUpdate, db_session: AsyncSession
+        self,
+        request: Request,
+        quotation_id: uuid.UUID,
+        data: QuotationUpdate,
+        db_session: AsyncSession,
     ) -> QuotationRead:
         item = await db_session.get(Quotation, quotation_id)
         if item is None:
             raise NotFoundException(detail="Quotation not found.")
+        quotation_content_change = bool(
+            data.items
+            or data.amount_ugx is not None
+            or data.issue_date is not None
+            or data.valid_until is not None
+            or data.notes is not None
+            or data.client_id is not None
+            or data.project_id is not None
+            or data.client_name is not None
+        )
+        previous_status = item.status
         if data.status is not None:
+            if data.status != item.status and quotation_content_change:
+                raise ClientException(
+                    detail="Save quotation edits first, preview the regenerated PDF, then change its workflow status.",
+                    status_code=409,
+                )
+            if item.status == "draft" and data.status == "sent":
+                try:
+                    await require_current_preview(db_session, "quotation", item.id)
+                except ValueError as exc:
+                    raise ClientException(detail=str(exc), status_code=409) from exc
+            elif item.status == "sent" and data.status in {"accepted", "rejected", "expired"}:
+                try:
+                    await require_current_reviewed_version(db_session, "quotation", item.id)
+                except ValueError as exc:
+                    raise ClientException(detail=str(exc), status_code=409) from exc
             item.status = _transition(item.status, data.status, QUOTATION_TRANSITIONS, "Quotation")
         if data.items:
             try:
@@ -500,7 +540,17 @@ class BusinessController(Controller):
             item.client_name = client_name
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_quotation_document(db_session, item, item.created_by_email)
+        await ensure_quotation_document(db_session, item, _email(request))
+        if item.status != previous_status:
+            document = await current_generated_document(db_session, "quotation", item.id)
+            if document is not None:
+                await record_document_event(
+                    db_session,
+                    document,
+                    item.status,
+                    _email(request),
+                    {"from_status": previous_status},
+                )
         await db_session.commit()
         return _quotation_read(item)
 
@@ -539,6 +589,11 @@ class BusinessController(Controller):
                 detail="Paid amount cannot exceed invoice amount.", status_code=400
             )
         status = _status(data.status, INVOICE_STATUSES, "Invoice")
+        if status != "draft":
+            raise ClientException(
+                detail="Create the invoice as Draft, preview the generated PDF, then send it.",
+                status_code=409,
+            )
         if amount > 0 and paid >= amount:
             status = "paid"
         elif paid > 0:
@@ -568,7 +623,7 @@ class BusinessController(Controller):
 
     @patch(path="/invoices/{invoice_id:uuid}")
     async def update_invoice(
-        self, invoice_id: uuid.UUID, data: InvoiceUpdate, db_session: AsyncSession
+        self, request: Request, invoice_id: uuid.UUID, data: InvoiceUpdate, db_session: AsyncSession
     ) -> InvoiceRead:
         item = await db_session.get(Invoice, invoice_id)
         if item is None:
@@ -594,7 +649,28 @@ class BusinessController(Controller):
                     status_code=409,
                 )
             item.amount_ugx = new_amount
+        invoice_content_change = bool(
+            data.items
+            or data.amount_ugx is not None
+            or data.issue_date is not None
+            or data.due_date is not None
+            or data.notes is not None
+            or data.client_id is not None
+            or data.project_id is not None
+            or data.client_name is not None
+        )
+        previous_status = item.status
         if data.status is not None:
+            if data.status != item.status and invoice_content_change:
+                raise ClientException(
+                    detail="Save invoice edits first, preview the regenerated PDF, then change its workflow status.",
+                    status_code=409,
+                )
+            if item.status == "draft" and data.status == "sent":
+                try:
+                    await require_current_preview(db_session, "invoice", item.id)
+                except ValueError as exc:
+                    raise ClientException(detail=str(exc), status_code=409) from exc
             item.status = _transition(item.status, data.status, INVOICE_TRANSITIONS, "Invoice")
         for field in ("issue_date", "due_date", "notes"):
             value = getattr(data, field)
@@ -622,7 +698,17 @@ class BusinessController(Controller):
             item.status = "partially_paid"
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_invoice_document(db_session, item, item.created_by_email)
+        await ensure_invoice_document(db_session, item, _email(request))
+        if item.status != previous_status:
+            document = await current_generated_document(db_session, "invoice", item.id)
+            if document is not None:
+                await record_document_event(
+                    db_session,
+                    document,
+                    item.status,
+                    _email(request),
+                    {"from_status": previous_status},
+                )
         await db_session.commit()
         return _invoice_read(item)
 
@@ -718,6 +804,21 @@ class BusinessController(Controller):
         await db_session.commit()
         await db_session.refresh(item)
         await ensure_receipt_document(db_session, item, _email(request))
+        if invoice is not None:
+            await ensure_invoice_document(db_session, invoice, _email(request))
+            invoice_document = await current_generated_document(db_session, "invoice", invoice.id)
+            if invoice_document is not None:
+                await record_document_event(
+                    db_session,
+                    invoice_document,
+                    "paid" if invoice.status == "paid" else "payment_recorded",
+                    _email(request),
+                    {
+                        "receipt_number": item.receipt_number,
+                        "payment_id": str(item.id),
+                        "amount_ugx": float(item.amount_ugx or 0),
+                    },
+                )
         await db_session.commit()
         return _payment_read(item)
 
@@ -790,6 +891,12 @@ class BusinessController(Controller):
             )
         except ValueError as exc:
             raise ClientException(detail=str(exc), status_code=400) from exc
+        status = _status(data.status, PO_STATUSES, "Purchase order")
+        if status != "draft":
+            raise ClientException(
+                detail="Create the purchase order as Draft, preview the generated PDF, then issue it.",
+                status_code=409,
+            )
         number = await next_business_number(db_session, "purchase_order", data.order_date)
         item = PurchaseOrder(
             po_number=number,
@@ -797,7 +904,7 @@ class BusinessController(Controller):
             project_id=data.project_id,
             supplier_name=supplier_name,
             amount_ugx=total,
-            status=_status(data.status, PO_STATUSES, "Purchase order"),
+            status=status,
             order_date=data.order_date,
             expected_date=data.expected_date,
             notes=data.notes,
@@ -817,6 +924,7 @@ class BusinessController(Controller):
     @patch(path="/purchase-orders/{purchase_order_id:uuid}")
     async def update_purchase_order(
         self,
+        request: Request,
         purchase_order_id: uuid.UUID,
         data: PurchaseOrderUpdate,
         db_session: AsyncSession,
@@ -824,7 +932,28 @@ class BusinessController(Controller):
         item = await db_session.get(PurchaseOrder, purchase_order_id)
         if item is None:
             raise NotFoundException(detail="Purchase order not found.")
+        po_content_change = bool(
+            data.items
+            or data.amount_ugx is not None
+            or data.supplier_id is not None
+            or data.supplier_name is not None
+            or data.project_id is not None
+            or data.order_date is not None
+            or data.expected_date is not None
+            or data.notes is not None
+        )
+        previous_status = item.status
         if data.status is not None:
+            if data.status != item.status and po_content_change:
+                raise ClientException(
+                    detail="Save purchase-order edits first, preview the regenerated PDF, then change its workflow status.",
+                    status_code=409,
+                )
+            if item.status == "draft" and data.status == "issued":
+                try:
+                    await require_current_preview(db_session, "purchase_order", item.id)
+                except ValueError as exc:
+                    raise ClientException(detail=str(exc), status_code=409) from exc
             item.status = _transition(item.status, data.status, PO_TRANSITIONS, "Purchase order")
         if data.items:
             try:
@@ -857,7 +986,17 @@ class BusinessController(Controller):
                 setattr(item, field, value)
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_purchase_order_document(db_session, item, item.created_by_email)
+        await ensure_purchase_order_document(db_session, item, _email(request))
+        if item.status != previous_status:
+            document = await current_generated_document(db_session, "purchase_order", item.id)
+            if document is not None:
+                await record_document_event(
+                    db_session,
+                    document,
+                    item.status,
+                    _email(request),
+                    {"from_status": previous_status},
+                )
         await db_session.commit()
         return _po_read(item)
 
@@ -981,7 +1120,9 @@ class BusinessController(Controller):
         documents = (
             (
                 await db_session.execute(
-                    select(Document).where(doc_filter).order_by(Document.created_at.desc())
+                    select(Document)
+                    .where(doc_filter, Document.is_deleted.is_(False))
+                    .order_by(Document.created_at.desc())
                 )
             )
             .scalars()
@@ -1085,7 +1226,9 @@ class BusinessController(Controller):
         documents = (
             (
                 await db_session.execute(
-                    select(Document).where(doc_filter).order_by(Document.created_at.desc())
+                    select(Document)
+                    .where(doc_filter, Document.is_deleted.is_(False))
+                    .order_by(Document.created_at.desc())
                 )
             )
             .scalars()

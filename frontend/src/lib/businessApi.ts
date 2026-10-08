@@ -47,6 +47,43 @@ export interface CommercialDocumentRecord {
   stored: boolean;
 }
 
+export interface BusinessDocumentArchiveRecord {
+  id: string;
+  document_type: string | null;
+  document_number: string | null;
+  title: string;
+  filename: string;
+  version: number;
+  is_current: boolean;
+  is_deleted: boolean;
+  client_id: string | null;
+  supplier_id: string | null;
+  project_id: string | null;
+  related_record_type: string | null;
+  related_record_id: string | null;
+  uploaded_by_email: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  deleted_by_email: string | null;
+  supersedes_document_id: string | null;
+}
+
+export interface BusinessDocumentEventRecord {
+  id: string;
+  document_id: string;
+  action: string;
+  actor_email: string;
+  details: Record<string, unknown>;
+  occurred_at: string;
+}
+
+export interface BusinessDocumentActionRecord {
+  document: BusinessDocumentArchiveRecord;
+  download_url: string | null;
+  message: string | null;
+}
+
 export interface QuotationRecord {
   id: string;
   quotation_number: string;
@@ -251,6 +288,8 @@ export const businessApi = {
     request<InvoiceRecord>(`/business/quotations/${id}/convert-to-invoice`, { method: "POST", body: JSON.stringify(body) }),
   quotationDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/quotations/${id}/document`, { method: "POST" }),
+  previewQuotation: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/quotations/${id}/preview`, { method: "POST" }),
 
   invoices: (filters?: { client_id?: string; project_id?: string }) =>
     request<InvoiceRecord[]>(`/business/invoices${queryString(filters)}`),
@@ -260,6 +299,8 @@ export const businessApi = {
     request<InvoiceRecord>(`/business/invoices/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   invoiceDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/invoices/${id}/document`, { method: "POST" }),
+  previewInvoice: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/invoices/${id}/preview`, { method: "POST" }),
 
   receipts: (filters?: { client_id?: string; project_id?: string }) =>
     request<ReceiptRecord[]>(`/business/receipts${queryString(filters)}`),
@@ -267,6 +308,8 @@ export const businessApi = {
     request<Record<string, unknown>>("/business/payments", { method: "POST", body: JSON.stringify(body) }),
   receiptDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/receipts/${id}/document`, { method: "POST" }),
+  previewReceipt: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/receipts/${id}/preview`, { method: "POST" }),
 
   purchaseOrders: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<PurchaseOrderRecord[]>(`/business/purchase-orders${queryString(filters)}`),
@@ -276,6 +319,8 @@ export const businessApi = {
     request<PurchaseOrderRecord>(`/business/purchase-orders/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   purchaseOrderDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/purchase-orders/${id}/document`, { method: "POST" }),
+  previewPurchaseOrder: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/purchase-orders/${id}/preview`, { method: "POST" }),
 
   expenses: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<ExpenseRecord[]>(`/business/expenses${queryString(filters)}`),
@@ -292,6 +337,28 @@ export const businessApi = {
     request<CommercialDocumentRecord>(`/business/clients/${id}/statement/document`, { method: "POST" }),
   supplierStatementDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/suppliers/${id}/statement/document`, { method: "POST" }),
+
+  businessDocuments: (filters?: {
+    document_type?: string; client_id?: string; supplier_id?: string; project_id?: string; q?: string; include_deleted?: string;
+  }) => request<BusinessDocumentArchiveRecord[]>(`/business/documents${queryString(filters)}`),
+  documentHistory: (id: string) =>
+    request<BusinessDocumentEventRecord[]>(`/business/documents/${id}/history`),
+  viewBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/view`, { method: "POST" }),
+  downloadBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/download`, { method: "POST" }),
+  printBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/print`, { method: "POST" }),
+  shareBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/share`, { method: "POST" }),
+  regenerateBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/regenerate`, { method: "POST" }),
+  emailBusinessDocument: (id: string, body: { to_address: string; subject?: string | null; message?: string | null }) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/email`, { method: "POST", body: JSON.stringify(body) }),
+  deleteBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}`, { method: "DELETE" }),
+  restoreBusinessDocument: (id: string) =>
+    request<BusinessDocumentActionRecord>(`/business/documents/${id}/restore`, { method: "POST" }),
 
   projects: () => request<ProjectOption[]>("/projects"),
   documents: () => request<DocumentOption[]>("/documents"),

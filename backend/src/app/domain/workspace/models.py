@@ -115,8 +115,23 @@ class Document(AuditBase):
         server_default="not_reviewed",
         index=True,
     )
-    related_record_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    related_record_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
+    related_record_type: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    related_record_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
+    document_type: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    document_number: Mapped[str | None] = mapped_column(String(96), nullable=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true", index=True
+    )
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false", index=True
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deleted_by_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    supersedes_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("documents.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     extracted_fields: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default="{}"

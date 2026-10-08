@@ -7,14 +7,13 @@ from decimal import Decimal
 from typing import Any, ClassVar
 
 import structlog
-from botocore.exceptions import ClientError
 from litestar import Controller, Request, delete, get, patch, post
 from litestar.exceptions import ClientException, NotFoundException
 from litestar.status_codes import HTTP_200_OK, HTTP_201_CREATED
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.storage import delete_object, presign_download, presign_upload, storage_configured
+from app.core.storage import presign_download, presign_upload, storage_configured
 from app.domain.audit.models import AuditLog
 from app.domain.business.models import (
     Client,
@@ -122,6 +121,15 @@ def _document_read(item: Document) -> DocumentRead:
         review_status=item.review_status,
         related_record_type=item.related_record_type,
         related_record_id=item.related_record_id,
+        document_type=item.document_type,
+        document_number=item.document_number,
+        version=item.version,
+        is_current=item.is_current,
+        is_deleted=item.is_deleted,
+        deleted_at=item.deleted_at,
+        deleted_by_email=item.deleted_by_email,
+        supersedes_document_id=item.supersedes_document_id,
+        content_hash=item.content_hash,
         ocr_text=item.ocr_text,
         extracted_fields=dict(item.extracted_fields or {}),
         created_at=item.created_at,
@@ -467,7 +475,7 @@ class ProjectsController(Controller):
             (
                 await db_session.execute(
                     select(Document)
-                    .where(Document.project_id == project_id)
+                    .where(Document.project_id == project_id, Document.is_deleted.is_(False))
                     .order_by(Document.created_at.desc())
                 )
             )
@@ -1023,7 +1031,11 @@ class DocumentsController(Controller):
         supplier_id: uuid.UUID | None = None,
         q: str | None = None,
     ) -> list[DocumentRead]:
-        stmt = select(Document).order_by(Document.created_at.desc())
+        stmt = (
+            select(Document)
+            .where(Document.is_deleted.is_(False))
+            .order_by(Document.created_at.desc())
+        )
         if project_id:
             stmt = stmt.where(Document.project_id == project_id)
         if client_id:
@@ -1159,27 +1171,23 @@ class DocumentsController(Controller):
         db_session: AsyncSession,
     ) -> DownloadResponse:
         item = await db_session.get(Document, document_id)
-        if item is None:
+        if item is None or item.is_deleted:
             raise NotFoundException(detail="Document not found.")
         return DownloadResponse(url=presign_download(item.storage_key))
 
     @delete(path="/{document_id:uuid}", status_code=HTTP_200_OK)
-    async def delete_document(self, document_id: uuid.UUID, db_session: AsyncSession) -> dict:
+    async def delete_document(
+        self, request: Request, document_id: uuid.UUID, db_session: AsyncSession
+    ) -> dict:
         item = await db_session.get(Document, document_id)
-        if item is None:
+        if item is None or item.is_deleted:
             raise NotFoundException(detail="Document not found.")
-        key = item.storage_key
-        await db_session.delete(item)
+        item.is_deleted = True
+        item.is_current = False
+        item.deleted_at = datetime.now(UTC)
+        item.deleted_by_email = _email(request)
         await db_session.commit()
-        try:
-            delete_object(key)
-        except ClientError as exc:
-            logger.warning(
-                "document.storage_delete_failed",
-                storage_key=key,
-                error=str(exc),
-            )
-        return {"message": "Document deleted."}
+        return {"message": "Document moved out of active use and retained for recovery/audit."}
 
 
 class WorkspaceController(Controller):

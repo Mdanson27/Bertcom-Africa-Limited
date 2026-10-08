@@ -385,3 +385,46 @@ class StatementEntry(msgspec.Struct, frozen=True):
     credit_ugx: float
     running_balance_ugx: float
     status: str | None = None
+
+
+class BusinessDocumentArchiveItem(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    document_type: str | None
+    document_number: str | None
+    title: str
+    filename: str
+    version: int
+    is_current: bool
+    is_deleted: bool
+    client_id: uuid.UUID | None
+    supplier_id: uuid.UUID | None
+    project_id: uuid.UUID | None
+    related_record_type: str | None
+    related_record_id: uuid.UUID | None
+    uploaded_by_email: str
+    created_at: datetime
+    updated_at: datetime
+    deleted_at: datetime | None
+    deleted_by_email: str | None
+    supersedes_document_id: uuid.UUID | None
+
+
+class BusinessDocumentEventRead(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    document_id: uuid.UUID
+    action: str
+    actor_email: str
+    details: dict
+    occurred_at: datetime
+
+
+class BusinessDocumentEmailRequest(msgspec.Struct, frozen=True):
+    to_address: str
+    subject: str | None = None
+    message: str | None = None
+
+
+class BusinessDocumentActionResponse(msgspec.Struct, frozen=True):
+    document: BusinessDocumentArchiveItem
+    download_url: str | None = None
+    message: str | None = None

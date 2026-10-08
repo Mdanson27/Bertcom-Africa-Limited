@@ -4,6 +4,7 @@ import {
   Building2,
   ArrowRight,
   Download,
+  Eye,
   FileText,
   Landmark,
   Plus,
@@ -18,12 +19,14 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { PageError, PageLoading } from "@/components/common/RequestState";
+import { BusinessDocumentsArchive } from "@/components/business/BusinessDocumentsArchive";
 import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
 import {
   businessApi,
+  type BusinessDocumentArchiveRecord,
   type BusinessSummary,
   type ClientRecord,
   type ClientStatementSummary,
@@ -50,7 +53,8 @@ type BusinessView =
   | "receipts"
   | "purchase_orders"
   | "expenses"
-  | "statements";
+  | "statements"
+  | "business_documents";
 
 type CreateKind =
   | "client"
@@ -182,6 +186,8 @@ export const BusinessPage: React.FC = () => {
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [documents, setDocuments] = useState<DocumentOption[]>([]);
+  const [businessDocuments, setBusinessDocuments] = useState<BusinessDocumentArchiveRecord[]>([]);
+  const [preview, setPreview] = useState<{ url: string; title: string; filename: string } | null>(null);
   const [clientStatements, setClientStatements] = useState<ClientStatementSummary[]>([]);
   const [supplierStatements, setSupplierStatements] = useState<SupplierStatementSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -219,6 +225,7 @@ export const BusinessPage: React.FC = () => {
         nextExpenses,
         nextProjects,
         nextDocuments,
+        nextBusinessDocuments,
         nextClientStatements,
         nextSupplierStatements,
       ] = await Promise.all([
@@ -232,6 +239,7 @@ export const BusinessPage: React.FC = () => {
         businessApi.expenses(),
         businessApi.projects(),
         businessApi.documents(),
+        businessApi.businessDocuments(),
         businessApi.clientStatementSummaries(),
         businessApi.supplierStatementSummaries(),
       ]);
@@ -245,6 +253,7 @@ export const BusinessPage: React.FC = () => {
       setExpenses(nextExpenses);
       setProjects(nextProjects);
       setDocuments(nextDocuments);
+      setBusinessDocuments(nextBusinessDocuments);
       setClientStatements(nextClientStatements);
       setSupplierStatements(nextSupplierStatements);
     } catch (error) {
@@ -411,19 +420,34 @@ export const BusinessPage: React.FC = () => {
     }
   };
 
-  const openDocument = async (loader: () => Promise<{ download_url: string | null; filename: string }>) => {
-    const popup = window.open("about:blank", "_blank");
+  const previewDocument = async (
+    loader: () => Promise<{ download_url: string | null; filename: string; document_id?: string | null }>,
+    title: string,
+  ) => {
     try {
       const document = await loader();
       if (!document.download_url) {
-        popup?.close();
-        throw new Error("Document storage is not configured, so the PDF could not be opened from the archive.");
+        throw new Error("Document storage is not configured, so the saved PDF cannot be previewed.");
       }
-      if (popup) popup.location.href = document.download_url;
-      else window.location.assign(document.download_url);
+      setPreview({ url: document.download_url, title, filename: document.filename });
     } catch (error) {
-      popup?.close();
-      showErrorToast(getErrorMessage(error, "The PDF could not be opened."));
+      showErrorToast(getErrorMessage(error, "The PDF preview could not be opened."));
+    }
+  };
+
+  const generateStatementPreview = async (
+    loader: () => Promise<{ download_url: string | null; filename: string; document_id: string | null }>,
+    title: string,
+  ) => {
+    try {
+      const generated = await loader();
+      if (!generated.document_id) throw new Error("The statement could not be saved to the document archive.");
+      const viewed = await businessApi.viewBusinessDocument(generated.document_id);
+      if (!viewed.download_url) throw new Error("The saved statement PDF is unavailable.");
+      setPreview({ url: viewed.download_url, title, filename: generated.filename });
+      await load(false);
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The statement preview could not be opened."));
     }
   };
 
@@ -487,6 +511,7 @@ export const BusinessPage: React.FC = () => {
     { id: "purchase_orders" as const, label: "Purchase Orders", count: purchaseOrders.length },
     { id: "expenses" as const, label: "Expenses", count: expenses.length },
     { id: "statements" as const, label: "Statements" },
+    { id: "business_documents" as const, label: "Business Documents", count: businessDocuments.length },
   ];
 
   return (
@@ -578,7 +603,7 @@ export const BusinessPage: React.FC = () => {
       )}
 
       {tab === "quotations" && (
-        <RecordSection title="Quotations" subtitle="Create itemized quotations, move them through approval, download the branded PDF, then convert accepted quotations into invoices." onAdd={() => openCreate("quotation")} addLabel="New quotation">
+        <RecordSection title="Quotations" subtitle="Create itemized quotations, preview the exact saved PDF, then move them through approval and convert accepted quotations into invoices." onAdd={() => openCreate("quotation")} addLabel="New quotation">
           {quotes.length === 0 ? <EmptyState text="No quotations yet." /> : (
             <RecordsTable headers={["Quotation", "Client", "Amount", "Issued", "Status", "Document", "Workflow"]}>
               {quotes.map((item) => {
@@ -586,7 +611,7 @@ export const BusinessPage: React.FC = () => {
                 return <tr key={item.id} className="border-t border-border">
                   <Cell strong>{item.quotation_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.issue_date}</Cell>
                   <Cell><select className={`${selectClass} h-8 min-w-32`} value={item.status} onChange={(e) => void updateStatus("quotation", item.id, e.target.value)}>{quotationStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
-                  <Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.quotationDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell>
+                  <Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewQuotation(item.id), `${item.quotation_number} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
                   <Cell>{item.status === "accepted" ? converted ? <span className="text-xs font-medium text-muted-foreground">Invoiced</span> : <Button size="sm" onClick={() => void convertQuotation(item)}><ArrowRight className="mr-1.5 h-3.5 w-3.5" />Convert to invoice</Button> : <span className="text-xs text-muted-foreground">{item.status === "draft" ? "Send first" : "?"}</span>}</Cell>
                 </tr>;
               })}
@@ -596,13 +621,13 @@ export const BusinessPage: React.FC = () => {
       )}
 
       {tab === "invoices" && (
-        <RecordSection title="Invoices" subtitle="Invoice balances and payment states are calculated from confirmed receipts." onAdd={() => openCreate("invoice")} addLabel="New invoice">
+        <RecordSection title="Invoices" subtitle="Preview the exact saved PDF before sending. Invoice balances and payment states are calculated from confirmed receipts." onAdd={() => openCreate("invoice")} addLabel="New invoice">
           {invoices.length === 0 ? <EmptyState text="No invoices yet." /> : (
             <RecordsTable headers={["Invoice", "Client", "Total", "Paid", "Outstanding", "Status", "Document", "Payment"]}>
               {invoices.map((item) => <tr key={item.id} className="border-t border-border">
                 <Cell strong>{item.invoice_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{money(item.paid_amount_ugx)}</Cell><Cell>{money(item.outstanding_amount_ugx)}</Cell>
                 <Cell><select className={`${selectClass} h-8 min-w-36`} value={item.status} disabled={item.status === "paid" || item.status === "overdue" || item.status === "partially_paid"} onChange={(e) => void updateStatus("invoice", item.id, e.target.value)}>{invoiceStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
-                <Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.invoiceDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell>
+                <Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewInvoice(item.id), `${item.invoice_number} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
                 <Cell>{item.outstanding_amount_ugx > 0 && <Button variant="outline" size="sm" onClick={() => openCreate("payment", { invoice_id: item.id, amount_ugx: String(item.outstanding_amount_ugx) })}>Record payment</Button>}</Cell>
               </tr>)}
             </RecordsTable>
@@ -614,17 +639,17 @@ export const BusinessPage: React.FC = () => {
         <RecordSection title="Receipts" subtitle="Every confirmed payment receives a backend-controlled receipt number and a branded Bertcom PDF.">
           {receipts.length === 0 ? <EmptyState text="No receipts yet. Record a payment against an invoice to create one." /> : (
             <RecordsTable headers={["Receipt", "Client", "Invoice", "Amount", "Date", "Method", "Reference", "Document"]}>
-              {receipts.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.receipt_reference}</Cell><Cell>{item.client_name || "?"}</Cell><Cell>{item.invoice_number || "?"}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.payment_date}</Cell><Cell>{labelStatus(item.method)}</Cell><Cell>{item.reference || "?"}</Cell><Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.receiptDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell></tr>)}
+              {receipts.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.receipt_reference}</Cell><Cell>{item.client_name || "?"}</Cell><Cell>{item.invoice_number || "?"}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.payment_date}</Cell><Cell>{labelStatus(item.method)}</Cell><Cell>{item.reference || "?"}</Cell><Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewReceipt(item.id), `${item.receipt_reference} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
       )}
 
       {tab === "purchase_orders" && (
-        <RecordSection title="Purchase Orders" subtitle="Itemized purchase orders follow Draft ? Issued ? Received ? Closed and generate branded PDFs." onAdd={() => openCreate("purchase_order")} addLabel="New purchase order">
+        <RecordSection title="Purchase Orders" subtitle="Itemized purchase orders must be previewed before Issue, then follow Draft → Issued → Received → Closed." onAdd={() => openCreate("purchase_order")} addLabel="New purchase order">
           {purchaseOrders.length === 0 ? <EmptyState text="No purchase orders yet." /> : (
             <RecordsTable headers={["PO", "Supplier", "Amount", "Order date", "Status", "Document"]}>
-              {purchaseOrders.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.po_number}</Cell><Cell>{item.supplier_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.order_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-28`} value={item.status} onChange={(e) => void updateStatus("purchase_order", item.id, e.target.value)}>{purchaseOrderStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell><Cell><Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.purchaseOrderDocument(item.id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button></Cell></tr>)}
+              {purchaseOrders.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.po_number}</Cell><Cell>{item.supplier_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.order_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-28`} value={item.status} onChange={(e) => void updateStatus("purchase_order", item.id, e.target.value)}>{purchaseOrderStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell><Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewPurchaseOrder(item.id), `${item.po_number} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
@@ -647,10 +672,13 @@ export const BusinessPage: React.FC = () => {
             <p className="mt-1 text-xs text-muted-foreground">Invoices, receipts and the live outstanding balance.</p>
             <div className="mt-4 space-y-2">
               {clientStatements.length === 0 ? <EmptyState text="No client statement activity yet." /> : clientStatements.map((item) => (
-                <button key={item.client_id} type="button" onClick={() => void openStatement(item)} className="flex w-full items-center justify-between gap-3 rounded-lg border border-border p-3 text-left hover:bg-accent/50">
-                  <div><p className="text-sm font-medium">{item.client_name}</p><p className="text-xs text-muted-foreground">Invoiced {money(item.invoiced_ugx)} Â· Paid {money(item.paid_ugx)}</p></div>
-                  <div className="text-right"><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-sm font-semibold">{money(item.outstanding_ugx)}</p></div>
-                </button>
+                <div key={item.client_id} className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button type="button" onClick={() => void openStatement(item)} className="flex flex-1 items-center justify-between gap-3 text-left">
+                    <div><p className="text-sm font-medium">{item.client_name}</p><p className="text-xs text-muted-foreground">Invoiced {money(item.invoiced_ugx)} · Paid {money(item.paid_ugx)}</p></div>
+                    <div className="text-right"><p className="text-xs text-muted-foreground">Outstanding</p><p className="text-sm font-semibold">{money(item.outstanding_ugx)}</p></div>
+                  </button>
+                  <Button variant="outline" size="sm" onClick={() => void generateStatementPreview(() => businessApi.clientStatementDocument(item.client_id), `${item.client_name} statement`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview PDF</Button>
+                </div>
               ))}
             </div>
           </Card>
@@ -660,14 +688,43 @@ export const BusinessPage: React.FC = () => {
             <div className="mt-4 space-y-2">
               {supplierStatements.length === 0 ? <EmptyState text="No supplier statement activity yet." /> : supplierStatements.map((item) => (
                 <div key={item.supplier_id} className="flex flex-col gap-3 rounded-lg border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div><p className="text-sm font-medium">{item.supplier_name}</p><p className="text-xs text-muted-foreground">Purchase orders {money(item.purchase_orders_ugx)} ? Expenses {money(item.expenses_ugx)}</p></div>
-                  <Button variant="outline" size="sm" onClick={() => void openDocument(() => businessApi.supplierStatementDocument(item.supplier_id))}><Download className="mr-1.5 h-3.5 w-3.5" />PDF</Button>
+                  <div><p className="text-sm font-medium">{item.supplier_name}</p><p className="text-xs text-muted-foreground">Purchase orders {money(item.purchase_orders_ugx)} · Expenses {money(item.expenses_ugx)}</p></div>
+                  <Button variant="outline" size="sm" onClick={() => void generateStatementPreview(() => businessApi.supplierStatementDocument(item.supplier_id), `${item.supplier_name} purchase summary`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview PDF</Button>
                 </div>
               ))}
             </div>
           </Card>
         </div>
       )}
+
+      {tab === "business_documents" && (
+        <BusinessDocumentsArchive
+          documents={businessDocuments}
+          clients={clients}
+          suppliers={suppliers}
+          projects={projects}
+          onReload={() => load(false)}
+          onPreview={(url, title, filename) => setPreview({ url, title, filename })}
+        />
+      )}
+
+      <Modal
+        isOpen={Boolean(preview)}
+        onClose={() => setPreview(null)}
+        title={preview?.title || "Document Preview"}
+        description="Review the actual saved PDF carefully before Send, Issue, Email or Share."
+        className="max-w-6xl"
+      >
+        {preview && (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+              Check the logo, party details, document number, dates, line items, totals, terms and status. This is the exact saved PDF version.
+            </div>
+            <iframe title={preview.title} src={preview.url} className="h-[72vh] w-full rounded-lg border border-border bg-white" />
+            <div className="flex justify-end"><Button type="button" variant="outline" onClick={() => setPreview(null)}>Preview complete</Button></div>
+          </div>
+        )}
+      </Modal>
 
       <Modal isOpen={Boolean(createKind)} onClose={closeCreate} title={createKind ? `New ${labelStatus(createKind)}` : "New record"} description="Business records remain connected to the correct parties and projects.">
         <form className="space-y-4" onSubmit={save}>
