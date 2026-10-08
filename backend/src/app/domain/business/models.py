@@ -5,6 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.base import AuditBase
@@ -223,3 +224,14 @@ class PurchaseOrderLineItem(AuditBase):
     unit_price_ugx: Mapped[Decimal] = mapped_column(
         Numeric(18, 2), nullable=False, default=0, server_default="0"
     )
+
+
+class BusinessDocumentEvent(AuditBase):
+    __tablename__ = "business_document_events"
+
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    action: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    actor_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    details: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default="{}")

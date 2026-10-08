@@ -150,7 +150,9 @@ async def purchase_order_pdf(db: AsyncSession, order: PurchaseOrder) -> bytes:
     )
 
 
-async def ensure_quotation_document(db: AsyncSession, quotation: Quotation, actor_email: str):
+async def ensure_quotation_document(
+    db: AsyncSession, quotation: Quotation, actor_email: str, *, force_new_version: bool = False
+):
     pdf = await quotation_pdf(db, quotation)
     filename = f"{quotation.quotation_number}.pdf"
     doc, url = await upsert_generated_document(
@@ -163,11 +165,14 @@ async def ensure_quotation_document(db: AsyncSession, quotation: Quotation, acto
         related_record_id=quotation.id,
         project_id=quotation.project_id,
         client_id=quotation.client_id,
+        force_new_version=force_new_version,
     )
     return pdf, doc, url, filename
 
 
-async def ensure_invoice_document(db: AsyncSession, invoice: Invoice, actor_email: str):
+async def ensure_invoice_document(
+    db: AsyncSession, invoice: Invoice, actor_email: str, *, force_new_version: bool = False
+):
     pdf = await invoice_pdf(db, invoice)
     filename = f"{invoice.invoice_number}.pdf"
     doc, url = await upsert_generated_document(
@@ -180,11 +185,14 @@ async def ensure_invoice_document(db: AsyncSession, invoice: Invoice, actor_emai
         related_record_id=invoice.id,
         project_id=invoice.project_id,
         client_id=invoice.client_id,
+        force_new_version=force_new_version,
     )
     return pdf, doc, url, filename
 
 
-async def ensure_receipt_document(db: AsyncSession, payment: Payment, actor_email: str):
+async def ensure_receipt_document(
+    db: AsyncSession, payment: Payment, actor_email: str, *, force_new_version: bool = False
+):
     pdf = await receipt_pdf(db, payment)
     number = payment.receipt_number or f"RCT-{str(payment.id)[:8].upper()}"
     filename = f"{number}.pdf"
@@ -198,11 +206,14 @@ async def ensure_receipt_document(db: AsyncSession, payment: Payment, actor_emai
         related_record_id=payment.id,
         project_id=payment.project_id,
         client_id=payment.client_id,
+        force_new_version=force_new_version,
     )
     return pdf, doc, url, filename
 
 
-async def ensure_purchase_order_document(db: AsyncSession, order: PurchaseOrder, actor_email: str):
+async def ensure_purchase_order_document(
+    db: AsyncSession, order: PurchaseOrder, actor_email: str, *, force_new_version: bool = False
+):
     pdf = await purchase_order_pdf(db, order)
     filename = f"{order.po_number}.pdf"
     doc, url = await upsert_generated_document(
@@ -215,6 +226,7 @@ async def ensure_purchase_order_document(db: AsyncSession, order: PurchaseOrder,
         related_record_id=order.id,
         project_id=order.project_id,
         supplier_id=order.supplier_id,
+        force_new_version=force_new_version,
     )
     return pdf, doc, url, filename
 

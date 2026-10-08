@@ -59,3 +59,8 @@ def put_object_bytes(storage_key: str, content: bytes, content_type: str) -> Non
         Body=content,
         ContentType=content_type,
     )
+
+
+def get_object_bytes(storage_key: str) -> bytes:
+    response = get_storage_client().get_object(Bucket=settings.DOCUMENTS_BUCKET, Key=storage_key)
+    return response["Body"].read()

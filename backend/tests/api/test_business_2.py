@@ -8,11 +8,31 @@ from httpx import AsyncClient
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture
+def mock_commercial_storage(monkeypatch):
+    objects: dict[str, bytes] = {}
+
+    def put(key: str, content: bytes, _content_type: str) -> None:
+        objects[key] = content
+
+    def url(key: str, expires: int = 900) -> str:
+        return f"https://storage.test/{key}?expires={expires}"
+
+    monkeypatch.setattr("app.domain.business.services.storage_configured", lambda: True)
+    monkeypatch.setattr("app.domain.business.services.put_object_bytes", put)
+    monkeypatch.setattr("app.domain.business.services.presign_download", url)
+    monkeypatch.setattr(
+        "app.presentation.api.v1.commercial_documents_controller.presign_download", url
+    )
+    return objects
+
+
 class TestBusiness2Foundation:
     async def test_connected_client_supplier_receipt_and_statement_workflows(
         self,
         async_client: AsyncClient,
         registered_user: dict,
+        mock_commercial_storage: dict[str, bytes],
     ) -> None:
         suffix = uuid.uuid4().hex[:8]
         headers = {"Authorization": f"Bearer {registered_user['token']}"}
@@ -85,14 +105,25 @@ class TestBusiness2Foundation:
                 "client_id": client["id"],
                 "project_id": project["id"],
                 "amount_ugx": 1_500_000,
-                "status": "sent",
+                "status": "draft",
                 "issue_date": "2026-10-05",
                 "valid_until": "2026-10-20",
             },
         )
         assert quotation_response.status_code == 201, quotation_response.text
         quotation = quotation_response.json()
-        assert quotation["status"] == "sent"
+        assert quotation["status"] == "draft"
+
+        quotation_preview = await async_client.post(
+            f"/api/v1/business/quotations/{quotation['id']}/preview", headers=headers
+        )
+        assert quotation_preview.status_code in {200, 201}, quotation_preview.text
+        quotation_sent = await async_client.patch(
+            f"/api/v1/business/quotations/{quotation['id']}",
+            headers=headers,
+            json={"status": "sent"},
+        )
+        assert quotation_sent.status_code == 200, quotation_sent.text
 
         quotation_update = await async_client.patch(
             f"/api/v1/business/quotations/{quotation['id']}",
@@ -111,7 +142,7 @@ class TestBusiness2Foundation:
                 "client_id": client["id"],
                 "project_id": project["id"],
                 "amount_ugx": 1_200_000,
-                "status": "sent",
+                "status": "draft",
                 "issue_date": "2026-10-05",
                 "due_date": "2026-10-30",
             },
@@ -119,6 +150,17 @@ class TestBusiness2Foundation:
         assert invoice_response.status_code == 201, invoice_response.text
         invoice = invoice_response.json()
         assert invoice["outstanding_amount_ugx"] == 1_200_000
+        assert invoice["status"] == "draft"
+        invoice_preview = await async_client.post(
+            f"/api/v1/business/invoices/{invoice['id']}/preview", headers=headers
+        )
+        assert invoice_preview.status_code in {200, 201}, invoice_preview.text
+        invoice_sent = await async_client.patch(
+            f"/api/v1/business/invoices/{invoice['id']}",
+            headers=headers,
+            json={"status": "sent"},
+        )
+        assert invoice_sent.status_code == 200, invoice_sent.text
 
         payment_response = await async_client.post(
             "/api/v1/business/payments",
@@ -168,12 +210,25 @@ class TestBusiness2Foundation:
                 "supplier_id": supplier["id"],
                 "project_id": project["id"],
                 "amount_ugx": 500_000,
-                "status": "issued",
+                "status": "draft",
                 "order_date": "2026-10-05",
             },
         )
         assert po_response.status_code == 201, po_response.text
         purchase_order = po_response.json()
+        assert purchase_order["status"] == "draft"
+        po_preview = await async_client.post(
+            f"/api/v1/business/purchase-orders/{purchase_order['id']}/preview",
+            headers=headers,
+        )
+        assert po_preview.status_code in {200, 201}, po_preview.text
+        po_issued = await async_client.patch(
+            f"/api/v1/business/purchase-orders/{purchase_order['id']}",
+            headers=headers,
+            json={"status": "issued"},
+        )
+        assert po_issued.status_code == 200, po_issued.text
+        purchase_order = po_issued.json()
 
         expense_response = await async_client.post(
             "/api/v1/business/expenses",
@@ -237,3 +292,4 @@ class TestBusiness2Foundation:
         assert summary["receivables_ugx"] >= 800_000
         assert summary["expenses_month_ugx"] >= 150_000
         assert summary["receipts_month_ugx"] >= 400_000
+        assert mock_commercial_storage

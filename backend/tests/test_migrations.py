@@ -85,6 +85,7 @@ class TestMigrationCycle:
         with engine.connect() as conn:
             conn.execute(sa.text("DROP TABLE IF EXISTS alembic_version CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS business_number_counters CASCADE;"))
+            conn.execute(sa.text("DROP TABLE IF EXISTS business_document_events CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS purchase_order_line_items CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS invoice_line_items CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS quotation_line_items CASCADE;"))

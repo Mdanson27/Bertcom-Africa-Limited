@@ -9,9 +9,43 @@ from httpx import AsyncClient
 pytestmark = pytest.mark.asyncio
 
 
+@pytest.fixture
+def mock_commercial_storage(monkeypatch):
+    objects: dict[str, bytes] = {}
+
+    def put(key: str, content: bytes, _content_type: str) -> None:
+        objects[key] = content
+
+    def get(key: str) -> bytes:
+        return objects[key]
+
+    def delete(key: str) -> None:
+        objects.pop(key, None)
+
+    def url(key: str, expires: int = 900) -> str:
+        return f"https://storage.test/{key}?expires={expires}"
+
+    monkeypatch.setattr("app.domain.business.services.storage_configured", lambda: True)
+    monkeypatch.setattr("app.domain.business.services.put_object_bytes", put)
+    monkeypatch.setattr("app.domain.business.services.presign_download", url)
+    monkeypatch.setattr(
+        "app.presentation.api.v1.commercial_documents_controller.presign_download", url
+    )
+    monkeypatch.setattr(
+        "app.presentation.api.v1.commercial_documents_controller.get_object_bytes", get
+    )
+    monkeypatch.setattr(
+        "app.presentation.api.v1.commercial_documents_controller.delete_object", delete
+    )
+    return objects
+
+
 class TestBusinessDocumentsWorkflow:
     async def test_quote_to_invoice_payment_receipt_and_pdf_chain(
-        self, async_client: AsyncClient, registered_user: dict
+        self,
+        async_client: AsyncClient,
+        registered_user: dict,
+        mock_commercial_storage: dict[str, bytes],
     ) -> None:
         suffix = uuid.uuid4().hex[:8]
         headers = {"Authorization": f"Bearer {registered_user['token']}"}
@@ -85,6 +119,21 @@ class TestBusinessDocumentsWorkflow:
         assert quote_pdf.content.startswith(b"%PDF")
         assert len(quote_pdf.content) > 1000
 
+        blocked_send = await async_client.patch(
+            f"/api/v1/business/quotations/{quote['id']}", headers=headers, json={"status": "sent"}
+        )
+        assert blocked_send.status_code == 409
+        assert "Preview" in blocked_send.text
+
+        quote_preview = await async_client.post(
+            f"/api/v1/business/quotations/{quote['id']}/preview", headers=headers
+        )
+        assert quote_preview.status_code == 201 or quote_preview.status_code == 200, (
+            quote_preview.text
+        )
+        assert quote_preview.json()["stored"] is True
+        assert quote_preview.json()["download_url"].startswith("https://storage.test/")
+
         sent = await async_client.patch(
             f"/api/v1/business/quotations/{quote['id']}", headers=headers, json={"status": "sent"}
         )
@@ -128,6 +177,14 @@ class TestBusinessDocumentsWorkflow:
         assert invoice_pdf.status_code == 200
         assert invoice_pdf.content.startswith(b"%PDF")
 
+        blocked_invoice_send = await async_client.patch(
+            f"/api/v1/business/invoices/{invoice['id']}", headers=headers, json={"status": "sent"}
+        )
+        assert blocked_invoice_send.status_code == 409
+        invoice_preview = await async_client.post(
+            f"/api/v1/business/invoices/{invoice['id']}/preview", headers=headers
+        )
+        assert invoice_preview.status_code in {200, 201}, invoice_preview.text
         sent_invoice = await async_client.patch(
             f"/api/v1/business/invoices/{invoice['id']}", headers=headers, json={"status": "sent"}
         )
@@ -203,6 +260,16 @@ class TestBusinessDocumentsWorkflow:
         po = po_res.json()
         assert re.fullmatch(r"PO-2026-\d{4}", po["po_number"])
         assert po["amount_ugx"] == 350_000
+        blocked_po_issue = await async_client.patch(
+            f"/api/v1/business/purchase-orders/{po['id']}",
+            headers=headers,
+            json={"status": "issued"},
+        )
+        assert blocked_po_issue.status_code == 409
+        po_preview = await async_client.post(
+            f"/api/v1/business/purchase-orders/{po['id']}/preview", headers=headers
+        )
+        assert po_preview.status_code in {200, 201}, po_preview.text
         for status in ("issued", "received", "closed"):
             status_res = await async_client.patch(
                 f"/api/v1/business/purchase-orders/{po['id']}",
@@ -227,3 +294,82 @@ class TestBusinessDocumentsWorkflow:
         )
         assert supplier_statement_pdf.status_code == 200
         assert supplier_statement_pdf.content.startswith(b"%PDF")
+        client_statement_document = await async_client.post(
+            f"/api/v1/business/clients/{client['id']}/statement/document", headers=headers
+        )
+        assert client_statement_document.status_code in {200, 201}, client_statement_document.text
+        statement_document_id = client_statement_document.json()["document_id"]
+        assert statement_document_id
+
+        archive = await async_client.get("/api/v1/business/documents", headers=headers)
+        assert archive.status_code == 200, archive.text
+        archived = archive.json()
+        quote_versions = [
+            row
+            for row in archived
+            if row["related_record_type"] == "quotation" and row["related_record_id"] == quote["id"]
+        ]
+        assert len(quote_versions) >= 3
+        assert sum(1 for row in quote_versions if row["is_current"]) == 1
+        assert any(row["version"] == 1 for row in quote_versions)
+        assert any(row["document_type"] == "client_statement" for row in archived)
+
+        current_quote_doc = max(quote_versions, key=lambda row: row["version"])
+        quote_history = await async_client.get(
+            f"/api/v1/business/documents/{current_quote_doc['id']}/history", headers=headers
+        )
+        assert quote_history.status_code == 200, quote_history.text
+        assert any(event["action"] == "accepted" for event in quote_history.json())
+
+        view_action = await async_client.post(
+            f"/api/v1/business/documents/{current_quote_doc['id']}/view", headers=headers
+        )
+        assert view_action.status_code in {200, 201}, view_action.text
+        assert view_action.json()["download_url"].startswith("https://storage.test/")
+
+        # A revised accepted quotation creates another immutable version and must be previewed again
+        # before it can be shared externally.
+        revised = await async_client.patch(
+            f"/api/v1/business/quotations/{quote['id']}",
+            headers=headers,
+            json={"notes": "Revised commercial terms for archive test"},
+        )
+        assert revised.status_code == 200, revised.text
+        archive_after_revision = (
+            await async_client.get("/api/v1/business/documents", headers=headers)
+        ).json()
+        revised_versions = [
+            row
+            for row in archive_after_revision
+            if row["related_record_type"] == "quotation" and row["related_record_id"] == quote["id"]
+        ]
+        assert max(row["version"] for row in revised_versions) > current_quote_doc["version"]
+        revised_current = next(row for row in revised_versions if row["is_current"])
+        blocked_share = await async_client.post(
+            f"/api/v1/business/documents/{revised_current['id']}/share", headers=headers
+        )
+        assert blocked_share.status_code == 409
+        revised_preview = await async_client.post(
+            f"/api/v1/business/quotations/{quote['id']}/preview", headers=headers
+        )
+        assert revised_preview.status_code in {200, 201}
+        shared = await async_client.post(
+            f"/api/v1/business/documents/{revised_current['id']}/share", headers=headers
+        )
+        assert shared.status_code in {200, 201}, shared.text
+        assert shared.json()["download_url"].startswith("https://storage.test/")
+
+        soft_delete = await async_client.delete(
+            f"/api/v1/business/documents/{statement_document_id}", headers=headers
+        )
+        assert soft_delete.status_code == 200, soft_delete.text
+        active_archive = (
+            await async_client.get("/api/v1/business/documents", headers=headers)
+        ).json()
+        assert all(row["id"] != statement_document_id for row in active_archive)
+        restored = await async_client.post(
+            f"/api/v1/business/documents/{statement_document_id}/restore", headers=headers
+        )
+        assert restored.status_code in {200, 201}, restored.text
+        assert restored.json()["document"]["is_deleted"] is False
+        assert mock_commercial_storage
