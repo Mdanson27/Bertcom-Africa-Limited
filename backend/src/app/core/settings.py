@@ -13,8 +13,8 @@ class AppSettings(BaseSettings):
     # ── Database ──────────────────────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://app_user:change-me@localhost:5432/app_db"
     DATABASE_URL_UNPOOLED: str | None = None
-    DB_POOL_SIZE: int = 20
-    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 5
 
     # ── Neon Managed Better Auth ─────────────────────────────────────────────
     NEON_AUTH_BASE_URL: str = ""
@@ -74,8 +74,12 @@ class AppSettings(BaseSettings):
 
     @property
     def database_url_async(self) -> str:
-        """Normalize a Neon/Postgres URL for SQLAlchemy's asyncpg dialect."""
-        url = self.DATABASE_URL.strip()
+        """Normalize the preferred Postgres URL for SQLAlchemy/asyncpg.
+
+        When Neon provides an unpooled endpoint, Bertcom uses it behind its own
+        small SQLAlchemy pool instead of double-pooling through Neon's pooler.
+        """
+        url = (self.DATABASE_URL_UNPOOLED or self.DATABASE_URL).strip()
         if url.startswith("postgresql://"):
             url = "postgresql+asyncpg://" + url[len("postgresql://") :]
         url = url.replace("sslmode=require", "ssl=require")

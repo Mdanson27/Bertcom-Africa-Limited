@@ -1,28 +1,14 @@
 """
-Database engine & session configuration — production / PgBouncer hardened.
+Database engine & session configuration for Neon Postgres.
 
-Key settings
-------------
-pool_pre_ping=True
-    Emits a ``SELECT 1`` before each checkout to evict stale connections.
-    Mandatory when sitting behind PgBouncer in transaction-pooling mode.
+Bertcom prefers Neon's direct endpoint when ``DATABASE_URL_UNPOOLED`` is
+configured and maintains a small application-side SQLAlchemy pool. This avoids
+double-pooling through the Neon pooler and removes the network pre-ping that
+previously added an extra Kampala-to-US-East round trip to every checkout.
 
-pool_recycle=1800
-    Recycle connections after 30 minutes so PgBouncer's ``server_lifetime``
-    never kills a connection the pool still thinks is alive.
-
-statement_cache_size=0
-    asyncpg caches prepared statements per connection by default, which is
-    incompatible with PgBouncer (statements are not shared across pool
-    connections). Setting this to 0 disables the per-connection cache so
-    every statement is sent as a one-off query — correct for PgBouncer
-    transaction-pooling mode.
-
-RLS Session Context (after_begin hook)
--------------------------------------
-Executes `SELECT set_config('app.current_user_id', ...), set_config('app.current_tenant_id', ...), set_config('app.current_role', ...)`
-with `is_local=True` on every transaction begin. Because it is strictly transaction-local,
-session context is automatically cleared on COMMIT/ROLLBACK, guaranteeing 100% PgBouncer safety.
+Connections are recycled every five minutes. PostgreSQL RLS context remains
+transaction-local via ``set_config(..., true)``, so it is cleared automatically
+on commit/rollback and remains safe for pooled application connections.
 """
 
 from __future__ import annotations
@@ -45,8 +31,8 @@ db_config = SQLAlchemyAsyncConfig(
     connection_string=settings.database_url_async,
     session_config=AsyncSessionConfig(expire_on_commit=False),
     engine_config=EngineConfig(
-        pool_pre_ping=True,
-        pool_recycle=1800,
+        pool_pre_ping=False,
+        pool_recycle=300,
         pool_size=settings.DB_POOL_SIZE,
         max_overflow=settings.DB_MAX_OVERFLOW,
         connect_args={"statement_cache_size": 0},
@@ -57,7 +43,7 @@ alchemy_plugin = SQLAlchemyInitPlugin(config=db_config)
 
 
 # ---------------------------------------------------------------------------
-# PgBouncer-Safe Tenant & Role Context Listener for PostgreSQL RLS
+# Tenant & Role Context Listener for PostgreSQL RLS
 # ---------------------------------------------------------------------------
 
 
@@ -65,8 +51,8 @@ alchemy_plugin = SQLAlchemyInitPlugin(config=db_config)
 def set_tenant_context(session: Session, transaction: object, connection: object) -> None:
     """
     Sets transaction-local session context for PostgreSQL Row-Level Security (RLS).
-    Uses PostgreSQL set_config(..., is_local=true) which is strictly transaction-local,
-    ensuring 100% safety with PgBouncer transaction-pooling mode.
+    Uses PostgreSQL set_config(..., is_local=true), which is strictly transaction-local
+    and therefore safe when application connections are reused.
     """
     user_id = str(session.info.get("user_id") or "")
     tenant_id = str(session.info.get("tenant_id") or "")
