@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import uuid
 from collections.abc import Iterable
@@ -11,7 +10,12 @@ from typing import Any, TypeVar
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.storage import presign_download, put_object_bytes, storage_configured
+from app.core.storage import (
+    object_exists_async,
+    presign_download,
+    put_object_bytes_async,
+    storage_configured,
+)
 from app.domain.business.models import BusinessDocumentEvent, BusinessNumberCounter
 from app.domain.business.schemas import CommercialLineItemRead
 from app.domain.workspace.models import Document
@@ -291,6 +295,8 @@ async def upsert_generated_document(
         current.title = title
         current.original_filename = filename
         current.uploaded_by_email = actor
+        if not await object_exists_async(current.storage_key):
+            await put_object_bytes_async(current.storage_key, pdf_bytes, "application/pdf")
         await db_session.flush()
         return current, presign_download(current.storage_key)
 
@@ -305,7 +311,7 @@ async def upsert_generated_document(
         f"documents/generated/{related_record_type}/{related_record_id}/"
         f"v{next_version}/{safe_filename}"
     )
-    await asyncio.to_thread(put_object_bytes, storage_key, pdf_bytes, "application/pdf")
+    await put_object_bytes_async(storage_key, pdf_bytes, "application/pdf")
 
     document_number = filename.removesuffix(".pdf")
     document = Document(

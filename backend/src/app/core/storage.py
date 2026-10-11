@@ -5,6 +5,7 @@ from functools import lru_cache
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 
 from app.core.settings import settings
 
@@ -74,6 +75,18 @@ def get_object_bytes(storage_key: str) -> bytes:
     return response["Body"].read()
 
 
+def object_exists(storage_key: str) -> bool:
+    try:
+        get_storage_client().head_object(Bucket=settings.DOCUMENTS_BUCKET, Key=storage_key)
+        return True
+    except ClientError as exc:
+        code = str(exc.response.get("Error", {}).get("Code", ""))
+        status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        if code in {"404", "NoSuchKey", "NotFound"} or status == 404:
+            return False
+        raise
+
+
 async def put_object_bytes_async(storage_key: str, content: bytes, content_type: str) -> None:
     await asyncio.to_thread(put_object_bytes, storage_key, content, content_type)
 
@@ -84,3 +97,7 @@ async def get_object_bytes_async(storage_key: str) -> bytes:
 
 async def delete_object_async(storage_key: str) -> None:
     await asyncio.to_thread(delete_object, storage_key)
+
+
+async def object_exists_async(storage_key: str) -> bool:
+    return await asyncio.to_thread(object_exists, storage_key)
