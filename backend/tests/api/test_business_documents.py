@@ -13,8 +13,11 @@ pytestmark = pytest.mark.asyncio
 def mock_commercial_storage(monkeypatch):
     objects: dict[str, bytes] = {}
 
-    def put(key: str, content: bytes, _content_type: str) -> None:
+    async def put(key: str, content: bytes, _content_type: str) -> None:
         objects[key] = content
+
+    async def exists(key: str) -> bool:
+        return key in objects
 
     def get(key: str) -> bytes:
         return objects[key]
@@ -26,10 +29,14 @@ def mock_commercial_storage(monkeypatch):
         return f"https://storage.test/{key}?expires={expires}"
 
     monkeypatch.setattr("app.domain.business.services.storage_configured", lambda: True)
-    monkeypatch.setattr("app.domain.business.services.put_object_bytes", put)
+    monkeypatch.setattr("app.domain.business.services.put_object_bytes_async", put)
+    monkeypatch.setattr("app.domain.business.services.object_exists_async", exists)
     monkeypatch.setattr("app.domain.business.services.presign_download", url)
     monkeypatch.setattr(
         "app.presentation.api.v1.commercial_documents_controller.presign_download", url
+    )
+    monkeypatch.setattr(
+        "app.presentation.api.v1.commercial_documents_controller.object_exists_async", exists
     )
     monkeypatch.setattr(
         "app.presentation.api.v1.commercial_documents_controller.get_object_bytes", get
