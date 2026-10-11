@@ -1,6 +1,23 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest, authenticatedFetch, getApiBaseUrl } from "@/lib/api";
 
 const request = apiRequest;
+
+const optionalRead = async <T>(loader: () => Promise<T>, fallback: T): Promise<T> => {
+  try {
+    return await loader();
+  } catch {
+    return fallback;
+  }
+};
+
+const pdfBlobUrl = async (path: string): Promise<string> => {
+  const response = await authenticatedFetch(`${getApiBaseUrl()}/api/v1${path}`, {
+    headers: { Accept: "application/pdf" },
+  });
+  if (!response.ok) throw new Error("The PDF stream is temporarily unavailable.");
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+};
 
 const queryString = (params?: Record<string, string | null | undefined>) => {
   if (!params) return "";
@@ -308,8 +325,28 @@ export const businessApi = {
     request<Record<string, unknown>>("/business/payments", { method: "POST", body: JSON.stringify(body) }),
   receiptDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/receipts/${id}/document`, { method: "POST" }),
-  previewReceipt: (id: string) =>
-    request<CommercialDocumentRecord>(`/business/receipts/${id}/preview`, { method: "POST" }),
+  previewReceipt: async (id: string) => {
+    try {
+      const saved = await request<CommercialDocumentRecord>(`/business/receipts/${id}/preview`, { method: "POST" });
+      try {
+        return { ...saved, download_url: await pdfBlobUrl(`/business/receipts/${id}/pdf`) };
+      } catch {
+        return saved;
+      }
+    } catch (previewError) {
+      try {
+        return {
+          document_id: null,
+          document_number: "Receipt preview",
+          filename: "Receipt-preview.pdf",
+          download_url: await pdfBlobUrl(`/business/receipts/${id}/pdf`),
+          stored: false,
+        } satisfies CommercialDocumentRecord;
+      } catch {
+        throw previewError;
+      }
+    }
+  },
 
   purchaseOrders: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<PurchaseOrderRecord[]>(`/business/purchase-orders${queryString(filters)}`),
@@ -360,6 +397,8 @@ export const businessApi = {
   restoreBusinessDocument: (id: string) =>
     request<BusinessDocumentActionRecord>(`/business/documents/${id}/restore`, { method: "POST" }),
 
-  projects: () => request<ProjectOption[]>("/projects"),
-  documents: () => request<DocumentOption[]>("/documents"),
+  // These records enrich Business forms, but they are not allowed to take the
+  // entire commercial workspace down if another module is temporarily unavailable.
+  projects: () => optionalRead(() => request<ProjectOption[]>("/projects"), []),
+  documents: () => optionalRead(() => request<DocumentOption[]>("/documents"), []),
 };

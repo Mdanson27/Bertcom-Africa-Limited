@@ -103,6 +103,37 @@ describe("central authenticated API client", () => {
     expect(retried.url).toBe("https://current-tunnel.test/api/v1/projects");
     expect(retried.headers.get("Authorization")).toBe("Bearer jwt-one");
   });
+
+  it("recovers from a 503 gateway response when runtime config has a new API host", async () => {
+    configureApiBaseUrl("https://expired-tunnel.test");
+    authMocks.getAccessToken.mockResolvedValue("jwt-one");
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ apiUrl: "https://current-tunnel.test" }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await authenticatedFetch(
+      "https://expired-tunnel.test/api/v1/projects",
+    );
+
+    expect(response.status).toBe(200);
+    expect(getApiBaseUrl()).toBe("https://current-tunnel.test");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    const retried = fetchMock.mock.calls[2][0] as Request;
+    expect(retried.url).toBe("https://current-tunnel.test/api/v1/projects");
+    expect(retried.headers.get("Authorization")).toBe("Bearer jwt-one");
+  });
 });
 
 describe("API error messages", () => {

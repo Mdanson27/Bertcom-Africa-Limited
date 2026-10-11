@@ -224,6 +224,7 @@ export async function authenticatedFetch(
         if (recovered) {
           baseRequest = recovered;
           protectedRequest = isProtectedApiRequest(baseRequest);
+          temporaryRetries = 0;
           continue;
         }
       }
@@ -248,14 +249,27 @@ export async function authenticatedFetch(
       return response;
     }
 
-    if (
-      retryTemporaryFailure &&
-      RETRYABLE_STATUSES.has(response.status) &&
-      temporaryRetries < 2
-    ) {
-      temporaryRetries += 1;
-      await sleep(300 * 2 ** (temporaryRetries - 1));
-      continue;
+    if (retryTemporaryFailure && RETRYABLE_STATUSES.has(response.status)) {
+      // A Cloudflare gateway can still return a real 502/503/504 response when
+      // an old tunnel hostname has expired. Re-read runtime-config before
+      // retrying the same dead origin so an updated API URL can take over
+      // immediately without forcing the user to reload the application.
+      if (!runtimeConfigRetried) {
+        runtimeConfigRetried = true;
+        const recovered = await recoverApiBaseUrl(baseRequest);
+        if (recovered) {
+          baseRequest = recovered;
+          protectedRequest = isProtectedApiRequest(baseRequest);
+          temporaryRetries = 0;
+          continue;
+        }
+      }
+
+      if (temporaryRetries < 2) {
+        temporaryRetries += 1;
+        await sleep(300 * 2 ** (temporaryRetries - 1));
+        continue;
+      }
     }
 
     return response;
