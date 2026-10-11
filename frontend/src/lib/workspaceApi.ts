@@ -16,6 +16,7 @@ function queryString(params?: Record<string, string | number | boolean | null | 
 export interface Project {
   id: string;
   name: string;
+  client_id: string | null;
   client_name: string;
   description: string | null;
   status: string;
@@ -32,6 +33,12 @@ export interface Project {
   is_archived: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface AssignableUser {
+  id: string;
+  email: string;
+  full_name: string;
 }
 
 export interface ProjectDashboardSummary {
@@ -409,6 +416,7 @@ export const workspaceApi = {
   summary: () => request<WorkspaceSummary>("/workspace/summary"),
 
   projectDashboard: () => request<ProjectDashboardSummary>("/projects/dashboard"),
+  assignableUsers: () => request<AssignableUser[]>("/users/assignable"),
   projects: (filters?: ProjectFilters) =>
     request<Project[]>(`/projects${queryString(filters as Record<string, string | number | boolean | null | undefined>)}`),
   project: (id: string) => request<Project>(`/projects/${id}`),

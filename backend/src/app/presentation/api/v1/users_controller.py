@@ -32,6 +32,7 @@ from app.core.security import get_password_hash, verify_password_async
 from app.domain.users.contracts import IUserRepository
 from app.domain.users.models import User
 from app.domain.users.schemas import (
+    AssignableUserRead,
     Message,
     UpdatePassword,
     UserAdminCreate,
@@ -333,6 +334,24 @@ class UsersController(Controller):
         users = await user_repo.list_all(limit=limit, offset=skip)
         count = await user_repo.count_all()
         return UsersPublic(data=[_model_to_read(u) for u in users], count=count)
+
+    @get(
+        path="/assignable",
+        guards=[JWTAuthGuard()],
+        status_code=HTTP_200_OK,
+        summary="List assignable users",
+        description="Return active Bertcom users that may be assigned to projects and tasks.",
+    )
+    async def list_assignable_users(
+        self,
+        user_repo: IUserRepository,
+    ) -> list[AssignableUserRead]:
+        users = await user_repo.list_all(limit=1000, offset=0)
+        return [
+            AssignableUserRead(id=user.id, email=user.email, full_name=user.full_name)
+            for user in sorted(users, key=lambda item: (item.full_name.lower(), item.email.lower()))
+            if user.is_active
+        ]
 
     # ------------------------------------------------------------------
     # GET /{user_id} — User details
