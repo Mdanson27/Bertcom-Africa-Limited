@@ -13,7 +13,12 @@ def _jwks_client() -> jwt.PyJWKClient:
     """Reuse the JWKS client so signing keys are cached between API requests."""
     if not settings.NEON_AUTH_JWKS_URL:
         raise ValueError("NEON_AUTH_JWKS_URL is not configured")
-    return jwt.PyJWKClient(settings.NEON_AUTH_JWKS_URL, cache_keys=True)
+    return jwt.PyJWKClient(
+        settings.NEON_AUTH_JWKS_URL,
+        cache_keys=True,
+        timeout=5,
+        lifespan=300,
+    )
 
 
 def _decode_neon_access_token_sync(token: str) -> dict:
