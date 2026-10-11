@@ -239,11 +239,11 @@ async def revoke_token(jti: str, expires_in: int) -> None:
         Seconds until the key auto-expires from Valkey.  Should equal the
         token's remaining lifetime so the blocklist doesn't grow unbounded.
     """
-    from app.adapters.cache.valkey_service import valkey_store
+    from app.core.cache import get_valkey_pool
 
     key = f"{_REVOCATION_PREFIX}{jti}"
     # Value is a sentinel byte — only existence matters
-    await valkey_store.set(key, b"1", expires_in=expires_in)
+    await get_valkey_pool().set(key, b"1", ex=expires_in)
 
 
 async def is_token_revoked(jti: str) -> bool:
