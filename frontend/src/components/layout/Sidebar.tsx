@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpe
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="scrollbar-none min-h-0 flex-1 overflow-y-auto px-3 py-4">
         {isPlatformAdmin && (
           <>
             {isOpen && <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Platform admin</p>}

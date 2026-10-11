@@ -36,8 +36,8 @@ export const DonutChart: React.FC<{
       {total <= 0 ? (
         <div className="flex min-h-56 items-center justify-center text-sm text-muted-foreground">No data recorded yet.</div>
       ) : (
-        <div className="mt-4 grid gap-5 sm:grid-cols-[180px_1fr] sm:items-center">
-          <div className="relative mx-auto h-44 w-44">
+        <div className="mt-4 grid min-w-0 gap-4 sm:grid-cols-[minmax(0,9rem)_minmax(0,1fr)] sm:items-center xl:grid-cols-1 2xl:grid-cols-[minmax(0,9rem)_minmax(0,1fr)]">
+          <div className="relative mx-auto h-36 w-36 max-w-full">
             <svg viewBox="0 0 100 100" className="h-full w-full" role="img" aria-label={title}>
               <circle cx="50" cy="50" r="38" fill="none" stroke="hsl(var(--muted))" strokeWidth="14" />
               {clean.map((item, index) => {
@@ -67,14 +67,14 @@ export const DonutChart: React.FC<{
               <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{centerLabel}</span>
             </div>
           </div>
-          <div className="space-y-2.5">
+          <div className="min-w-0 space-y-2.5">
             {clean.slice(0, 7).map((item, index) => (
               <div key={item.label} className="flex items-center justify-between gap-3 text-xs">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: PALETTE[index % PALETTE.length] }} />
                   <span className="truncate text-muted-foreground">{item.label}</span>
                 </div>
-                <span className="font-medium">{valueFormatter(item.value)}</span>
+                <span className="shrink-0 font-medium">{valueFormatter(item.value)}</span>
               </div>
             ))}
           </div>

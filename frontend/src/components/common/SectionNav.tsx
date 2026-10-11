@@ -23,7 +23,7 @@ export function SectionNav<T extends string>({
   return (
     <nav
       aria-label={ariaLabel}
-      className="overflow-x-auto rounded-xl border border-border bg-card p-1.5"
+      className="scrollbar-none max-w-full overflow-x-auto rounded-xl border border-border bg-card p-1.5"
     >
       <div className="flex min-w-max gap-1">
         {items.map((item) => (

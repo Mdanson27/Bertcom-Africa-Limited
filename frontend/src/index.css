@@ -141,3 +141,29 @@
   animation: bertcom-mascot-float 4.4s ease-in-out infinite;
 }
 
+
+@layer utilities {
+  .app-scrollbarless,
+  .app-scrollbarless * {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .app-scrollbarless::-webkit-scrollbar,
+  .app-scrollbarless *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
