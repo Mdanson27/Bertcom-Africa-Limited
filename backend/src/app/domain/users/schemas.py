@@ -25,6 +25,12 @@ class UserRead(msgspec.Struct, frozen=True):
     is_superuser: bool
 
 
+class AssignableUserRead(msgspec.Struct, frozen=True):
+    id: uuid.UUID
+    email: str
+    full_name: str
+
+
 class UsersPublic(msgspec.Struct, frozen=True):
     data: list[UserRead]
     count: int

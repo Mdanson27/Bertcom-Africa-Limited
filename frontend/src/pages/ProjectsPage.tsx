@@ -41,9 +41,11 @@ import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
 import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
+import { businessApi, type ClientRecord } from "@/lib/businessApi";
 import {
   uploadToPresignedUrl,
   workspaceApi,
+  type AssignableUser,
   type DocumentRecord,
   type Project,
   type ProjectDashboardSummary,
@@ -72,6 +74,7 @@ type ProjectsSnapshot = {
 
 type ProjectFormState = {
   name: string;
+  client_id: string;
   client_name: string;
   description: string;
   status: string;
@@ -81,7 +84,7 @@ type ProjectFormState = {
   due_date: string;
   progress: string;
   project_manager_email: string;
-  team_emails: string;
+  team_emails: string[];
   tags: string;
   current_milestone: string;
 };
@@ -112,6 +115,7 @@ type FilterState = {
 
 const emptyProjectForm: ProjectFormState = {
   name: "",
+  client_id: "",
   client_name: "",
   description: "",
   status: "planning",
@@ -121,7 +125,7 @@ const emptyProjectForm: ProjectFormState = {
   due_date: "",
   progress: "0",
   project_manager_email: "",
-  team_emails: "",
+  team_emails: [],
   tags: "",
   current_milestone: "",
 };
@@ -304,6 +308,10 @@ export const ProjectsPage: React.FC = () => {
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [workspaceSyncedAt, setWorkspaceSyncedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [availableClients, setAvailableClients] = useState<ClientRecord[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
+  const [projectOptionsLoading, setProjectOptionsLoading] = useState(false);
+  const [projectOptionsError, setProjectOptionsError] = useState<string | null>(null);
 
   const projectDirty =
     Boolean(projectModal) &&
@@ -312,6 +320,7 @@ export const ProjectsPage: React.FC = () => {
       JSON.stringify(projectForm) !==
         JSON.stringify({
           name: editingProject.name,
+          client_id: editingProject.client_id || "",
           client_name: editingProject.client_name,
           description: editingProject.description || "",
           status: editingProject.status,
@@ -321,7 +330,7 @@ export const ProjectsPage: React.FC = () => {
           due_date: editingProject.due_date || "",
           progress: String(editingProject.progress),
           project_manager_email: editingProject.project_manager_email || "",
-          team_emails: editingProject.team_emails.join(", "),
+          team_emails: editingProject.team_emails,
           tags: editingProject.tags.join(", "),
           current_milestone: editingProject.current_milestone || "",
         }));
@@ -362,6 +371,27 @@ export const ProjectsPage: React.FC = () => {
       setIsRefreshing(false);
     }
   }, [user?.id]);
+
+  const loadProjectOptions = useCallback(async () => {
+    setProjectOptionsLoading(true);
+    setProjectOptionsError(null);
+    try {
+      const [clients, users] = await Promise.all([
+        businessApi.clients(),
+        workspaceApi.assignableUsers(),
+      ]);
+      setAvailableClients(clients.slice().sort((a, b) => a.name.localeCompare(b.name)));
+      setAssignableUsers(users);
+    } catch (error) {
+      setProjectOptionsError(getErrorMessage(error, "Project client and staff options could not be loaded."));
+    } finally {
+      setProjectOptionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProjectOptions();
+  }, [loadProjectOptions]);
 
   const loadWorkspace = useCallback(async (id: string) => {
     if (!id) {
@@ -562,14 +592,19 @@ export const ProjectsPage: React.FC = () => {
 
   const openCreateProject = () => {
     setEditingProject(null);
-    setProjectForm(emptyProjectForm);
+    setProjectForm({
+      ...emptyProjectForm,
+      project_manager_email: user?.email || "",
+    });
     setProjectModal("create");
+    if (!availableClients.length || !assignableUsers.length) void loadProjectOptions();
   };
 
   const openEditProject = (project: Project) => {
     setEditingProject(project);
     setProjectForm({
       name: project.name,
+      client_id: project.client_id || "",
       client_name: project.client_name,
       description: project.description || "",
       status: project.status,
@@ -579,7 +614,7 @@ export const ProjectsPage: React.FC = () => {
       due_date: project.due_date || "",
       progress: String(project.progress),
       project_manager_email: project.project_manager_email || "",
-      team_emails: project.team_emails.join(", "),
+      team_emails: project.team_emails,
       tags: project.tags.join(", "),
       current_milestone: project.current_milestone || "",
     });
@@ -599,7 +634,7 @@ export const ProjectsPage: React.FC = () => {
     event.preventDefault();
     if (projectSaving) return;
 
-    if (!projectForm.name.trim() || !projectForm.client_name.trim()) {
+    if (!projectForm.name.trim() || !projectForm.client_id) {
       showWarningToast("Project name and client are required.", "Check project details");
       return;
     }
@@ -620,6 +655,7 @@ export const ProjectsPage: React.FC = () => {
 
     const payload = {
       name: projectForm.name.trim(),
+      client_id: projectForm.client_id,
       client_name: projectForm.client_name.trim(),
       description: projectForm.description.trim() || null,
       status: projectForm.status,
@@ -629,7 +665,7 @@ export const ProjectsPage: React.FC = () => {
       due_date: projectForm.due_date || null,
       progress,
       project_manager_email: projectForm.project_manager_email.trim(),
-      team_emails: splitList(projectForm.team_emails),
+      team_emails: projectForm.team_emails,
       tags: splitList(projectForm.tags),
       current_milestone: projectForm.current_milestone.trim(),
     };
@@ -929,7 +965,8 @@ export const ProjectsPage: React.FC = () => {
       if (financeKind === "quotation") {
         await workspaceApi.createQuotation({
           quotation_number: financeForm.number?.trim(),
-          client_name: financeForm.party?.trim() || financeProject.client_name,
+          client_id: financeProject.client_id,
+          client_name: financeProject.client_name,
           project_id: financeProject.id,
           amount_ugx: amount,
           issue_date: financeForm.issue_date || today(),
@@ -938,7 +975,8 @@ export const ProjectsPage: React.FC = () => {
       } else if (financeKind === "invoice") {
         await workspaceApi.createInvoice({
           invoice_number: financeForm.number?.trim(),
-          client_name: financeForm.party?.trim() || financeProject.client_name,
+          client_id: financeProject.client_id,
+          client_name: financeProject.client_name,
           project_id: financeProject.id,
           amount_ugx: amount,
           paid_amount_ugx: Number(financeForm.paid || 0),
@@ -2273,7 +2311,33 @@ export const ProjectsPage: React.FC = () => {
         <form onSubmit={saveProject} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Input label="Project name" value={projectForm.name} onChange={(event) => setProjectForm((previous) => ({ ...previous, name: event.target.value }))} required />
-            <Input label="Client" value={projectForm.client_name} onChange={(event) => setProjectForm((previous) => ({ ...previous, client_name: event.target.value }))} required />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium">Client</label>
+              <select
+                className={selectClass}
+                value={projectForm.client_id}
+                onChange={(event) => {
+                  const selected = availableClients.find((client) => client.id === event.target.value);
+                  setProjectForm((previous) => ({
+                    ...previous,
+                    client_id: event.target.value,
+                    client_name: selected?.name || "",
+                  }));
+                }}
+                required
+                disabled={projectOptionsLoading}
+              >
+                <option value="">{projectOptionsLoading ? "Loading clients..." : "Select client"}</option>
+                {availableClients.map((client) => (
+                  <option key={client.id} value={client.id} disabled={!client.is_active}>
+                    {client.name}{client.is_active ? "" : " (inactive)"}
+                  </option>
+                ))}
+              </select>
+              {projectOptionsError && (
+                <p className="mt-1 text-xs text-destructive">{projectOptionsError}</p>
+              )}
+            </div>
           </div>
 
           <div>
@@ -2370,24 +2434,62 @@ export const ProjectsPage: React.FC = () => {
             label="Project manager email"
             type="email"
             value={projectForm.project_manager_email}
-            onChange={(event) =>
-              setProjectForm((previous) => ({
-                ...previous,
-                project_manager_email: event.target.value,
-              }))
-            }
-            helperText="The staff roles phase will later replace free-text assignment with managed staff selection."
+            readOnly
+            helperText={projectModal === "create"
+              ? "Automatically set to the currently signed-in Bertcom user."
+              : "The project manager is managed by the system and is not free text."}
           />
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              label="Assigned staff emails"
-              value={projectForm.team_emails}
-              onChange={(event) =>
-                setProjectForm((previous) => ({ ...previous, team_emails: event.target.value }))
-              }
-              helperText="Separate multiple emails with commas."
-            />
+            <div>
+              <label className="mb-1.5 block text-xs font-medium">Assigned staff</label>
+              <select
+                className={selectClass}
+                value=""
+                disabled={projectOptionsLoading}
+                onChange={(event) => {
+                  const email = event.target.value;
+                  if (!email) return;
+                  setProjectForm((previous) => ({
+                    ...previous,
+                    team_emails: previous.team_emails.includes(email)
+                      ? previous.team_emails
+                      : [...previous.team_emails, email],
+                  }));
+                }}
+              >
+                <option value="">{projectOptionsLoading ? "Loading staff..." : "Add staff member"}</option>
+                {assignableUsers
+                  .filter((staff) => staff.email !== projectForm.project_manager_email)
+                  .filter((staff) => !projectForm.team_emails.includes(staff.email))
+                  .map((staff) => (
+                    <option key={staff.id} value={staff.email}>
+                      {staff.full_name} ? {staff.email}
+                    </option>
+                  ))}
+              </select>
+              <div className="mt-2 flex min-h-8 flex-wrap gap-2">
+                {projectForm.team_emails.length ? projectForm.team_emails.map((email) => (
+                  <button
+                    key={email}
+                    type="button"
+                    className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs text-foreground hover:bg-muted/80"
+                    onClick={() =>
+                      setProjectForm((previous) => ({
+                        ...previous,
+                        team_emails: previous.team_emails.filter((item) => item !== email),
+                      }))
+                    }
+                    title="Remove assigned staff"
+                  >
+                    {email} ?
+                  </button>
+                )) : (
+                  <span className="text-xs text-muted-foreground">No additional staff assigned.</span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">Only active Bertcom users can be selected.</p>
+            </div>
             <Input
               label="Tags"
               value={projectForm.tags}

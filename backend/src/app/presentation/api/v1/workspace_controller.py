@@ -424,11 +424,7 @@ class ProjectsController(Controller):
             start_date=data.start_date,
             due_date=data.due_date,
             progress=progress,
-            project_manager_email=(
-                data.project_manager_email.strip().lower()
-                if data.project_manager_email and data.project_manager_email.strip()
-                else None
-            ),
+            project_manager_email=_email(request),
             team_emails=_clean_emails(data.team_emails),
             tags=_clean_tags(data.tags),
             current_milestone=(

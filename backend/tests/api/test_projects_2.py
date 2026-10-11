@@ -40,6 +40,7 @@ async def test_projects_2_dashboard_filters_actions_and_workspace(
     assert create_response.status_code == 201, create_response.text
     project = create_response.json()
     project_id = project["id"]
+    assert project["project_manager_email"] == registered_user["email"]
     assert project["team_emails"] == ["tech@bertcom.test", "ops@bertcom.test"]
     assert project["tags"] == ["Priority", "Installation"]
     assert project["current_milestone"] == "Site preparation"
@@ -48,7 +49,7 @@ async def test_projects_2_dashboard_filters_actions_and_workspace(
         "/api/v1/projects",
         headers=headers,
         params={
-            "manager": "manager@bertcom.test",
+            "manager": registered_user["email"],
             "client": f"Client {suffix}",
             "tag": "Priority",
             "progress_min": 20,
