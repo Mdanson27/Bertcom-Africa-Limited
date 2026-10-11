@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import asyncio
+import threading
 from functools import lru_cache
 
 import jwt
 
 from app.core.settings import settings
+
+_jwks_lookup_lock = threading.Lock()
 
 
 @lru_cache(maxsize=1)
@@ -22,7 +25,11 @@ def _jwks_client() -> jwt.PyJWKClient:
 
 
 def _decode_neon_access_token_sync(token: str) -> dict:
-    signing_key = _jwks_client().get_signing_key_from_jwt(token)
+    # A Business dashboard can start many authenticated requests together. The
+    # lock prevents the first burst from issuing duplicate JWKS downloads before
+    # PyJWKClient has had a chance to warm its signing-key cache.
+    with _jwks_lookup_lock:
+        signing_key = _jwks_client().get_signing_key_from_jwt(token)
     algorithm = getattr(signing_key, "algorithm_name", None) or "RS256"
     return jwt.decode(
         token,
