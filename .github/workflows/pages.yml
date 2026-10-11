@@ -43,7 +43,9 @@ jobs:
         env:
           VITE_BASE_PATH: /Bertcom-Africa-Limited/
           VITE_NEON_AUTH_URL: https://ep-proud-fire-b4ban3g8.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth
-          VITE_API_URL: https://dependent-tap-parallel-signing.trycloudflare.com
+          # The API host is intentionally runtime-only. Never compile a
+          # Cloudflare Quick Tunnel hostname into the production bundle.
+          VITE_API_URL: ""
         run: npm run build
 
       - name: Upload Pages artifact
