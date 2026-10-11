@@ -1,6 +1,45 @@
 {
   "components": {
     "schemas": {
+      "AccountRead": {
+        "properties": {
+          "account_type": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "normal_balance": {
+            "type": "string"
+          },
+          "system_key": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "account_type",
+          "code",
+          "is_active",
+          "name",
+          "normal_balance",
+          "system_key"
+        ],
+        "title": "AccountRead",
+        "type": "object"
+      },
       "ActivityItem": {
         "properties": {
           "detail": {
@@ -36,6 +75,60 @@
           "record_id"
         ],
         "title": "ActivityItem",
+        "type": "object"
+      },
+      "BalanceSheetReport": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "type": "string"
+          },
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/StatementLine"
+            },
+            "type": "array"
+          },
+          "balanced": {
+            "type": "boolean"
+          },
+          "difference_ugx": {
+            "type": "number"
+          },
+          "equity": {
+            "items": {
+              "$ref": "#/components/schemas/StatementLine"
+            },
+            "type": "array"
+          },
+          "liabilities": {
+            "items": {
+              "$ref": "#/components/schemas/StatementLine"
+            },
+            "type": "array"
+          },
+          "total_assets_ugx": {
+            "type": "number"
+          },
+          "total_equity_ugx": {
+            "type": "number"
+          },
+          "total_liabilities_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "as_of",
+          "assets",
+          "balanced",
+          "difference_ugx",
+          "equity",
+          "liabilities",
+          "total_assets_ugx",
+          "total_equity_ugx",
+          "total_liabilities_ugx"
+        ],
+        "title": "BalanceSheetReport",
         "type": "object"
       },
       "BusinessDocumentActionResponse": {
@@ -362,6 +455,67 @@
           "total_suppliers"
         ],
         "title": "BusinessSummary",
+        "type": "object"
+      },
+      "CashFlowPoint": {
+        "properties": {
+          "inflows_ugx": {
+            "type": "number"
+          },
+          "month": {
+            "type": "string"
+          },
+          "net_ugx": {
+            "type": "number"
+          },
+          "outflows_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "inflows_ugx",
+          "month",
+          "net_ugx",
+          "outflows_ugx"
+        ],
+        "title": "CashFlowPoint",
+        "type": "object"
+      },
+      "CashFlowReport": {
+        "properties": {
+          "from_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "inflows_ugx": {
+            "type": "number"
+          },
+          "monthly": {
+            "items": {
+              "$ref": "#/components/schemas/CashFlowPoint"
+            },
+            "type": "array"
+          },
+          "net_cash_flow_ugx": {
+            "type": "number"
+          },
+          "outflows_ugx": {
+            "type": "number"
+          },
+          "to_date": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_date",
+          "inflows_ugx",
+          "monthly",
+          "net_cash_flow_ugx",
+          "outflows_ugx",
+          "to_date"
+        ],
+        "title": "CashFlowReport",
         "type": "object"
       },
       "ClientCreate": {
@@ -770,6 +924,102 @@
           "unit_price_ugx"
         ],
         "title": "CommercialLineItemRead",
+        "type": "object"
+      },
+      "DashboardAnalytics": {
+        "properties": {
+          "active_projects": {
+            "type": "integer"
+          },
+          "document_categories": {
+            "items": {
+              "$ref": "#/components/schemas/NamedCount"
+            },
+            "type": "array"
+          },
+          "expense_categories": {
+            "items": {
+              "$ref": "#/components/schemas/NamedValue"
+            },
+            "type": "array"
+          },
+          "expenses_month_ugx": {
+            "type": "number"
+          },
+          "invoice_status": {
+            "items": {
+              "$ref": "#/components/schemas/NamedCount"
+            },
+            "type": "array"
+          },
+          "monthly_finance": {
+            "items": {
+              "$ref": "#/components/schemas/MonthlyFinancePoint"
+            },
+            "type": "array"
+          },
+          "net_cash_month_ugx": {
+            "type": "number"
+          },
+          "open_tasks": {
+            "type": "integer"
+          },
+          "overdue_tasks": {
+            "type": "integer"
+          },
+          "project_status": {
+            "items": {
+              "$ref": "#/components/schemas/NamedCount"
+            },
+            "type": "array"
+          },
+          "quotation_status": {
+            "items": {
+              "$ref": "#/components/schemas/NamedCount"
+            },
+            "type": "array"
+          },
+          "receipts_month_ugx": {
+            "type": "number"
+          },
+          "receivables_ugx": {
+            "type": "number"
+          },
+          "task_completion_rate": {
+            "type": "number"
+          },
+          "task_status": {
+            "items": {
+              "$ref": "#/components/schemas/NamedCount"
+            },
+            "type": "array"
+          },
+          "top_projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectPerformanceItem"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "active_projects",
+          "document_categories",
+          "expense_categories",
+          "expenses_month_ugx",
+          "invoice_status",
+          "monthly_finance",
+          "net_cash_month_ugx",
+          "open_tasks",
+          "overdue_tasks",
+          "project_status",
+          "quotation_status",
+          "receipts_month_ugx",
+          "receivables_ugx",
+          "task_completion_rate",
+          "task_status",
+          "top_projects"
+        ],
+        "title": "DashboardAnalytics",
         "type": "object"
       },
       "DocumentCreate": {
@@ -1725,6 +1975,158 @@
         "title": "InvoiceUpdate",
         "type": "object"
       },
+      "JournalEntryRead": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "entry_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/JournalLineRead"
+            },
+            "type": "array"
+          },
+          "posted_by_email": {
+            "type": "string"
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_type": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "description",
+          "entry_date",
+          "id",
+          "lines",
+          "posted_by_email",
+          "reference",
+          "source_type"
+        ],
+        "title": "JournalEntryRead",
+        "type": "object"
+      },
+      "JournalLineRead": {
+        "properties": {
+          "account_code": {
+            "type": "string"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "credit_ugx": {
+            "type": "number"
+          },
+          "debit_ugx": {
+            "type": "number"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "account_code",
+          "account_name",
+          "credit_ugx",
+          "debit_ugx",
+          "description"
+        ],
+        "title": "JournalLineRead",
+        "type": "object"
+      },
+      "ManualJournalCreate": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "entry_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ManualJournalLineInput"
+            },
+            "type": "array"
+          },
+          "reference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "description",
+          "entry_date"
+        ],
+        "title": "ManualJournalCreate",
+        "type": "object"
+      },
+      "ManualJournalLineInput": {
+        "properties": {
+          "account_code": {
+            "type": "string"
+          },
+          "credit_ugx": {
+            "default": 0,
+            "type": "number"
+          },
+          "debit_ugx": {
+            "default": 0,
+            "type": "number"
+          },
+          "description": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "account_code"
+        ],
+        "title": "ManualJournalLineInput",
+        "type": "object"
+      },
       "Message": {
         "properties": {
           "message": {
@@ -1735,6 +2137,66 @@
           "message"
         ],
         "title": "Message",
+        "type": "object"
+      },
+      "MonthlyFinancePoint": {
+        "properties": {
+          "expenses_ugx": {
+            "type": "number"
+          },
+          "invoiced_ugx": {
+            "type": "number"
+          },
+          "month": {
+            "type": "string"
+          },
+          "net_cash_ugx": {
+            "type": "number"
+          },
+          "received_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "expenses_ugx",
+          "invoiced_ugx",
+          "month",
+          "net_cash_ugx",
+          "received_ugx"
+        ],
+        "title": "MonthlyFinancePoint",
+        "type": "object"
+      },
+      "NamedCount": {
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "name"
+        ],
+        "title": "NamedCount",
+        "type": "object"
+      },
+      "NamedValue": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "NamedValue",
         "type": "object"
       },
       "PartyDocumentItem": {
@@ -2005,6 +2467,54 @@
           "updated_at"
         ],
         "title": "PaymentRead",
+        "type": "object"
+      },
+      "ProfitLossReport": {
+        "properties": {
+          "expenses": {
+            "items": {
+              "$ref": "#/components/schemas/StatementLine"
+            },
+            "type": "array"
+          },
+          "from_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "margin_percent": {
+            "type": "number"
+          },
+          "net_profit_ugx": {
+            "type": "number"
+          },
+          "revenue": {
+            "items": {
+              "$ref": "#/components/schemas/StatementLine"
+            },
+            "type": "array"
+          },
+          "to_date": {
+            "format": "date",
+            "type": "string"
+          },
+          "total_expenses_ugx": {
+            "type": "number"
+          },
+          "total_revenue_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "expenses",
+          "from_date",
+          "margin_percent",
+          "net_profit_ugx",
+          "revenue",
+          "to_date",
+          "total_expenses_ugx",
+          "total_revenue_ugx"
+        ],
+        "title": "ProfitLossReport",
         "type": "object"
       },
       "ProjectActivityItem": {
@@ -2440,6 +2950,50 @@
           "reference"
         ],
         "title": "ProjectPaymentItem",
+        "type": "object"
+      },
+      "ProjectPerformanceItem": {
+        "properties": {
+          "client_name": {
+            "type": "string"
+          },
+          "expenses_ugx": {
+            "type": "number"
+          },
+          "margin_ugx": {
+            "type": "number"
+          },
+          "progress": {
+            "type": "integer"
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "received_ugx": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string"
+          },
+          "value_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "client_name",
+          "expenses_ugx",
+          "margin_ugx",
+          "progress",
+          "project_id",
+          "project_name",
+          "received_ugx",
+          "status",
+          "value_ugx"
+        ],
+        "title": "ProjectPerformanceItem",
         "type": "object"
       },
       "ProjectPurchaseOrderItem": {
@@ -3544,6 +4098,90 @@
         "title": "ReceiptRead",
         "type": "object"
       },
+      "ReceivableAgingInvoice": {
+        "properties": {
+          "bucket": {
+            "type": "string"
+          },
+          "client_name": {
+            "type": "string"
+          },
+          "days_overdue": {
+            "type": "integer"
+          },
+          "due_date": {
+            "oneOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "invoice_number": {
+            "type": "string"
+          },
+          "outstanding_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "bucket",
+          "client_name",
+          "days_overdue",
+          "due_date",
+          "invoice_number",
+          "outstanding_ugx"
+        ],
+        "title": "ReceivableAgingInvoice",
+        "type": "object"
+      },
+      "ReceivableAgingReport": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "type": "string"
+          },
+          "current_ugx": {
+            "type": "number"
+          },
+          "days_1_30_ugx": {
+            "type": "number"
+          },
+          "days_31_60_ugx": {
+            "type": "number"
+          },
+          "days_61_90_ugx": {
+            "type": "number"
+          },
+          "days_90_plus_ugx": {
+            "type": "number"
+          },
+          "invoices": {
+            "items": {
+              "$ref": "#/components/schemas/ReceivableAgingInvoice"
+            },
+            "type": "array"
+          },
+          "total_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "as_of",
+          "current_ugx",
+          "days_1_30_ugx",
+          "days_31_60_ugx",
+          "days_61_90_ugx",
+          "days_90_plus_ugx",
+          "invoices",
+          "total_ugx"
+        ],
+        "title": "ReceivableAgingReport",
+        "type": "object"
+      },
       "StatementEntry": {
         "properties": {
           "credit_ugx": {
@@ -3590,6 +4228,26 @@
           "running_balance_ugx"
         ],
         "title": "StatementEntry",
+        "type": "object"
+      },
+      "StatementLine": {
+        "properties": {
+          "amount_ugx": {
+            "type": "number"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount_ugx",
+          "code",
+          "name"
+        ],
+        "title": "StatementLine",
         "type": "object"
       },
       "SupplierCreate": {
@@ -4276,6 +4934,74 @@
           "access_token"
         ],
         "title": "TokenResponse",
+        "type": "object"
+      },
+      "TrialBalanceReport": {
+        "properties": {
+          "as_of": {
+            "format": "date",
+            "type": "string"
+          },
+          "balanced": {
+            "type": "boolean"
+          },
+          "difference_ugx": {
+            "type": "number"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/TrialBalanceRow"
+            },
+            "type": "array"
+          },
+          "total_credits_ugx": {
+            "type": "number"
+          },
+          "total_debits_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "as_of",
+          "balanced",
+          "difference_ugx",
+          "rows",
+          "total_credits_ugx",
+          "total_debits_ugx"
+        ],
+        "title": "TrialBalanceReport",
+        "type": "object"
+      },
+      "TrialBalanceRow": {
+        "properties": {
+          "account_code": {
+            "type": "string"
+          },
+          "account_name": {
+            "type": "string"
+          },
+          "account_type": {
+            "type": "string"
+          },
+          "balance_ugx": {
+            "type": "number"
+          },
+          "credit_ugx": {
+            "type": "number"
+          },
+          "debit_ugx": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "account_code",
+          "account_name",
+          "account_type",
+          "balance_ugx",
+          "credit_ugx",
+          "debit_ugx"
+        ],
+        "title": "TrialBalanceRow",
         "type": "object"
       },
       "UpdatePassword": {
@@ -9918,6 +10644,675 @@
           }
         },
         "summary": "GetProjectWorkspace"
+      }
+    },
+    "/api/v1/reports/accounts": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsAccountsAccounts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AccountRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "Accounts"
+      }
+    },
+    "/api/v1/reports/balance-sheet": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsBalanceSheetBalanceSheetReport",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceSheetReport"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "BalanceSheetReport"
+      }
+    },
+    "/api/v1/reports/cash-flow": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsCashFlowCashFlowReport",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "from_date",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "to_date",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CashFlowReport"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CashFlowReport"
+      }
+    },
+    "/api/v1/reports/dashboard": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsDashboardDashboard",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "months",
+            "required": false,
+            "schema": {
+              "default": 6,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardAnalytics"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "Dashboard"
+      }
+    },
+    "/api/v1/reports/journal-entries": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsJournalEntriesJournalEntries",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JournalEntryRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "JournalEntries"
+      },
+      "post": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsJournalEntriesCreateManualJournal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualJournalCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalEntryRead"
+                }
+              }
+            },
+            "description": "Document created, URL follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "CreateManualJournal"
+      }
+    },
+    "/api/v1/reports/profit-loss": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsProfitLossProfitLossReport",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "from_date",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "to_date",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfitLossReport"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ProfitLossReport"
+      }
+    },
+    "/api/v1/reports/receivables-aging": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsReceivablesAgingReceivablesAgingReport",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceivableAgingReport"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "ReceivablesAgingReport"
+      }
+    },
+    "/api/v1/reports/trial-balance": {
+      "get": {
+        "deprecated": false,
+        "operationId": "ApiV1ReportsTrialBalanceTrialBalanceReport",
+        "parameters": [
+          {
+            "allowEmptyValue": false,
+            "allowReserved": false,
+            "deprecated": false,
+            "in": "query",
+            "name": "as_of",
+            "required": false,
+            "schema": {
+              "oneOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrialBalanceReport"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Validation Exception",
+                  "examples": [
+                    {
+                      "detail": "Bad Request",
+                      "extra": {},
+                      "status_code": 400
+                    }
+                  ],
+                  "properties": {
+                    "detail": {
+                      "type": "string"
+                    },
+                    "extra": {
+                      "additionalProperties": {},
+                      "type": [
+                        "null",
+                        "object",
+                        "array"
+                      ]
+                    },
+                    "status_code": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "detail",
+                    "status_code"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Bad request syntax or unsupported method"
+          }
+        },
+        "summary": "TrialBalanceReport"
       }
     },
     "/api/v1/tasks": {

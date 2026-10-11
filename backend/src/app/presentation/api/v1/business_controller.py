@@ -69,6 +69,11 @@ from app.domain.business.services import (
     require_current_preview,
     require_current_reviewed_version,
 )
+from app.domain.reporting.services import (
+    sync_expense_ledger,
+    sync_invoice_ledger,
+    sync_payment_ledger,
+)
 from app.domain.workspace.models import Document, Project
 from app.presentation.guards.auth_guard import JWTAuthGuard
 
@@ -617,6 +622,7 @@ class BusinessController(Controller):
         await replace_line_items(db_session, InvoiceLineItem, "invoice_id", item.id, lines)
         await db_session.commit()
         await db_session.refresh(item)
+        await sync_invoice_ledger(db_session, item)
         await ensure_invoice_document(db_session, item, _email(request))
         await db_session.commit()
         return _invoice_read(item)
@@ -698,6 +704,7 @@ class BusinessController(Controller):
             item.status = "partially_paid"
         await db_session.commit()
         await db_session.refresh(item)
+        await sync_invoice_ledger(db_session, item)
         await ensure_invoice_document(db_session, item, _email(request))
         if item.status != previous_status:
             document = await current_generated_document(db_session, "invoice", item.id)
@@ -803,6 +810,9 @@ class BusinessController(Controller):
             )
         await db_session.commit()
         await db_session.refresh(item)
+        await sync_payment_ledger(db_session, item)
+        if invoice is not None:
+            await sync_invoice_ledger(db_session, invoice)
         await ensure_receipt_document(db_session, item, _email(request))
         if invoice is not None:
             await ensure_invoice_document(db_session, invoice, _email(request))
@@ -1055,6 +1065,8 @@ class BusinessController(Controller):
         db_session.add(item)
         await db_session.commit()
         await db_session.refresh(item)
+        await sync_expense_ledger(db_session, item)
+        await db_session.commit()
         return _expense_read(item)
 
     @get(path="/clients/{client_id:uuid}/workspace")

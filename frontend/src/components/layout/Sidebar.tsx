@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpe
   }, []);
 
   const workspace = [
-    { id: "home" as NavItem, label: "Home", icon: Home },
+    { id: "home" as NavItem, label: "Dashboard", icon: Home },
     { id: "projects" as NavItem, label: "Projects", icon: FolderKanban },
     { id: "documents" as NavItem, label: "Documents", icon: Files },
     { id: "business" as NavItem, label: "Business", icon: BriefcaseBusiness },

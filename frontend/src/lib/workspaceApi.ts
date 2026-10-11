@@ -301,6 +301,110 @@ export interface BusinessSummary {
   expenses_ugx: number;
 }
 
+export interface NamedCount { name: string; count: number; }
+export interface NamedValue { name: string; value: number; }
+export interface MonthlyFinancePoint {
+  month: string;
+  invoiced_ugx: number;
+  received_ugx: number;
+  expenses_ugx: number;
+  net_cash_ugx: number;
+}
+export interface ProjectPerformanceItem {
+  project_id: string;
+  project_name: string;
+  client_name: string;
+  status: string;
+  progress: number;
+  value_ugx: number;
+  received_ugx: number;
+  expenses_ugx: number;
+  margin_ugx: number;
+}
+export interface DashboardAnalytics {
+  active_projects: number;
+  open_tasks: number;
+  overdue_tasks: number;
+  task_completion_rate: number;
+  receivables_ugx: number;
+  receipts_month_ugx: number;
+  expenses_month_ugx: number;
+  net_cash_month_ugx: number;
+  project_status: NamedCount[];
+  task_status: NamedCount[];
+  invoice_status: NamedCount[];
+  quotation_status: NamedCount[];
+  expense_categories: NamedValue[];
+  monthly_finance: MonthlyFinancePoint[];
+  top_projects: ProjectPerformanceItem[];
+  document_categories: NamedCount[];
+}
+export interface TrialBalanceRow {
+  account_code: string;
+  account_name: string;
+  account_type: string;
+  debit_ugx: number;
+  credit_ugx: number;
+  balance_ugx: number;
+}
+export interface TrialBalanceReport {
+  as_of: string;
+  rows: TrialBalanceRow[];
+  total_debits_ugx: number;
+  total_credits_ugx: number;
+  difference_ugx: number;
+  balanced: boolean;
+}
+export interface StatementLine { code: string; name: string; amount_ugx: number; }
+export interface ProfitLossReport {
+  from_date: string;
+  to_date: string;
+  revenue: StatementLine[];
+  expenses: StatementLine[];
+  total_revenue_ugx: number;
+  total_expenses_ugx: number;
+  net_profit_ugx: number;
+  margin_percent: number;
+}
+export interface BalanceSheetReport {
+  as_of: string;
+  assets: StatementLine[];
+  liabilities: StatementLine[];
+  equity: StatementLine[];
+  total_assets_ugx: number;
+  total_liabilities_ugx: number;
+  total_equity_ugx: number;
+  difference_ugx: number;
+  balanced: boolean;
+}
+export interface CashFlowPoint { month: string; inflows_ugx: number; outflows_ugx: number; net_ugx: number; }
+export interface CashFlowReport {
+  from_date: string;
+  to_date: string;
+  inflows_ugx: number;
+  outflows_ugx: number;
+  net_cash_flow_ugx: number;
+  monthly: CashFlowPoint[];
+}
+export interface ReceivableAgingInvoice {
+  invoice_number: string;
+  client_name: string;
+  due_date: string | null;
+  outstanding_ugx: number;
+  days_overdue: number;
+  bucket: string;
+}
+export interface ReceivableAgingReport {
+  as_of: string;
+  current_ugx: number;
+  days_1_30_ugx: number;
+  days_31_60_ugx: number;
+  days_61_90_ugx: number;
+  days_90_plus_ugx: number;
+  total_ugx: number;
+  invoices: ReceivableAgingInvoice[];
+}
+
 export const workspaceApi = {
   summary: () => request<WorkspaceSummary>("/workspace/summary"),
 
@@ -420,6 +524,19 @@ export const workspaceApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  reportingDashboard: (months = 6) =>
+    request<DashboardAnalytics>(`/reports/dashboard?months=${months}`),
+  trialBalance: (asOf?: string) =>
+    request<TrialBalanceReport>(`/reports/trial-balance${queryString({ as_of: asOf })}`),
+  profitLoss: (fromDate?: string, toDate?: string) =>
+    request<ProfitLossReport>(`/reports/profit-loss${queryString({ from_date: fromDate, to_date: toDate })}`),
+  balanceSheet: (asOf?: string) =>
+    request<BalanceSheetReport>(`/reports/balance-sheet${queryString({ as_of: asOf })}`),
+  cashFlow: (fromDate?: string, toDate?: string) =>
+    request<CashFlowReport>(`/reports/cash-flow${queryString({ from_date: fromDate, to_date: toDate })}`),
+  receivablesAging: (asOf?: string) =>
+    request<ReceivableAgingReport>(`/reports/receivables-aging${queryString({ as_of: asOf })}`),
 };
 
 export async function uploadToPresignedUrl(url: string, file: File): Promise<void> {

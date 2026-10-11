@@ -5,6 +5,18 @@ export type ClientOptions = {
 };
 
 /**
+ * AccountRead
+ */
+export type AccountRead = {
+    account_type: string;
+    code: string;
+    is_active: boolean;
+    name: string;
+    normal_balance: string;
+    system_key: string | null;
+};
+
+/**
  * ActivityItem
  */
 export type ActivityItem = {
@@ -13,6 +25,21 @@ export type ActivityItem = {
     label: string;
     occurred_at: string;
     record_id: string;
+};
+
+/**
+ * BalanceSheetReport
+ */
+export type BalanceSheetReport = {
+    as_of: string;
+    assets: Array<StatementLine>;
+    balanced: boolean;
+    difference_ugx: number;
+    equity: Array<StatementLine>;
+    liabilities: Array<StatementLine>;
+    total_assets_ugx: number;
+    total_equity_ugx: number;
+    total_liabilities_ugx: number;
 };
 
 /**
@@ -90,6 +117,28 @@ export type BusinessSummary = {
     suppliers: number;
     total_clients: number;
     total_suppliers: number;
+};
+
+/**
+ * CashFlowPoint
+ */
+export type CashFlowPoint = {
+    inflows_ugx: number;
+    month: string;
+    net_ugx: number;
+    outflows_ugx: number;
+};
+
+/**
+ * CashFlowReport
+ */
+export type CashFlowReport = {
+    from_date: string;
+    inflows_ugx: number;
+    monthly: Array<CashFlowPoint>;
+    net_cash_flow_ugx: number;
+    outflows_ugx: number;
+    to_date: string;
 };
 
 /**
@@ -188,6 +237,28 @@ export type CommercialLineItemRead = {
     position: number;
     quantity: number;
     unit_price_ugx: number;
+};
+
+/**
+ * DashboardAnalytics
+ */
+export type DashboardAnalytics = {
+    active_projects: number;
+    document_categories: Array<NamedCount>;
+    expense_categories: Array<NamedValue>;
+    expenses_month_ugx: number;
+    invoice_status: Array<NamedCount>;
+    monthly_finance: Array<MonthlyFinancePoint>;
+    net_cash_month_ugx: number;
+    open_tasks: number;
+    overdue_tasks: number;
+    project_status: Array<NamedCount>;
+    quotation_status: Array<NamedCount>;
+    receipts_month_ugx: number;
+    receivables_ugx: number;
+    task_completion_rate: number;
+    task_status: Array<NamedCount>;
+    top_projects: Array<ProjectPerformanceItem>;
 };
 
 /**
@@ -379,10 +450,81 @@ export type InvoiceUpdate = {
 };
 
 /**
+ * JournalEntryRead
+ */
+export type JournalEntryRead = {
+    description: string;
+    entry_date: string;
+    id: string;
+    lines: Array<JournalLineRead>;
+    posted_by_email: string;
+    reference: string | null;
+    source_type: string | null;
+};
+
+/**
+ * JournalLineRead
+ */
+export type JournalLineRead = {
+    account_code: string;
+    account_name: string;
+    credit_ugx: number;
+    debit_ugx: number;
+    description: string | null;
+};
+
+/**
+ * ManualJournalCreate
+ */
+export type ManualJournalCreate = {
+    description: string;
+    entry_date: string;
+    lines?: Array<ManualJournalLineInput>;
+    reference?: string | null;
+};
+
+/**
+ * ManualJournalLineInput
+ */
+export type ManualJournalLineInput = {
+    account_code: string;
+    credit_ugx?: number;
+    debit_ugx?: number;
+    description?: string | null;
+};
+
+/**
  * Message
  */
 export type Message = {
     message: string;
+};
+
+/**
+ * MonthlyFinancePoint
+ */
+export type MonthlyFinancePoint = {
+    expenses_ugx: number;
+    invoiced_ugx: number;
+    month: string;
+    net_cash_ugx: number;
+    received_ugx: number;
+};
+
+/**
+ * NamedCount
+ */
+export type NamedCount = {
+    count: number;
+    name: string;
+};
+
+/**
+ * NamedValue
+ */
+export type NamedValue = {
+    name: string;
+    value: number;
 };
 
 /**
@@ -441,6 +583,20 @@ export type PaymentRead = {
     recorded_by_email: string;
     reference: string | null;
     updated_at: string;
+};
+
+/**
+ * ProfitLossReport
+ */
+export type ProfitLossReport = {
+    expenses: Array<StatementLine>;
+    from_date: string;
+    margin_percent: number;
+    net_profit_ugx: number;
+    revenue: Array<StatementLine>;
+    to_date: string;
+    total_expenses_ugx: number;
+    total_revenue_ugx: number;
 };
 
 /**
@@ -550,6 +706,21 @@ export type ProjectPaymentItem = {
     notes: string | null;
     payment_date: string;
     reference: string | null;
+};
+
+/**
+ * ProjectPerformanceItem
+ */
+export type ProjectPerformanceItem = {
+    client_name: string;
+    expenses_ugx: number;
+    margin_ugx: number;
+    progress: number;
+    project_id: string;
+    project_name: string;
+    received_ugx: number;
+    status: string;
+    value_ugx: number;
 };
 
 /**
@@ -762,6 +933,32 @@ export type ReceiptRead = {
 };
 
 /**
+ * ReceivableAgingInvoice
+ */
+export type ReceivableAgingInvoice = {
+    bucket: string;
+    client_name: string;
+    days_overdue: number;
+    due_date: string | null;
+    invoice_number: string;
+    outstanding_ugx: number;
+};
+
+/**
+ * ReceivableAgingReport
+ */
+export type ReceivableAgingReport = {
+    as_of: string;
+    current_ugx: number;
+    days_1_30_ugx: number;
+    days_31_60_ugx: number;
+    days_61_90_ugx: number;
+    days_90_plus_ugx: number;
+    invoices: Array<ReceivableAgingInvoice>;
+    total_ugx: number;
+};
+
+/**
  * StatementEntry
  */
 export type StatementEntry = {
@@ -773,6 +970,15 @@ export type StatementEntry = {
     reference: string;
     running_balance_ugx: number;
     status?: string | null;
+};
+
+/**
+ * StatementLine
+ */
+export type StatementLine = {
+    amount_ugx: number;
+    code: string;
+    name: string;
 };
 
 /**
@@ -922,6 +1128,30 @@ export type TokenResponse = {
     access_token: string;
     expires_in?: number;
     token_type?: string;
+};
+
+/**
+ * TrialBalanceReport
+ */
+export type TrialBalanceReport = {
+    as_of: string;
+    balanced: boolean;
+    difference_ugx: number;
+    rows: Array<TrialBalanceRow>;
+    total_credits_ugx: number;
+    total_debits_ugx: number;
+};
+
+/**
+ * TrialBalanceRow
+ */
+export type TrialBalanceRow = {
+    account_code: string;
+    account_name: string;
+    account_type: string;
+    balance_ugx: number;
+    credit_ugx: number;
+    debit_ugx: number;
 };
 
 /**
@@ -3274,6 +3504,286 @@ export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses = {
 };
 
 export type ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponse = ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses[keyof ApiV1ProjectsProjectIdWorkspaceGetProjectWorkspaceResponses];
+
+export type ApiV1ReportsAccountsAccountsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/reports/accounts';
+};
+
+export type ApiV1ReportsAccountsAccountsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<AccountRead>;
+};
+
+export type ApiV1ReportsAccountsAccountsResponse = ApiV1ReportsAccountsAccountsResponses[keyof ApiV1ReportsAccountsAccountsResponses];
+
+export type ApiV1ReportsBalanceSheetBalanceSheetReportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        as_of?: string | null;
+    };
+    url: '/api/v1/reports/balance-sheet';
+};
+
+export type ApiV1ReportsBalanceSheetBalanceSheetReportErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsBalanceSheetBalanceSheetReportError = ApiV1ReportsBalanceSheetBalanceSheetReportErrors[keyof ApiV1ReportsBalanceSheetBalanceSheetReportErrors];
+
+export type ApiV1ReportsBalanceSheetBalanceSheetReportResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BalanceSheetReport;
+};
+
+export type ApiV1ReportsBalanceSheetBalanceSheetReportResponse = ApiV1ReportsBalanceSheetBalanceSheetReportResponses[keyof ApiV1ReportsBalanceSheetBalanceSheetReportResponses];
+
+export type ApiV1ReportsCashFlowCashFlowReportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        from_date?: string | null;
+        to_date?: string | null;
+    };
+    url: '/api/v1/reports/cash-flow';
+};
+
+export type ApiV1ReportsCashFlowCashFlowReportErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsCashFlowCashFlowReportError = ApiV1ReportsCashFlowCashFlowReportErrors[keyof ApiV1ReportsCashFlowCashFlowReportErrors];
+
+export type ApiV1ReportsCashFlowCashFlowReportResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: CashFlowReport;
+};
+
+export type ApiV1ReportsCashFlowCashFlowReportResponse = ApiV1ReportsCashFlowCashFlowReportResponses[keyof ApiV1ReportsCashFlowCashFlowReportResponses];
+
+export type ApiV1ReportsDashboardDashboardData = {
+    body?: never;
+    path?: never;
+    query?: {
+        months?: number;
+    };
+    url: '/api/v1/reports/dashboard';
+};
+
+export type ApiV1ReportsDashboardDashboardErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsDashboardDashboardError = ApiV1ReportsDashboardDashboardErrors[keyof ApiV1ReportsDashboardDashboardErrors];
+
+export type ApiV1ReportsDashboardDashboardResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: DashboardAnalytics;
+};
+
+export type ApiV1ReportsDashboardDashboardResponse = ApiV1ReportsDashboardDashboardResponses[keyof ApiV1ReportsDashboardDashboardResponses];
+
+export type ApiV1ReportsJournalEntriesJournalEntriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        limit?: number;
+    };
+    url: '/api/v1/reports/journal-entries';
+};
+
+export type ApiV1ReportsJournalEntriesJournalEntriesErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsJournalEntriesJournalEntriesError = ApiV1ReportsJournalEntriesJournalEntriesErrors[keyof ApiV1ReportsJournalEntriesJournalEntriesErrors];
+
+export type ApiV1ReportsJournalEntriesJournalEntriesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<JournalEntryRead>;
+};
+
+export type ApiV1ReportsJournalEntriesJournalEntriesResponse = ApiV1ReportsJournalEntriesJournalEntriesResponses[keyof ApiV1ReportsJournalEntriesJournalEntriesResponses];
+
+export type ApiV1ReportsJournalEntriesCreateManualJournalData = {
+    body: ManualJournalCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/reports/journal-entries';
+};
+
+export type ApiV1ReportsJournalEntriesCreateManualJournalErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsJournalEntriesCreateManualJournalError = ApiV1ReportsJournalEntriesCreateManualJournalErrors[keyof ApiV1ReportsJournalEntriesCreateManualJournalErrors];
+
+export type ApiV1ReportsJournalEntriesCreateManualJournalResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: JournalEntryRead;
+};
+
+export type ApiV1ReportsJournalEntriesCreateManualJournalResponse = ApiV1ReportsJournalEntriesCreateManualJournalResponses[keyof ApiV1ReportsJournalEntriesCreateManualJournalResponses];
+
+export type ApiV1ReportsProfitLossProfitLossReportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        from_date?: string | null;
+        to_date?: string | null;
+    };
+    url: '/api/v1/reports/profit-loss';
+};
+
+export type ApiV1ReportsProfitLossProfitLossReportErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsProfitLossProfitLossReportError = ApiV1ReportsProfitLossProfitLossReportErrors[keyof ApiV1ReportsProfitLossProfitLossReportErrors];
+
+export type ApiV1ReportsProfitLossProfitLossReportResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ProfitLossReport;
+};
+
+export type ApiV1ReportsProfitLossProfitLossReportResponse = ApiV1ReportsProfitLossProfitLossReportResponses[keyof ApiV1ReportsProfitLossProfitLossReportResponses];
+
+export type ApiV1ReportsReceivablesAgingReceivablesAgingReportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        as_of?: string | null;
+    };
+    url: '/api/v1/reports/receivables-aging';
+};
+
+export type ApiV1ReportsReceivablesAgingReceivablesAgingReportErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsReceivablesAgingReceivablesAgingReportError = ApiV1ReportsReceivablesAgingReceivablesAgingReportErrors[keyof ApiV1ReportsReceivablesAgingReceivablesAgingReportErrors];
+
+export type ApiV1ReportsReceivablesAgingReceivablesAgingReportResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ReceivableAgingReport;
+};
+
+export type ApiV1ReportsReceivablesAgingReceivablesAgingReportResponse = ApiV1ReportsReceivablesAgingReceivablesAgingReportResponses[keyof ApiV1ReportsReceivablesAgingReceivablesAgingReportResponses];
+
+export type ApiV1ReportsTrialBalanceTrialBalanceReportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        as_of?: string | null;
+    };
+    url: '/api/v1/reports/trial-balance';
+};
+
+export type ApiV1ReportsTrialBalanceTrialBalanceReportErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1ReportsTrialBalanceTrialBalanceReportError = ApiV1ReportsTrialBalanceTrialBalanceReportErrors[keyof ApiV1ReportsTrialBalanceTrialBalanceReportErrors];
+
+export type ApiV1ReportsTrialBalanceTrialBalanceReportResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: TrialBalanceReport;
+};
+
+export type ApiV1ReportsTrialBalanceTrialBalanceReportResponse = ApiV1ReportsTrialBalanceTrialBalanceReportResponses[keyof ApiV1ReportsTrialBalanceTrialBalanceReportResponses];
 
 export type ApiV1TasksListTasksData = {
     body?: never;
