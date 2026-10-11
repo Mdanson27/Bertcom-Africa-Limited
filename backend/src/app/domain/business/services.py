@@ -247,6 +247,22 @@ async def require_current_reviewed_version(
         )
 
 
+async def invalidate_current_generated_document(
+    db_session: AsyncSession, related_record_type: str, related_record_id: uuid.UUID
+) -> Document | None:
+    """Mark the current generated PDF stale when its source record changes.
+
+    The business record remains authoritative. A fresh PDF is created only when
+    the user explicitly previews/generates it, preventing storage failures from
+    breaking ordinary business saves and preventing stale PDFs from being sent.
+    """
+    current = await current_generated_document(db_session, related_record_type, related_record_id)
+    if current is not None:
+        current.is_current = False
+        await db_session.flush()
+    return current
+
+
 async def upsert_generated_document(
     db_session: AsyncSession,
     *,

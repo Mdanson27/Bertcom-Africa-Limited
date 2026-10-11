@@ -25,7 +25,7 @@ from litestar.middleware.base import AbstractMiddleware
 from litestar.status_codes import HTTP_409_CONFLICT
 from litestar.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.core.settings import settings
+from app.adapters.cache.valkey_service import valkey_store
 
 logger = structlog.get_logger()
 
@@ -53,7 +53,7 @@ class IdempotencyMiddleware(AbstractMiddleware):
             return
 
         cache_key = f"idempotency:{idempotency_key}"
-        valkey_client = await self._get_valkey()
+        valkey_client = self._get_valkey()
 
         if valkey_client is not None:
             try:
@@ -61,7 +61,6 @@ class IdempotencyMiddleware(AbstractMiddleware):
                 if cached_data:
                     record = json.loads(cached_data)
                     if record.get("status") == "IN_PROGRESS":
-                        # In-flight concurrent request
                         await self._send_json_response(
                             send,
                             status_code=HTTP_409_CONFLICT,
@@ -72,18 +71,19 @@ class IdempotencyMiddleware(AbstractMiddleware):
                         return
 
                     if record.get("status") == "COMPLETED":
-                        # Return cached response
                         logger.info("idempotency.cache_hit", key=idempotency_key)
                         await self._send_cached_response(send, record)
                         return
 
-                # Acquire in-flight lock
-                in_progress_record = json.dumps({"status": "IN_PROGRESS"})
-                await valkey_client.set(cache_key, in_progress_record, ex=LOCK_TTL_SECONDS)
+                in_progress_record = json.dumps({"status": "IN_PROGRESS"}).encode("utf-8")
+                await valkey_client.set(
+                    cache_key,
+                    in_progress_record,
+                    expires_in=LOCK_TTL_SECONDS,
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("idempotency.valkey_error", error=str(exc))
 
-        # Capture response body and status
         response_status = 200
         response_headers: list[tuple[bytes, bytes]] = []
         response_body: list[bytes] = []
@@ -103,7 +103,6 @@ class IdempotencyMiddleware(AbstractMiddleware):
         try:
             await self.app(scope, receive, capturing_send)
         except Exception:
-            # On unhandled error, clear in-flight lock
             if valkey_client is not None:
                 try:
                     await valkey_client.delete(cache_key)
@@ -111,7 +110,6 @@ class IdempotencyMiddleware(AbstractMiddleware):
                     pass
             raise
 
-        # Save successful / completed response in cache
         if valkey_client is not None and 200 <= response_status < 400:
             try:
                 full_body = b"".join(response_body).decode("utf-8", errors="replace")
@@ -126,20 +124,18 @@ class IdempotencyMiddleware(AbstractMiddleware):
                     "headers": cached_headers,
                     "body": full_body,
                 }
-                await valkey_client.set(cache_key, json.dumps(record), ex=IDEMPOTENCY_TTL_SECONDS)
+                await valkey_client.set(
+                    cache_key,
+                    json.dumps(record).encode("utf-8"),
+                    expires_in=IDEMPOTENCY_TTL_SECONDS,
+                )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("idempotency.cache_save_error", error=str(exc))
 
-    async def _get_valkey(self) -> Any:
+    def _get_valkey(self) -> Any:
+        """Return Bertcom's lifecycle-managed Valkey store instead of opening a new client."""
         try:
-            import valkey.asyncio as valkey
-
-            return valkey.from_url(
-                settings.valkey_url,
-                decode_responses=True,
-                socket_connect_timeout=2.0,
-                socket_timeout=2.0,
-            )
+            return valkey_store
         except Exception:  # noqa: BLE001
             return None
 

@@ -15,6 +15,7 @@ Guards
 
 from __future__ import annotations
 
+import jwt
 from litestar.connection import ASGIConnection
 from litestar.exceptions import NotAuthorizedException, PermissionDeniedException
 from litestar.types import RouteHandlerType
@@ -44,15 +45,22 @@ class JWTAuthGuard:
 
         token = auth_header[len("Bearer ") :]
 
-        # Decode & validate JWT. Neon JWKS lookup runs in a worker thread and
-        # reuses its key cache so a burst of dashboard requests cannot block
-        # the ASGI event loop or repeatedly refetch the same signing keys.
+        # Decode & validate JWT. Production is Neon-only when managed auth is
+        # configured. Development/test may also accept Bertcom's locally-issued
+        # HS256 token so the built-in local login and API test harness remain
+        # usable without weakening the production trust boundary.
+        token_is_neon = False
         try:
-            payload = (
-                await decode_neon_access_token_async(token)
-                if settings.NEON_AUTH_JWKS_URL
-                else decode_access_token(token)
-            )
+            if settings.NEON_AUTH_JWKS_URL:
+                environment = settings.ENVIRONMENT.lower()
+                algorithm = str(jwt.get_unverified_header(token).get("alg") or "").upper()
+                if environment != "production" and algorithm == "HS256":
+                    payload = decode_access_token(token)
+                else:
+                    payload = await decode_neon_access_token_async(token)
+                    token_is_neon = True
+            else:
+                payload = decode_access_token(token)
         except Exception as exc:
             raise NotAuthorizedException("Invalid or expired session token.") from exc
 
@@ -62,11 +70,11 @@ class JWTAuthGuard:
         token_role = payload.get("role")
         role: str = str(token_role or "authenticated")
         # Managed Neon Auth is intentionally email-locked to the configured
-        # AutoMinds platform administrator. Legacy local JWTs continue to honor
-        # the explicit is_superuser claim only when Neon Auth is not configured.
+        # AutoMinds platform administrator. Local HS256 tokens are accepted only
+        # outside production and honor their explicit is_superuser claim.
         is_super: bool = (
             bool(email and email == settings.platform_admin_email)
-            if settings.NEON_AUTH_JWKS_URL
+            if token_is_neon
             else bool(payload.get("is_superuser", False))
         )
         tenant_id: str | None = payload.get("tenant_id") or payload.get("organization_id")

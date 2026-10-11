@@ -209,6 +209,7 @@ export const BusinessPage: React.FC = () => {
   const [documents, setDocuments] = useState<DocumentOption[]>(initialCache?.data.documents ?? []);
   const [businessDocuments, setBusinessDocuments] = useState<BusinessDocumentArchiveRecord[]>(initialCache?.data.businessDocuments ?? []);
   const [preview, setPreview] = useState<{ url: string; title: string; filename: string } | null>(null);
+  const [finalizingPreviewId, setFinalizingPreviewId] = useState<string | null>(null);
   const [clientStatements, setClientStatements] = useState<ClientStatementSummary[]>(initialCache?.data.clientStatements ?? []);
   const [supplierStatements, setSupplierStatements] = useState<SupplierStatementSummary[]>(initialCache?.data.supplierStatements ?? []);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -455,16 +456,46 @@ export const BusinessPage: React.FC = () => {
     }
   };
 
+  const closePreview = () => {
+    setPreview((current) => {
+      if (current?.url.startsWith("blob:")) URL.revokeObjectURL(current.url);
+      return null;
+    });
+  };
+
   const previewDocument = async (
-    loader: () => Promise<{ download_url: string | null; filename: string; document_id?: string | null }>,
+    recordId: string,
+    pdfLoader: () => Promise<string>,
+    archiveLoader: () => Promise<{ document_id?: string | null }>,
     title: string,
+    filename: string,
   ) => {
     try {
-      const document = await loader();
-      if (!document.download_url) {
-        throw new Error("Document storage is not configured, so the saved PDF cannot be previewed.");
-      }
-      setPreview({ url: document.download_url, title, filename: document.filename });
+      const url = await pdfLoader();
+      setPreview((current) => {
+        if (current?.url.startsWith("blob:")) URL.revokeObjectURL(current.url);
+        return { url, title, filename };
+      });
+      setFinalizingPreviewId(recordId);
+
+      void archiveLoader()
+        .then((saved) => {
+          if (!saved.document_id) {
+            throw new Error("The PDF opened, but its reviewed archive copy could not be saved.");
+          }
+          showSuccessToast("Preview ready. The reviewed PDF version has been saved.");
+        })
+        .catch((error) => {
+          showErrorToast(
+            getErrorMessage(
+              error,
+              "The PDF opened, but Bertcom could not save its reviewed copy. Preview it again before sending or issuing.",
+            ),
+          );
+        })
+        .finally(() => {
+          setFinalizingPreviewId((current) => current === recordId ? null : current);
+        });
     } catch (error) {
       showErrorToast(getErrorMessage(error, "The PDF preview could not be opened."));
     }
@@ -653,8 +684,8 @@ export const BusinessPage: React.FC = () => {
                 const converted = invoices.some((invoice) => invoice.source_quotation_id === item.id);
                 return <tr key={item.id} className="border-t border-border">
                   <Cell strong>{item.quotation_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.issue_date}</Cell>
-                  <Cell><select className={`${selectClass} h-8 min-w-32`} value={item.status} onChange={(e) => void updateStatus("quotation", item.id, e.target.value)}>{quotationStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
-                  <Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewQuotation(item.id), `${item.quotation_number} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
+                  <Cell><select className={`${selectClass} h-8 min-w-32`} value={item.status} disabled={finalizingPreviewId === item.id} onChange={(e) => void updateStatus("quotation", item.id, e.target.value)}>{quotationStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
+                  <Cell><Button variant="outline" size="sm" disabled={finalizingPreviewId === item.id} onClick={() => void previewDocument(item.id, () => businessApi.quotationPdf(item.id), () => businessApi.previewQuotation(item.id), `${item.quotation_number} preview`, `${item.quotation_number}.pdf`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
                   <Cell>{item.status === "accepted" ? converted ? <span className="text-xs font-medium text-muted-foreground">Invoiced</span> : <Button size="sm" onClick={() => void convertQuotation(item)}><ArrowRight className="mr-1.5 h-3.5 w-3.5" />Convert to invoice</Button> : <span className="text-xs text-muted-foreground">{item.status === "draft" ? "Send first" : "?"}</span>}</Cell>
                 </tr>;
               })}
@@ -669,8 +700,8 @@ export const BusinessPage: React.FC = () => {
             <RecordsTable headers={["Invoice", "Client", "Total", "Paid", "Outstanding", "Status", "Document", "Payment"]}>
               {invoices.map((item) => <tr key={item.id} className="border-t border-border">
                 <Cell strong>{item.invoice_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{money(item.paid_amount_ugx)}</Cell><Cell>{money(item.outstanding_amount_ugx)}</Cell>
-                <Cell><select className={`${selectClass} h-8 min-w-36`} value={item.status} disabled={item.status === "paid" || item.status === "overdue" || item.status === "partially_paid"} onChange={(e) => void updateStatus("invoice", item.id, e.target.value)}>{invoiceStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
-                <Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewInvoice(item.id), `${item.invoice_number} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
+                <Cell><select className={`${selectClass} h-8 min-w-36`} value={item.status} disabled={finalizingPreviewId === item.id || item.status === "paid" || item.status === "overdue" || item.status === "partially_paid"} onChange={(e) => void updateStatus("invoice", item.id, e.target.value)}>{invoiceStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
+                <Cell><Button variant="outline" size="sm" disabled={finalizingPreviewId === item.id} onClick={() => void previewDocument(item.id, () => businessApi.invoicePdf(item.id), () => businessApi.previewInvoice(item.id), `${item.invoice_number} preview`, `${item.invoice_number}.pdf`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
                 <Cell>{item.outstanding_amount_ugx > 0 && <Button variant="outline" size="sm" onClick={() => openCreate("payment", { invoice_id: item.id, amount_ugx: String(item.outstanding_amount_ugx) })}>Record payment</Button>}</Cell>
               </tr>)}
             </RecordsTable>
@@ -682,7 +713,7 @@ export const BusinessPage: React.FC = () => {
         <RecordSection title="Receipts" subtitle="Every confirmed payment receives a backend-controlled receipt number and a branded Bertcom PDF.">
           {receipts.length === 0 ? <EmptyState text="No receipts yet. Record a payment against an invoice to create one." /> : (
             <RecordsTable headers={["Receipt", "Client", "Invoice", "Amount", "Date", "Method", "Reference", "Document"]}>
-              {receipts.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.receipt_reference}</Cell><Cell>{item.client_name || "?"}</Cell><Cell>{item.invoice_number || "?"}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.payment_date}</Cell><Cell>{labelStatus(item.method)}</Cell><Cell>{item.reference || "?"}</Cell><Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewReceipt(item.id), `${item.receipt_reference} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell></tr>)}
+              {receipts.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.receipt_reference}</Cell><Cell>{item.client_name || "?"}</Cell><Cell>{item.invoice_number || "?"}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.payment_date}</Cell><Cell>{labelStatus(item.method)}</Cell><Cell>{item.reference || "?"}</Cell><Cell><Button variant="outline" size="sm" disabled={finalizingPreviewId === item.id} onClick={() => void previewDocument(item.id, () => businessApi.receiptPdf(item.id), () => businessApi.previewReceipt(item.id), `${item.receipt_reference} preview`, `${item.receipt_reference}.pdf`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
@@ -692,7 +723,7 @@ export const BusinessPage: React.FC = () => {
         <RecordSection title="Purchase Orders" subtitle="Itemized purchase orders must be previewed before Issue, then follow Draft → Issued → Received → Closed." onAdd={() => openCreate("purchase_order")} addLabel="New purchase order">
           {purchaseOrders.length === 0 ? <EmptyState text="No purchase orders yet." /> : (
             <RecordsTable headers={["PO", "Supplier", "Amount", "Order date", "Status", "Document"]}>
-              {purchaseOrders.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.po_number}</Cell><Cell>{item.supplier_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.order_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-28`} value={item.status} onChange={(e) => void updateStatus("purchase_order", item.id, e.target.value)}>{purchaseOrderStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell><Cell><Button variant="outline" size="sm" onClick={() => void previewDocument(() => businessApi.previewPurchaseOrder(item.id), `${item.po_number} preview`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell></tr>)}
+              {purchaseOrders.map((item) => <tr key={item.id} className="border-t border-border"><Cell strong>{item.po_number}</Cell><Cell>{item.supplier_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.order_date}</Cell><Cell><select className={`${selectClass} h-8 min-w-28`} value={item.status} disabled={finalizingPreviewId === item.id} onChange={(e) => void updateStatus("purchase_order", item.id, e.target.value)}>{purchaseOrderStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell><Cell><Button variant="outline" size="sm" disabled={finalizingPreviewId === item.id} onClick={() => void previewDocument(item.id, () => businessApi.purchaseOrderPdf(item.id), () => businessApi.previewPurchaseOrder(item.id), `${item.po_number} preview`, `${item.po_number}.pdf`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell></tr>)}
             </RecordsTable>
           )}
         </RecordSection>
@@ -761,10 +792,10 @@ export const BusinessPage: React.FC = () => {
         {preview && (
           <div className="space-y-3">
             <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
-              Check the logo, party details, document number, dates, line items, totals, terms and status. This is the exact saved PDF version.
+              Check the logo, party details, document number, dates, line items, totals, terms and status. The PDF opens immediately; Bertcom saves the reviewed archive version in the background.
             </div>
             <iframe title={preview.title} src={preview.url} className="h-[72vh] w-full rounded-lg border border-border bg-white" />
-            <div className="flex justify-end"><Button type="button" variant="outline" onClick={() => setPreview(null)}>Preview complete</Button></div>
+            <div className="flex justify-end"><Button type="button" variant="outline" onClick={closePreview}>Preview complete</Button></div>
           </div>
         )}
       </Modal>
