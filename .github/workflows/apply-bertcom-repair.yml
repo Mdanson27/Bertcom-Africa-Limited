@@ -1,0 +1,43 @@
+name: Apply Bertcom reliability repair
+
+on:
+  push:
+    branches:
+      - repair/business-reliability-20261011
+    paths:
+      - .repair/repair_bertcom.py
+
+permissions:
+  contents: write
+
+jobs:
+  apply-repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: repair/business-reliability-20261011
+          fetch-depth: 0
+
+      - name: Apply exact repair patch
+        run: python .repair/repair_bertcom.py
+
+      - name: Syntax checks
+        run: |
+          python -m py_compile \
+            backend/src/app/domain/business/services.py \
+            backend/src/app/presentation/api/v1/business_controller.py \
+            backend/src/app/presentation/api/v1/commercial_documents_controller.py \
+            backend/src/app/presentation/guards/auth_guard.py \
+            backend/tests/api/test_business_documents.py
+          git diff --check
+
+      - name: Commit repaired source only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .repair/repair_bertcom.py .github/workflows/apply-bertcom-repair.yml
+          git add backend frontend
+          git commit -m "fix: harden business reliability and document previews"
+          git push origin HEAD:repair/business-reliability-20261011
