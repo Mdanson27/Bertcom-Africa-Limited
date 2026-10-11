@@ -2,6 +2,14 @@ import { apiRequest } from "@/lib/api";
 
 const request = apiRequest;
 
+const optionalRead = async <T>(loader: () => Promise<T>, fallback: T): Promise<T> => {
+  try {
+    return await loader();
+  } catch {
+    return fallback;
+  }
+};
+
 const queryString = (params?: Record<string, string | null | undefined>) => {
   if (!params) return "";
   const search = new URLSearchParams();
@@ -360,6 +368,8 @@ export const businessApi = {
   restoreBusinessDocument: (id: string) =>
     request<BusinessDocumentActionRecord>(`/business/documents/${id}/restore`, { method: "POST" }),
 
-  projects: () => request<ProjectOption[]>("/projects"),
-  documents: () => request<DocumentOption[]>("/documents"),
+  // These records enrich Business forms, but they are not allowed to take the
+  // entire commercial workspace down if another module is temporarily unavailable.
+  projects: () => optionalRead(() => request<ProjectOption[]>("/projects"), []),
+  documents: () => optionalRead(() => request<DocumentOption[]>("/documents"), []),
 };
