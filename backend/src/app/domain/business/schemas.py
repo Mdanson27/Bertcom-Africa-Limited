@@ -123,6 +123,7 @@ class QuotationRead(msgspec.Struct, frozen=True):
     notes: str | None
     created_at: datetime
     updated_at: datetime
+    has_current_preview: bool = False
     items: list[CommercialLineItemRead] = msgspec.field(default_factory=list)
 
 

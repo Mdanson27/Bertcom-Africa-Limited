@@ -113,6 +113,7 @@ export interface QuotationRecord {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  has_current_preview: boolean;
   items?: CommercialLineItemRecord[];
 }
 

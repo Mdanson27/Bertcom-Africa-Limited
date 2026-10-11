@@ -118,13 +118,6 @@ class TestBusiness2Foundation:
             f"/api/v1/business/quotations/{quotation['id']}/preview", headers=headers
         )
         assert quotation_preview.status_code in {200, 201}, quotation_preview.text
-        quotation_sent = await async_client.patch(
-            f"/api/v1/business/quotations/{quotation['id']}",
-            headers=headers,
-            json={"status": "sent"},
-        )
-        assert quotation_sent.status_code == 200, quotation_sent.text
-
         quotation_update = await async_client.patch(
             f"/api/v1/business/quotations/{quotation['id']}",
             headers=headers,

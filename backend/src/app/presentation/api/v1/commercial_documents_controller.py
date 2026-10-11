@@ -54,6 +54,7 @@ from app.domain.business.services import (
     next_business_number,
     record_document_event,
     replace_line_items,
+    require_current_preview,
     upsert_generated_document,
 )
 from app.domain.workspace.models import Document
@@ -153,10 +154,27 @@ class CommercialDocumentsController(Controller):
         quotation = await db_session.get(Quotation, quotation_id)
         if quotation is None:
             raise NotFoundException(detail="Quotation not found.")
-        if quotation.status != "accepted":
+        if quotation.status in {"rejected", "expired"}:
             raise ClientException(
-                detail="Only an accepted quotation can be converted to an invoice.", status_code=409
+                detail="Rejected or expired quotations cannot be converted to invoices.",
+                status_code=409,
             )
+        if quotation.status != "accepted":
+            try:
+                await require_current_preview(db_session, "quotation", quotation.id)
+            except ValueError as exc:
+                raise ClientException(detail=str(exc), status_code=409) from exc
+            previous_status = quotation.status
+            quotation.status = "accepted"
+            document = await current_generated_document(db_session, "quotation", quotation.id)
+            if document is not None:
+                await record_document_event(
+                    db_session,
+                    document,
+                    "accepted",
+                    _email(request),
+                    {"from_status": previous_status, "via": "convert_to_invoice"},
+                )
         existing = (
             await db_session.execute(
                 select(Invoice).where(Invoice.source_quotation_id == quotation.id)
