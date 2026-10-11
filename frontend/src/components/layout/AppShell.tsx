@@ -22,8 +22,8 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      <div className="flex flex-1">
+    <div className="app-scrollbarless flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <Sidebar
           currentTab={currentTab}
           onSelectTab={onSelectTab}
@@ -33,7 +33,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
         <div
           className={cn(
-            "flex flex-1 flex-col transition-all duration-200 min-w-0",
+            "flex h-full min-w-0 flex-1 flex-col overflow-hidden transition-all duration-200",
             sidebarOpen ? "pl-64" : "pl-20"
           )}
         >
@@ -42,7 +42,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             onRefreshAll={onRefreshAll}
             isRefreshing={isRefreshing}
           />
-          <main className="flex-1 p-6 md:p-8 overflow-y-auto">{children}</main>
+          <main className="scrollbar-none min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-6 md:p-8">{children}</main>
           <Footer />
         </div>
       </div>

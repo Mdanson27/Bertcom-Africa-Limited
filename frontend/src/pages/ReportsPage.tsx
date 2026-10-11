@@ -212,7 +212,7 @@ export const ReportsPage: React.FC = () => {
   const periodLabel = `${fromDate} → ${toDate}`;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 max-w-full space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Reporting & Analytics 2.0</p>
