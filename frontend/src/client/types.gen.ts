@@ -886,6 +886,7 @@ export type QuotationRead = {
     client_id: string | null;
     client_name: string;
     created_at: string;
+    has_current_preview?: boolean;
     id: string;
     issue_date: string;
     items?: Array<CommercialLineItemRead>;

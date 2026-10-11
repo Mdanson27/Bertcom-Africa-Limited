@@ -12,6 +12,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.business.models import (
+    BusinessDocumentEvent,
     Client,
     Expense,
     Invoice,
@@ -55,6 +56,7 @@ from app.domain.business.schemas import (
     SupplierWorkspace,
 )
 from app.domain.business.services import (
+    current_document_has_action,
     current_generated_document,
     invalidate_current_generated_document,
     next_business_number,
@@ -76,7 +78,7 @@ QUOTATION_STATUSES = {"draft", "sent", "accepted", "rejected", "expired"}
 INVOICE_STATUSES = {"draft", "sent", "partially_paid", "paid", "overdue"}
 PO_STATUSES = {"draft", "issued", "received", "closed"}
 QUOTATION_TRANSITIONS = {
-    "draft": {"draft", "sent"},
+    "draft": {"draft", "sent", "accepted"},
     "sent": {"sent", "accepted", "rejected", "expired"},
     "accepted": {"accepted"},
     "rejected": {"rejected"},
@@ -157,7 +159,7 @@ def _supplier_read(item: Supplier) -> SupplierRead:
     )
 
 
-def _quotation_read(item: Quotation) -> QuotationRead:
+def _quotation_read(item: Quotation, *, has_current_preview: bool = False) -> QuotationRead:
     return QuotationRead(
         id=item.id,
         quotation_number=item.quotation_number,
@@ -171,6 +173,7 @@ def _quotation_read(item: Quotation) -> QuotationRead:
         notes=item.notes,
         created_at=item.created_at,
         updated_at=item.updated_at,
+        has_current_preview=has_current_preview,
     )
 
 
@@ -425,7 +428,30 @@ class BusinessController(Controller):
             stmt = stmt.where(Quotation.client_id == client_id)
         if project_id:
             stmt = stmt.where(Quotation.project_id == project_id)
-        return [_quotation_read(row) for row in (await db_session.execute(stmt)).scalars().all()]
+        rows = list((await db_session.execute(stmt)).scalars().all())
+        previewed_ids = set(
+            (
+                await db_session.execute(
+                    select(Document.related_record_id)
+                    .join(
+                        BusinessDocumentEvent,
+                        BusinessDocumentEvent.document_id == Document.id,
+                    )
+                    .where(
+                        Document.category == "generated_commercial",
+                        Document.related_record_type == "quotation",
+                        Document.is_current.is_(True),
+                        Document.is_deleted.is_(False),
+                        BusinessDocumentEvent.action == "previewed",
+                        Document.related_record_id.is_not(None),
+                    )
+                    .distinct()
+                )
+            )
+            .scalars()
+            .all()
+        )
+        return [_quotation_read(row, has_current_preview=row.id in previewed_ids) for row in rows]
 
     @post(path="/quotations", status_code=HTTP_201_CREATED)
     async def create_quotation(
@@ -496,7 +522,7 @@ class BusinessController(Controller):
                     detail="Save quotation edits first, preview the regenerated PDF, then change its workflow status.",
                     status_code=409,
                 )
-            if item.status == "draft" and data.status == "sent":
+            if item.status == "draft" and data.status in {"sent", "accepted"}:
                 try:
                     await require_current_preview(db_session, "quotation", item.id)
                 except ValueError as exc:
@@ -551,7 +577,10 @@ class BusinessController(Controller):
                     {"from_status": previous_status},
                 )
         await db_session.commit()
-        return _quotation_read(item)
+        has_preview = await current_document_has_action(
+            db_session, "quotation", item.id, {"previewed"}
+        )
+        return _quotation_read(item, has_current_preview=has_preview)
 
     @get(path="/invoices")
     async def invoices(
