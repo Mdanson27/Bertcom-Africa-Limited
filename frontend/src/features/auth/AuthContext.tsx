@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
+import { clearSectionCaches } from "@/lib/sectionCache";
 import {
   AUTH_SESSION_EXPIRED_EVENT,
   cacheAccessToken,
@@ -123,6 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearSession = useCallback(() => {
     clearCachedAccessToken();
     clearCachedUser();
+    clearSectionCaches();
     setToken(null);
     setUser(null);
   }, []);

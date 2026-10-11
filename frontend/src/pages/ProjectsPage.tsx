@@ -33,9 +33,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SyncStatus } from "@/components/common/SyncStatus";
 import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
+import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
 import {
@@ -61,6 +64,11 @@ type PortfolioView = "table" | "cards" | "timeline" | "calendar";
 type WorkspaceTab = "overview" | "tasks" | "documents" | "finance" | "activity";
 type FinanceKind = "quotation" | "invoice" | "payment" | "purchase" | "expense";
 type FinanceView = "quotations" | "invoices" | "payments" | "purchase_orders" | "expenses";
+
+type ProjectsSnapshot = {
+  projects: Project[];
+  dashboard: ProjectDashboardSummary | null;
+};
 
 type ProjectFormState = {
   name: string;
@@ -251,9 +259,11 @@ const metricCard = (
 
 export const ProjectsPage: React.FC = () => {
   const { showSuccessToast, showErrorToast, showWarningToast } = useCustomToast();
+  const { user } = useAuth();
+  const [initialCache] = useState(() => readSectionCache<ProjectsSnapshot>(user?.id, "projects"));
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [dashboard, setDashboard] = useState<ProjectDashboardSummary | null>(null);
+  const [projects, setProjects] = useState<Project[]>(initialCache?.data.projects ?? []);
+  const [dashboard, setDashboard] = useState<ProjectDashboardSummary | null>(initialCache?.data.dashboard ?? null);
   const [section, setSection] = useState<ProjectsSection>("overview");
   const [portfolioView, setPortfolioView] = useState<PortfolioView>("table");
   const [selectedId, setSelectedId] = useState("");
@@ -289,8 +299,10 @@ export const ProjectsPage: React.FC = () => {
   const [docBusy, setDocBusy] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
+  const [workspaceSyncedAt, setWorkspaceSyncedAt] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const projectDirty =
@@ -332,42 +344,50 @@ export const ProjectsPage: React.FC = () => {
 
   useUnsavedChanges(projectDirty || taskDirty || financeDirty);
 
-  const loadPortfolio = useCallback(async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
+  const loadPortfolio = useCallback(async (_showLoading = true) => {
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const [rows, summary] = await Promise.all([
         workspaceApi.projects({ include_archived: true }),
         workspaceApi.projectDashboard(),
       ]);
-      setProjects(rows);
-      setDashboard(summary);
+      const snapshot: ProjectsSnapshot = { projects: rows, dashboard: summary };
+      setProjects(snapshot.projects);
+      setDashboard(snapshot.dashboard);
+      setLastSyncedAt(writeSectionCache(user?.id, "projects", snapshot));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "Projects could not be loaded."));
+      setLoadError(getErrorMessage(error, "Projects could not be refreshed."));
     } finally {
-      if (showLoading) setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
   const loadWorkspace = useCallback(async (id: string) => {
     if (!id) {
       setWorkspace(null);
+      setWorkspaceSyncedAt(null);
       return;
+    }
+    const cached = readSectionCache<ProjectWorkspace>(user?.id, `project-workspace:${id}`);
+    if (cached) {
+      setWorkspace(cached.data);
+      setWorkspaceSyncedAt(cached.savedAt);
     }
     setWorkspaceLoading(true);
     setLoadError(null);
     try {
-      setWorkspace(await workspaceApi.projectWorkspace(id));
+      const nextWorkspace = await workspaceApi.projectWorkspace(id);
+      setWorkspace(nextWorkspace);
+      setWorkspaceSyncedAt(writeSectionCache(user?.id, `project-workspace:${id}`, nextWorkspace));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "The project workspace could not be loaded."));
+      setLoadError(getErrorMessage(error, "The project workspace could not be refreshed."));
     } finally {
       setWorkspaceLoading(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    void loadPortfolio();
-  }, [loadPortfolio]);
+  useBackgroundRefresh(loadPortfolio);
 
   useEffect(() => {
     if (selectedId) void loadWorkspace(selectedId);
@@ -524,6 +544,11 @@ export const ProjectsPage: React.FC = () => {
 
   const openProject = (project: Project) => {
     setActionProject(null);
+    const cached = readSectionCache<ProjectWorkspace>(user?.id, `project-workspace:${project.id}`);
+    if (cached) {
+      setWorkspace(cached.data);
+      setWorkspaceSyncedAt(cached.savedAt);
+    }
     setSelectedId(project.id);
     setWorkspaceTab("overview");
   };
@@ -966,17 +991,6 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
-  if (isLoading) return <PageLoading label="Loading Projects 2.0..." />;
-  if (loadError && projects.length === 0) {
-    return (
-      <PageError
-        message={loadError}
-        onRetry={() => void loadPortfolio()}
-        title="Projects are temporarily unavailable"
-      />
-    );
-  }
-
   const renderPortfolioProject = (project: Project) => {
     const health = projectHealth(project);
     const remaining = daysRemaining(project.due_date);
@@ -1259,9 +1273,12 @@ export const ProjectsPage: React.FC = () => {
                 Company-wide project control, delivery, documents, teams and money.
               </p>
             </div>
-            <Button className="gap-2" onClick={openCreateProject}>
-              <Plus className="h-4 w-4" /> New project
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
+              <Button className="gap-2" onClick={openCreateProject}>
+                <Plus className="h-4 w-4" /> New project
+              </Button>
+            </div>
           </div>
 
           <SectionNav
@@ -1651,9 +1668,7 @@ export const ProjectsPage: React.FC = () => {
         </>
       )}
 
-      {workspaceLoading && selectedId && <PageLoading label="Opening project workspace..." />}
-
-      {workspace && !workspaceLoading && (
+      {workspace && (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Button
@@ -1663,12 +1678,14 @@ export const ProjectsPage: React.FC = () => {
               onClick={() => {
                 setSelectedId("");
                 setWorkspace(null);
+                setWorkspaceSyncedAt(null);
                 setWorkspaceTab("overview");
               }}
             >
               <ArrowLeft className="h-4 w-4" /> Back to Projects
             </Button>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <SyncStatus isRefreshing={workspaceLoading} error={loadError} lastSyncedAt={workspaceSyncedAt} />
               <Button variant="outline" size="sm" onClick={() => openEditProject(workspace.project)}>
                 <Edit3 className="h-4 w-4" /> Edit project
               </Button>

@@ -1,7 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { BarChart3, FileText, ListTodo, WalletCards } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SyncStatus } from "@/components/common/SyncStatus";
+import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { SectionNav } from "@/components/common/SectionNav";
 import { getErrorMessage } from "@/lib/api";
 import {
@@ -15,6 +18,14 @@ import {
 
 type ReportsView = "overview" | "projects" | "finance" | "tasks" | "documents" | "activity";
 
+type ReportsSnapshot = {
+  projects: Project[];
+  tasks: ProjectTask[];
+  documents: DocumentRecord[];
+  summary: WorkspaceSummary | null;
+  business: BusinessSummary | null;
+};
+
 const money = (value: number) =>
   new Intl.NumberFormat("en-UG", {
     style: "currency",
@@ -23,17 +34,20 @@ const money = (value: number) =>
   }).format(value);
 
 export const ReportsPage: React.FC = () => {
+  const { user } = useAuth();
+  const [initialCache] = useState(() => readSectionCache<ReportsSnapshot>(user?.id, "reports"));
   const [view, setView] = useState<ReportsView>("overview");
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [tasks, setTasks] = useState<ProjectTask[]>([]);
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
-  const [business, setBusiness] = useState<BusinessSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>(initialCache?.data.projects ?? []);
+  const [tasks, setTasks] = useState<ProjectTask[]>(initialCache?.data.tasks ?? []);
+  const [documents, setDocuments] = useState<DocumentRecord[]>(initialCache?.data.documents ?? []);
+  const [summary, setSummary] = useState<WorkspaceSummary | null>(initialCache?.data.summary ?? null);
+  const [business, setBusiness] = useState<BusinessSummary | null>(initialCache?.data.business ?? null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setIsLoading(true);
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const [p, t, d, s, b] = await Promise.all([
@@ -43,21 +57,21 @@ export const ReportsPage: React.FC = () => {
         workspaceApi.summary(),
         workspaceApi.businessSummary(),
       ]);
-      setProjects(p);
-      setTasks(t);
-      setDocuments(d);
-      setSummary(s);
-      setBusiness(b);
+      const snapshot: ReportsSnapshot = { projects: p, tasks: t, documents: d, summary: s, business: b };
+      setProjects(snapshot.projects);
+      setTasks(snapshot.tasks);
+      setDocuments(snapshot.documents);
+      setSummary(snapshot.summary);
+      setBusiness(snapshot.business);
+      setLastSyncedAt(writeSectionCache(user?.id, "reports", snapshot));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "Reports could not be loaded."));
+      setLoadError(getErrorMessage(error, "Reports could not be refreshed."));
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useBackgroundRefresh(load);
 
   const totals = useMemo(
     () =>
@@ -80,18 +94,16 @@ export const ReportsPage: React.FC = () => {
     { id: "activity" as const, label: "Activity" },
   ];
 
-  if (isLoading) return <PageLoading label="Loading management reports..." />;
-  if (loadError) {
-    return <PageError message={loadError} onRetry={load} title="Reports are temporarily unavailable" />;
-  }
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Management reporting is separated by the type of decision you need to make.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Reports</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Management reporting is separated by the type of decision you need to make.
+          </p>
+        </div>
+        <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
       </div>
 
       <SectionNav items={tabs} active={view} onChange={setView} ariaLabel="Report sections" />

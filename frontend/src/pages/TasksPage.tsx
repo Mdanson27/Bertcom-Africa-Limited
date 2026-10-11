@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -17,10 +17,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SyncStatus } from "@/components/common/SyncStatus";
 import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
 import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { getErrorMessage } from "@/lib/api";
 import {
   TASK_STATUSES,
@@ -51,6 +53,13 @@ type TaskForm = {
   related_document_id: string;
 };
 
+type TasksSnapshot = {
+  tasks: ProjectTask[];
+  projects: Project[];
+  documents: DocumentRecord[];
+  dashboard: TaskDashboardSummary | null;
+};
+
 const blankForm = (projectId = ""): TaskForm => ({
   title: "",
   description: "",
@@ -79,14 +88,16 @@ const priorityClass = (priority: string) => {
 export const TasksPage: React.FC = () => {
   const { user } = useAuth();
   const { showSuccessToast, showErrorToast } = useCustomToast();
-  const [tasks, setTasks] = useState<ProjectTask[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [dashboard, setDashboard] = useState<TaskDashboardSummary | null>(null);
+  const [initialCache] = useState(() => readSectionCache<TasksSnapshot>(user?.id, "tasks"));
+  const [tasks, setTasks] = useState<ProjectTask[]>(initialCache?.data.tasks ?? []);
+  const [projects, setProjects] = useState<Project[]>(initialCache?.data.projects ?? []);
+  const [documents, setDocuments] = useState<DocumentRecord[]>(initialCache?.data.documents ?? []);
+  const [dashboard, setDashboard] = useState<TaskDashboardSummary | null>(initialCache?.data.dashboard ?? null);
   const [view, setView] = useState<TasksView>("my");
   const [displayMode, setDisplayMode] = useState<DisplayMode>("list");
   const [search, setSearch] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -94,8 +105,8 @@ export const TasksPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState<TaskForm>(blankForm());
 
-  const load = useCallback(async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
+  const load = useCallback(async (_showLoading = true) => {
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const [nextTasks, nextProjects, nextDocuments, nextDashboard] = await Promise.all([
@@ -104,20 +115,25 @@ export const TasksPage: React.FC = () => {
         workspaceApi.documents(),
         workspaceApi.taskDashboard(),
       ]);
-      setTasks(nextTasks);
-      setProjects(nextProjects);
-      setDocuments(nextDocuments);
-      setDashboard(nextDashboard);
+      const snapshot: TasksSnapshot = {
+        tasks: nextTasks,
+        projects: nextProjects,
+        documents: nextDocuments,
+        dashboard: nextDashboard,
+      };
+      setTasks(snapshot.tasks);
+      setProjects(snapshot.projects);
+      setDocuments(snapshot.documents);
+      setDashboard(snapshot.dashboard);
+      setLastSyncedAt(writeSectionCache(user?.id, "tasks", snapshot));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "Tasks could not be loaded."));
+      setLoadError(getErrorMessage(error, "Tasks could not be refreshed."));
     } finally {
-      if (showLoading) setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useBackgroundRefresh(load);
 
   const today = dateOnly();
   const currentEmail = user?.email?.trim().toLowerCase() || "";
@@ -251,11 +267,6 @@ export const TasksPage: React.FC = () => {
     }
   };
 
-  if (isLoading) return <PageLoading label="Loading Tasks 2.0..." />;
-  if (loadError) {
-    return <PageError message={loadError} onRetry={() => load()} title="Tasks are temporarily unavailable" />;
-  }
-
   const metrics = [
     { label: "Due Today", value: dashboard?.due_today ?? 0, icon: CalendarDays },
     { label: "Overdue", value: dashboard?.overdue ?? 0, icon: AlertTriangle },
@@ -273,9 +284,12 @@ export const TasksPage: React.FC = () => {
             Start the day here: see what is due, overdue, important and assigned to you.
           </p>
         </div>
-        <Button onClick={openCreate} disabled={projects.length === 0}>
-          <Plus className="mr-2 h-4 w-4" /> New Task
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
+          <Button onClick={openCreate} disabled={projects.length === 0}>
+            <Plus className="mr-2 h-4 w-4" /> New Task
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">

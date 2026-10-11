@@ -15,7 +15,6 @@ import { TasksPage } from "@/pages/TasksPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { TelemetryStream } from "@/features/dashboard/TelemetryStream";
 import { SystemHealthProvider, useSystemHealth } from "@/features/dashboard/SystemHealthContext";
-import { BrandedLoadingScreen } from "@/components/common/BrandedLoadingScreen";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -35,7 +34,7 @@ const ALL_TABS: NavItem[] = [
 ];
 
 const AuthenticatedApp: React.FC = () => {
-  const { isAuthenticated, isLoading, isPlatformAdmin, refreshProfile } = useAuth();
+  const { isAuthenticated, isPlatformAdmin, refreshProfile } = useAuth();
   const { refreshHealth } = useSystemHealth();
   const [currentTab, setCurrentTab] = useState<NavItem>("home");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -60,7 +59,6 @@ const AuthenticatedApp: React.FC = () => {
     setCurrentTab(tab);
   };
 
-  if (isLoading) return <BrandedLoadingScreen />;
   if (!isAuthenticated) return <LoginPage />;
 
   const handleRefresh = async () => {
