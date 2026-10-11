@@ -608,7 +608,8 @@ class CommercialDocumentsController(Controller):
 
         if repaired is None or not await object_exists_async(repaired.storage_key):
             raise ClientException(
-                detail="The current PDF could not be restored from its source record.", status_code=502
+                detail="The current PDF could not be restored from its source record.",
+                status_code=502,
             )
         await db_session.commit()
         return repaired
