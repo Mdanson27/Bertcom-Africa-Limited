@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.mail import EmailAttachment, EmailMessage, mail_service
 from app.core.settings import settings
-from app.core.storage import delete_object, get_object_bytes, presign_download
+from app.core.storage import delete_object, get_object_bytes, object_exists_async, presign_download
 from app.domain.business.document_service import (
     client_statement_pdf,
     ensure_invoice_document,
@@ -566,6 +566,72 @@ class CommercialDocumentsController(Controller):
                 status_code=409,
             )
 
+    async def _repair_current_archive_object(
+        self, request: Request, item: Document, db_session: AsyncSession
+    ) -> Document:
+        if not item.is_current or not item.related_record_type or not item.related_record_id:
+            raise ClientException(
+                detail="This archived PDF is no longer available in storage.", status_code=410
+            )
+
+        actor = _email(request)
+        record_type = item.related_record_type
+        record_id = item.related_record_id
+        repaired: Document | None = None
+
+        if record_type == "quotation":
+            source = await db_session.get(Quotation, record_id)
+            if source is not None:
+                _, repaired, _, _ = await ensure_quotation_document(db_session, source, actor)
+        elif record_type == "invoice":
+            source = await db_session.get(Invoice, record_id)
+            if source is not None:
+                _, repaired, _, _ = await ensure_invoice_document(db_session, source, actor)
+        elif record_type == "receipt":
+            source = await db_session.get(Payment, record_id)
+            if source is not None:
+                _, repaired, _, _ = await ensure_receipt_document(db_session, source, actor)
+        elif record_type == "purchase_order":
+            source = await db_session.get(PurchaseOrder, record_id)
+            if source is not None:
+                _, repaired, _, _ = await ensure_purchase_order_document(db_session, source, actor)
+        elif record_type == "client_statement":
+            source = await db_session.get(Client, record_id)
+            if source is not None:
+                pdf = await client_statement_pdf(db_session, source)
+                repaired, _ = await upsert_generated_document(
+                    db_session,
+                    pdf_bytes=pdf,
+                    title=item.title,
+                    filename=item.original_filename,
+                    uploaded_by_email=actor,
+                    related_record_type=record_type,
+                    related_record_id=record_id,
+                    client_id=source.id,
+                )
+        elif record_type == "supplier_statement":
+            source = await db_session.get(Supplier, record_id)
+            if source is not None:
+                pdf = await supplier_statement_pdf(db_session, source)
+                repaired, _ = await upsert_generated_document(
+                    db_session,
+                    pdf_bytes=pdf,
+                    title=item.title,
+                    filename=item.original_filename,
+                    uploaded_by_email=actor,
+                    related_record_type=record_type,
+                    related_record_id=record_id,
+                    supplier_id=source.id,
+                )
+
+        if repaired is None or not await object_exists_async(repaired.storage_key):
+            raise ClientException(
+                detail="The current PDF could not be restored from its source record.",
+                status_code=502,
+            )
+        await db_session.commit()
+        return repaired
+
     async def _archive_link_action(
         self,
         request: Request,
@@ -578,6 +644,8 @@ class CommercialDocumentsController(Controller):
         item = await db_session.get(Document, document_id)
         if item is None or item.is_deleted:
             raise NotFoundException(detail="Document not found.")
+        if not await object_exists_async(item.storage_key):
+            item = await self._repair_current_archive_object(request, item, db_session)
         await record_document_event(
             db_session, item, action, _email(request), {"version": item.version}
         )
