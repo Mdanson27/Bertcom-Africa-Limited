@@ -31,6 +31,7 @@ import app.domain.users.models  # noqa: E402, F401  – registers User on Base.m
 import app.domain.telemetry.models  # noqa: E402, F401  – registers TelemetryReading
 import app.domain.workspace.models  # noqa: E402, F401  – registers OS workspace tables
 import app.domain.business.models  # noqa: E402, F401  – registers commercial tables
+import app.domain.reporting.models  # noqa: E402, F401  – registers accounting/reporting tables
 
 # ---------------------------------------------------------------------------
 # Standard Alembic boilerplate

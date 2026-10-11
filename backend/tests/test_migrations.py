@@ -84,6 +84,9 @@ class TestMigrationCycle:
         engine = sa.create_engine(_sync_dsn(), isolation_level="AUTOCOMMIT")
         with engine.connect() as conn:
             conn.execute(sa.text("DROP TABLE IF EXISTS alembic_version CASCADE;"))
+            conn.execute(sa.text("DROP TABLE IF EXISTS journal_lines CASCADE;"))
+            conn.execute(sa.text("DROP TABLE IF EXISTS journal_entries CASCADE;"))
+            conn.execute(sa.text("DROP TABLE IF EXISTS accounts CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS business_number_counters CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS business_document_events CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS purchase_order_line_items CASCADE;"))
