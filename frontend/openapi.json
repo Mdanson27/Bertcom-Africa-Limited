@@ -3808,6 +3808,10 @@
             "format": "date-time",
             "type": "string"
           },
+          "has_current_preview": {
+            "default": false,
+            "type": "boolean"
+          },
           "id": {
             "format": "uuid",
             "type": "string"

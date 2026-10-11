@@ -3,6 +3,7 @@ import {
   Banknote,
   Building2,
   ArrowRight,
+  CheckCircle2,
   Download,
   Eye,
   FileText,
@@ -104,13 +105,11 @@ const selectClass =
   "h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary";
 
 const labelStatus = (value: string) =>
-  value
-    .replaceAll("_", " ")
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-
-const quotationStatuses = (current: string) =>
-  current === "draft" ? ["draft", "sent"] :
-  current === "sent" ? ["sent", "accepted", "rejected", "expired"] : [current];
+  value === "accepted"
+    ? "Approved"
+    : value
+        .replaceAll("_", " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 const invoiceStatuses = (current: string) =>
   current === "draft" ? ["draft", "sent"] :
@@ -210,6 +209,7 @@ export const BusinessPage: React.FC = () => {
   const [businessDocuments, setBusinessDocuments] = useState<BusinessDocumentArchiveRecord[]>(initialCache?.data.businessDocuments ?? []);
   const [preview, setPreview] = useState<{ url: string; title: string; filename: string } | null>(null);
   const [finalizingPreviewId, setFinalizingPreviewId] = useState<string | null>(null);
+  const [quotationActionId, setQuotationActionId] = useState<string | null>(null);
   const [clientStatements, setClientStatements] = useState<ClientStatementSummary[]>(initialCache?.data.clientStatements ?? []);
   const [supplierStatements, setSupplierStatements] = useState<SupplierStatementSummary[]>(initialCache?.data.supplierStatements ?? []);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -469,6 +469,7 @@ export const BusinessPage: React.FC = () => {
     archiveLoader: () => Promise<{ document_id?: string | null }>,
     title: string,
     filename: string,
+    onArchived?: () => void,
   ) => {
     try {
       const url = await pdfLoader();
@@ -483,6 +484,7 @@ export const BusinessPage: React.FC = () => {
           if (!saved.document_id) {
             throw new Error("The PDF opened, but its reviewed archive copy could not be saved.");
           }
+          onArchived?.();
           showSuccessToast("Preview ready. The reviewed PDF version has been saved.");
         })
         .catch((error) => {
@@ -517,13 +519,33 @@ export const BusinessPage: React.FC = () => {
     }
   };
 
+  const approveQuotation = async (quotation: QuotationRecord) => {
+    setQuotationActionId(quotation.id);
+    try {
+      await businessApi.updateQuotation(quotation.id, { status: "accepted" });
+      showSuccessToast(`${quotation.quotation_number} approved.`);
+      await load(false);
+    } catch (error) {
+      showErrorToast(getErrorMessage(error, "The quotation could not be approved."));
+    } finally {
+      setQuotationActionId(null);
+    }
+  };
+
   const convertQuotation = async (quotation: QuotationRecord) => {
+    setQuotationActionId(quotation.id);
     try {
       await businessApi.convertQuotation(quotation.id, { issue_date: today(), due_date: null });
-      showSuccessToast(`${quotation.quotation_number} converted to a draft invoice.`);
+      showSuccessToast(
+        quotation.status === "accepted"
+          ? `${quotation.quotation_number} converted to a draft invoice.`
+          : `${quotation.quotation_number} approved and converted to a draft invoice.`,
+      );
       await load(false);
     } catch (error) {
       showErrorToast(getErrorMessage(error, "The quotation could not be converted."));
+    } finally {
+      setQuotationActionId(null);
     }
   };
 
@@ -684,9 +706,22 @@ export const BusinessPage: React.FC = () => {
                 const converted = invoices.some((invoice) => invoice.source_quotation_id === item.id);
                 return <tr key={item.id} className="border-t border-border">
                   <Cell strong>{item.quotation_number}</Cell><Cell>{item.client_name}</Cell><Cell>{money(item.amount_ugx)}</Cell><Cell>{item.issue_date}</Cell>
-                  <Cell><select className={`${selectClass} h-8 min-w-32`} value={item.status} disabled={finalizingPreviewId === item.id} onChange={(e) => void updateStatus("quotation", item.id, e.target.value)}>{quotationStatuses(item.status).map((status) => <option key={status} value={status}>{labelStatus(status)}</option>)}</select></Cell>
-                  <Cell><Button variant="outline" size="sm" disabled={finalizingPreviewId === item.id} onClick={() => void previewDocument(item.id, () => businessApi.quotationPdf(item.id), () => businessApi.previewQuotation(item.id), `${item.quotation_number} preview`, `${item.quotation_number}.pdf`)}><Eye className="mr-1.5 h-3.5 w-3.5" />Preview</Button></Cell>
-                  <Cell>{item.status === "accepted" ? converted ? <span className="text-xs font-medium text-muted-foreground">Invoiced</span> : <Button size="sm" onClick={() => void convertQuotation(item)}><ArrowRight className="mr-1.5 h-3.5 w-3.5" />Convert to invoice</Button> : <span className="text-xs text-muted-foreground">{item.status === "draft" ? "Send first" : "?"}</span>}</Cell>
+                  <Cell><StatusPill value={item.status} /></Cell>
+                  <Cell><Button variant="outline" size="sm" disabled={finalizingPreviewId === item.id || quotationActionId === item.id} onClick={() => void previewDocument(item.id, () => businessApi.quotationPdf(item.id), () => businessApi.previewQuotation(item.id), `${item.quotation_number} preview`, `${item.quotation_number}.pdf`, () => setQuotes((current) => current.map((quote) => quote.id === item.id ? { ...quote, has_current_preview: true } : quote)))}><Eye className="mr-1.5 h-3.5 w-3.5" />{item.has_current_preview ? "Preview again" : "Preview"}</Button></Cell>
+                  <Cell>
+                    {converted ? (
+                      <span className="text-xs font-medium text-muted-foreground">Invoiced</span>
+                    ) : item.status === "accepted" ? (
+                      <Button size="sm" disabled={quotationActionId === item.id} onClick={() => void convertQuotation(item)}><ArrowRight className="mr-1.5 h-3.5 w-3.5" />Convert to invoice</Button>
+                    ) : item.has_current_preview && (item.status === "draft" || item.status === "sent") ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" disabled={quotationActionId === item.id || finalizingPreviewId === item.id} onClick={() => void approveQuotation(item)}><CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />Approve</Button>
+                        <Button size="sm" disabled={quotationActionId === item.id || finalizingPreviewId === item.id} onClick={() => void convertQuotation(item)}><ArrowRight className="mr-1.5 h-3.5 w-3.5" />Convert to invoice</Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{item.status === "rejected" || item.status === "expired" ? labelStatus(item.status) : "Preview first"}</span>
+                    )}
+                  </Cell>
                 </tr>;
               })}
             </RecordsTable>

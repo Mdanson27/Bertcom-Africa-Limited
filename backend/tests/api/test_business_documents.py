@@ -119,11 +119,13 @@ class TestBusinessDocumentsWorkflow:
         assert quote_pdf.content.startswith(b"%PDF")
         assert len(quote_pdf.content) > 1000
 
-        blocked_send = await async_client.patch(
-            f"/api/v1/business/quotations/{quote['id']}", headers=headers, json={"status": "sent"}
+        blocked_approval = await async_client.patch(
+            f"/api/v1/business/quotations/{quote['id']}",
+            headers=headers,
+            json={"status": "accepted"},
         )
-        assert blocked_send.status_code == 409
-        assert "Preview" in blocked_send.text
+        assert blocked_approval.status_code == 409
+        assert "Preview" in blocked_approval.text
 
         quote_preview = await async_client.post(
             f"/api/v1/business/quotations/{quote['id']}/preview", headers=headers
@@ -134,21 +136,14 @@ class TestBusinessDocumentsWorkflow:
         assert quote_preview.json()["stored"] is True
         assert quote_preview.json()["download_url"].startswith("https://storage.test/")
 
-        sent = await async_client.patch(
-            f"/api/v1/business/quotations/{quote['id']}", headers=headers, json={"status": "sent"}
+        quotations_after_preview = await async_client.get(
+            "/api/v1/business/quotations", headers=headers
         )
-        assert sent.status_code == 200, sent.text
-        accepted = await async_client.patch(
-            f"/api/v1/business/quotations/{quote['id']}",
-            headers=headers,
-            json={"status": "accepted"},
+        assert quotations_after_preview.status_code == 200, quotations_after_preview.text
+        previewed_quote = next(
+            row for row in quotations_after_preview.json() if row["id"] == quote["id"]
         )
-        assert accepted.status_code == 200, accepted.text
-
-        invalid_reopen = await async_client.patch(
-            f"/api/v1/business/quotations/{quote['id']}", headers=headers, json={"status": "draft"}
-        )
-        assert invalid_reopen.status_code == 409
+        assert previewed_quote["has_current_preview"] is True
 
         conversion = await async_client.post(
             f"/api/v1/business/quotations/{quote['id']}/convert-to-invoice",
@@ -156,6 +151,20 @@ class TestBusinessDocumentsWorkflow:
             json={"issue_date": "2026-10-06", "due_date": "2026-10-31"},
         )
         assert conversion.status_code == 201, conversion.text
+
+        quotations_after_conversion = await async_client.get(
+            "/api/v1/business/quotations", headers=headers
+        )
+        converted_quote = next(
+            row for row in quotations_after_conversion.json() if row["id"] == quote["id"]
+        )
+        assert converted_quote["status"] == "accepted"
+        assert converted_quote["has_current_preview"] is True
+
+        invalid_reopen = await async_client.patch(
+            f"/api/v1/business/quotations/{quote['id']}", headers=headers, json={"status": "draft"}
+        )
+        assert invalid_reopen.status_code == 409
         invoice = conversion.json()
         assert re.fullmatch(r"INV-2026-\d{4}", invoice["invoice_number"])
         assert invoice["source_quotation_id"] == quote["id"]
