@@ -12,11 +12,19 @@ def test_jwks_client_is_reused(monkeypatch: pytest.MonkeyPatch) -> None:
     created = 0
 
     class FakeClient:
-        def __init__(self, url: str, cache_keys: bool = True) -> None:
+        def __init__(
+            self,
+            url: str,
+            cache_keys: bool = True,
+            timeout: int = 30,
+            lifespan: int = 300,
+        ) -> None:
             nonlocal created
             created += 1
             self.url = url
             self.cache_keys = cache_keys
+            self.timeout = timeout
+            self.lifespan = lifespan
 
     monkeypatch.setattr(neon_jwt.settings, "NEON_AUTH_JWKS_URL", "https://auth.example/jwks")
     monkeypatch.setattr(neon_jwt.jwt, "PyJWKClient", FakeClient)
@@ -26,6 +34,9 @@ def test_jwks_client_is_reused(monkeypatch: pytest.MonkeyPatch) -> None:
         second = neon_jwt._jwks_client()
         assert first is second
         assert created == 1
+        assert first.cache_keys is True
+        assert first.timeout == 5
+        assert first.lifespan == 300
     finally:
         neon_jwt._jwks_client.cache_clear()
 
