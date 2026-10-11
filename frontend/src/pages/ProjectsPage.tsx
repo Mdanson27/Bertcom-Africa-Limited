@@ -375,18 +375,32 @@ export const ProjectsPage: React.FC = () => {
   const loadProjectOptions = useCallback(async () => {
     setProjectOptionsLoading(true);
     setProjectOptionsError(null);
-    try {
-      const [clients, users] = await Promise.all([
-        businessApi.clients(),
-        workspaceApi.assignableUsers(),
-      ]);
-      setAvailableClients(clients.slice().sort((a, b) => a.name.localeCompare(b.name)));
-      setAssignableUsers(users);
-    } catch (error) {
-      setProjectOptionsError(getErrorMessage(error, "Project client and staff options could not be loaded."));
-    } finally {
-      setProjectOptionsLoading(false);
+
+    const [clientsResult, staffResult] = await Promise.allSettled([
+      businessApi.clients(),
+      workspaceApi.assignableUsers(),
+    ]);
+
+    const errors: string[] = [];
+    if (clientsResult.status === "fulfilled") {
+      setAvailableClients(
+        clientsResult.value
+          .filter((client) => client.is_active)
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name)),
+      );
+    } else {
+      errors.push(getErrorMessage(clientsResult.reason, "Clients could not be loaded."));
     }
+
+    if (staffResult.status === "fulfilled") {
+      setAssignableUsers(staffResult.value);
+    } else {
+      errors.push(getErrorMessage(staffResult.reason, "Assignable staff could not be loaded."));
+    }
+
+    setProjectOptionsError(errors.length ? errors.join(" ") : null);
+    setProjectOptionsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -597,7 +611,7 @@ export const ProjectsPage: React.FC = () => {
       project_manager_email: user?.email || "",
     });
     setProjectModal("create");
-    if (!availableClients.length || !assignableUsers.length) void loadProjectOptions();
+    void loadProjectOptions();
   };
 
   const openEditProject = (project: Project) => {
