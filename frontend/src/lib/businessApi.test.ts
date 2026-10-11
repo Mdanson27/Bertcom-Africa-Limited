@@ -19,7 +19,7 @@ describe("Business API reliability", () => {
     });
   });
 
-  it("uses the authenticated PDF stream for a saved receipt preview", async () => {
+  it("uses the saved receipt preview URL without a duplicate PDF request", async () => {
     apiMocks.apiRequest.mockResolvedValue({
       document_id: "doc-1",
       document_number: "RCT-2026-0001",
@@ -27,9 +27,6 @@ describe("Business API reliability", () => {
       download_url: "https://storage.test/signed-receipt.pdf",
       stored: true,
     });
-    apiMocks.authenticatedFetch.mockResolvedValue(
-      new Response(new Blob(["%PDF-test"], { type: "application/pdf" }), { status: 200 }),
-    );
 
     const preview = await businessApi.previewReceipt("payment-1");
 
@@ -37,26 +34,19 @@ describe("Business API reliability", () => {
       "/business/receipts/payment-1/preview",
       { method: "POST" },
     );
-    expect(apiMocks.authenticatedFetch).toHaveBeenCalledWith(
-      "https://api.bertcom.test/api/v1/business/receipts/payment-1/pdf",
-      { headers: { Accept: "application/pdf" } },
-    );
+    expect(apiMocks.authenticatedFetch).not.toHaveBeenCalled();
     expect(preview.document_id).toBe("doc-1");
     expect(preview.stored).toBe(true);
-    expect(preview.download_url).toBe("blob:bertcom-receipt-preview");
+    expect(preview.download_url).toBe("https://storage.test/signed-receipt.pdf");
   });
 
-  it("still previews the generated PDF when the archived-preview action is unavailable", async () => {
+  it("surfaces a receipt preview failure without starting a second PDF request", async () => {
     apiMocks.apiRequest.mockRejectedValue(new Error("storage preview unavailable"));
-    apiMocks.authenticatedFetch.mockResolvedValue(
-      new Response(new Blob(["%PDF-fallback"], { type: "application/pdf" }), { status: 200 }),
+
+    await expect(businessApi.previewReceipt("payment-2")).rejects.toThrow(
+      "storage preview unavailable",
     );
-
-    const preview = await businessApi.previewReceipt("payment-2");
-
-    expect(preview.document_id).toBeNull();
-    expect(preview.stored).toBe(false);
-    expect(preview.download_url).toBe("blob:bertcom-receipt-preview");
+    expect(apiMocks.authenticatedFetch).not.toHaveBeenCalled();
   });
 
   it("does not let optional Documents data take down the Business workspace", async () => {

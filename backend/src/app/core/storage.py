@@ -30,7 +30,9 @@ def get_storage_client():
         endpoint_url=settings.AWS_ENDPOINT_URL_S3,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-        config=Config(connect_timeout=3, read_timeout=8, retries={"max_attempts": 2, "mode": "standard"}),
+        config=Config(
+            connect_timeout=3, read_timeout=8, retries={"max_attempts": 2, "mode": "standard"}
+        ),
     )
 
 
