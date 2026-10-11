@@ -309,9 +309,11 @@ class TestBusinessDocumentsWorkflow:
             for row in archived
             if row["related_record_type"] == "quotation" and row["related_record_id"] == quote["id"]
         ]
-        assert len(quote_versions) >= 3
+        # Ordinary workflow/status saves must not create extra archived PDFs.
+        # Only an explicit Preview/Generate action persists a document version.
+        assert len(quote_versions) == 1
         assert sum(1 for row in quote_versions if row["is_current"]) == 1
-        assert any(row["version"] == 1 for row in quote_versions)
+        assert quote_versions[0]["version"] == 1
         assert any(row["document_type"] == "client_statement" for row in archived)
 
         current_quote_doc = max(quote_versions, key=lambda row: row["version"])
@@ -327,8 +329,9 @@ class TestBusinessDocumentsWorkflow:
         assert view_action.status_code in {200, 201}, view_action.text
         assert view_action.json()["download_url"].startswith("https://storage.test/")
 
-        # A revised accepted quotation creates another immutable version and must be previewed again
-        # before it can be shared externally.
+        # Editing source content invalidates the old archived PDF immediately, but does
+        # not regenerate during the save request. Explicit Preview creates the next
+        # immutable version and marks that exact version as reviewed.
         revised = await async_client.patch(
             f"/api/v1/business/quotations/{quote['id']}",
             headers=headers,
@@ -343,16 +346,26 @@ class TestBusinessDocumentsWorkflow:
             for row in archive_after_revision
             if row["related_record_type"] == "quotation" and row["related_record_id"] == quote["id"]
         ]
-        assert max(row["version"] for row in revised_versions) > current_quote_doc["version"]
-        revised_current = next(row for row in revised_versions if row["is_current"])
-        blocked_share = await async_client.post(
-            f"/api/v1/business/documents/{revised_current['id']}/share", headers=headers
-        )
-        assert blocked_share.status_code == 409
+        assert len(revised_versions) == 1
+        assert all(not row["is_current"] for row in revised_versions)
+
         revised_preview = await async_client.post(
             f"/api/v1/business/quotations/{quote['id']}/preview", headers=headers
         )
         assert revised_preview.status_code in {200, 201}
+        revised_document_id = revised_preview.json()["document_id"]
+        assert revised_document_id
+        archive_after_preview = (
+            await async_client.get("/api/v1/business/documents", headers=headers)
+        ).json()
+        revised_versions = [
+            row
+            for row in archive_after_preview
+            if row["related_record_type"] == "quotation" and row["related_record_id"] == quote["id"]
+        ]
+        assert max(row["version"] for row in revised_versions) > current_quote_doc["version"]
+        revised_current = next(row for row in revised_versions if row["is_current"])
+        assert revised_current["id"] == revised_document_id
         shared = await async_client.post(
             f"/api/v1/business/documents/{revised_current['id']}/share", headers=headers
         )

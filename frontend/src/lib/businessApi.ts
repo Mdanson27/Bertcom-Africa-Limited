@@ -1,6 +1,14 @@
-import { apiRequest } from "@/lib/api";
+import { apiRequest, authenticatedFetch, getApiBaseUrl } from "@/lib/api";
 
 const request = apiRequest;
+
+const pdfBlobUrl = async (path: string): Promise<string> => {
+  const response = await authenticatedFetch(`${getApiBaseUrl()}/api/v1${path}`, {
+    headers: { Accept: "application/pdf" },
+  });
+  if (!response.ok) throw new Error("The PDF stream is temporarily unavailable.");
+  return URL.createObjectURL(await response.blob());
+};
 
 const optionalRead = async <T>(loader: () => Promise<T>, fallback: T): Promise<T> => {
   try {
@@ -298,6 +306,7 @@ export const businessApi = {
     request<CommercialDocumentRecord>(`/business/quotations/${id}/document`, { method: "POST" }),
   previewQuotation: (id: string) =>
     request<CommercialDocumentRecord>(`/business/quotations/${id}/preview`, { method: "POST" }),
+  quotationPdf: (id: string) => pdfBlobUrl(`/business/quotations/${id}/pdf`),
 
   invoices: (filters?: { client_id?: string; project_id?: string }) =>
     request<InvoiceRecord[]>(`/business/invoices${queryString(filters)}`),
@@ -309,6 +318,7 @@ export const businessApi = {
     request<CommercialDocumentRecord>(`/business/invoices/${id}/document`, { method: "POST" }),
   previewInvoice: (id: string) =>
     request<CommercialDocumentRecord>(`/business/invoices/${id}/preview`, { method: "POST" }),
+  invoicePdf: (id: string) => pdfBlobUrl(`/business/invoices/${id}/pdf`),
 
   receipts: (filters?: { client_id?: string; project_id?: string }) =>
     request<ReceiptRecord[]>(`/business/receipts${queryString(filters)}`),
@@ -318,6 +328,7 @@ export const businessApi = {
     request<CommercialDocumentRecord>(`/business/receipts/${id}/document`, { method: "POST" }),
   previewReceipt: (id: string) =>
     request<CommercialDocumentRecord>(`/business/receipts/${id}/preview`, { method: "POST" }),
+  receiptPdf: (id: string) => pdfBlobUrl(`/business/receipts/${id}/pdf`),
 
   purchaseOrders: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<PurchaseOrderRecord[]>(`/business/purchase-orders${queryString(filters)}`),
@@ -329,6 +340,7 @@ export const businessApi = {
     request<CommercialDocumentRecord>(`/business/purchase-orders/${id}/document`, { method: "POST" }),
   previewPurchaseOrder: (id: string) =>
     request<CommercialDocumentRecord>(`/business/purchase-orders/${id}/preview`, { method: "POST" }),
+  purchaseOrderPdf: (id: string) => pdfBlobUrl(`/business/purchase-orders/${id}/pdf`),
 
   expenses: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<ExpenseRecord[]>(`/business/expenses${queryString(filters)}`),

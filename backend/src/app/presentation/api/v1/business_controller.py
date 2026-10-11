@@ -11,12 +11,6 @@ from litestar.status_codes import HTTP_201_CREATED
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.business.document_service import (
-    ensure_invoice_document,
-    ensure_purchase_order_document,
-    ensure_quotation_document,
-    ensure_receipt_document,
-)
 from app.domain.business.models import (
     Client,
     Expense,
@@ -62,6 +56,7 @@ from app.domain.business.schemas import (
 )
 from app.domain.business.services import (
     current_generated_document,
+    invalidate_current_generated_document,
     next_business_number,
     normalize_line_items,
     record_document_event,
@@ -471,8 +466,6 @@ class BusinessController(Controller):
         await replace_line_items(db_session, QuotationLineItem, "quotation_id", item.id, lines)
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_quotation_document(db_session, item, _email(request))
-        await db_session.commit()
         return _quotation_read(item)
 
     @patch(path="/quotations/{quotation_id:uuid}")
@@ -543,9 +536,10 @@ class BusinessController(Controller):
             item.client_id = client_id
             item.project_id = data.project_id if data.project_id is not None else item.project_id
             item.client_name = client_name
+        if quotation_content_change:
+            await invalidate_current_generated_document(db_session, "quotation", item.id)
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_quotation_document(db_session, item, _email(request))
         if item.status != previous_status:
             document = await current_generated_document(db_session, "quotation", item.id)
             if document is not None:
@@ -620,11 +614,9 @@ class BusinessController(Controller):
         db_session.add(item)
         await db_session.flush()
         await replace_line_items(db_session, InvoiceLineItem, "invoice_id", item.id, lines)
+        await sync_invoice_ledger(db_session, item)
         await db_session.commit()
         await db_session.refresh(item)
-        await sync_invoice_ledger(db_session, item)
-        await ensure_invoice_document(db_session, item, _email(request))
-        await db_session.commit()
         return _invoice_read(item)
 
     @patch(path="/invoices/{invoice_id:uuid}")
@@ -702,10 +694,11 @@ class BusinessController(Controller):
             item.status = "paid"
         elif paid > 0:
             item.status = "partially_paid"
+        if invoice_content_change:
+            await invalidate_current_generated_document(db_session, "invoice", item.id)
+        await sync_invoice_ledger(db_session, item)
         await db_session.commit()
         await db_session.refresh(item)
-        await sync_invoice_ledger(db_session, item)
-        await ensure_invoice_document(db_session, item, _email(request))
         if item.status != previous_status:
             document = await current_generated_document(db_session, "invoice", item.id)
             if document is not None:
@@ -808,15 +801,14 @@ class BusinessController(Controller):
                 if project.value_ugx and project.value_ugx > 0
                 else received
             )
-        await db_session.commit()
-        await db_session.refresh(item)
+        await db_session.flush()
         await sync_payment_ledger(db_session, item)
+        invoice_document = None
         if invoice is not None:
             await sync_invoice_ledger(db_session, invoice)
-        await ensure_receipt_document(db_session, item, _email(request))
-        if invoice is not None:
-            await ensure_invoice_document(db_session, invoice, _email(request))
-            invoice_document = await current_generated_document(db_session, "invoice", invoice.id)
+            invoice_document = await invalidate_current_generated_document(
+                db_session, "invoice", invoice.id
+            )
             if invoice_document is not None:
                 await record_document_event(
                     db_session,
@@ -830,6 +822,7 @@ class BusinessController(Controller):
                     },
                 )
         await db_session.commit()
+        await db_session.refresh(item)
         return _payment_read(item)
 
     async def _receipt_read(self, db_session: AsyncSession, item: Payment) -> ReceiptRead:
@@ -927,8 +920,6 @@ class BusinessController(Controller):
         )
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_purchase_order_document(db_session, item, _email(request))
-        await db_session.commit()
         return _po_read(item)
 
     @patch(path="/purchase-orders/{purchase_order_id:uuid}")
@@ -994,9 +985,10 @@ class BusinessController(Controller):
             value = getattr(data, field)
             if value is not None:
                 setattr(item, field, value)
+        if po_content_change:
+            await invalidate_current_generated_document(db_session, "purchase_order", item.id)
         await db_session.commit()
         await db_session.refresh(item)
-        await ensure_purchase_order_document(db_session, item, _email(request))
         if item.status != previous_status:
             document = await current_generated_document(db_session, "purchase_order", item.id)
             if document is not None:
@@ -1063,10 +1055,10 @@ class BusinessController(Controller):
             created_by_email=_email(request),
         )
         db_session.add(item)
-        await db_session.commit()
-        await db_session.refresh(item)
+        await db_session.flush()
         await sync_expense_ledger(db_session, item)
         await db_session.commit()
+        await db_session.refresh(item)
         return _expense_read(item)
 
     @get(path="/clients/{client_id:uuid}/workspace")

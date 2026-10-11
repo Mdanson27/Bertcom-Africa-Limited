@@ -192,8 +192,6 @@ class CommercialDocumentsController(Controller):
         await db_session.commit()
         await db_session.refresh(invoice)
         lines = await load_line_items(db_session, InvoiceLineItem, "invoice_id", invoice.id)
-        await ensure_invoice_document(db_session, invoice, _email(request))
-        await db_session.commit()
         return _invoice_read(invoice, lines)
 
     async def _quotation_document(
