@@ -19,7 +19,8 @@ from litestar.connection import ASGIConnection
 from litestar.exceptions import NotAuthorizedException, PermissionDeniedException
 from litestar.types import RouteHandlerType
 
-from app.core.security import decode_access_token, decode_neon_access_token, is_token_revoked
+from app.core.neon_jwt import decode_neon_access_token_async
+from app.core.security import decode_access_token, is_token_revoked
 from app.core.settings import settings
 
 
@@ -43,10 +44,12 @@ class JWTAuthGuard:
 
         token = auth_header[len("Bearer ") :]
 
-        # Decode & validate JWT (Neon JWKS in production, legacy local token as fallback)
+        # Decode & validate JWT. Neon JWKS lookup runs in a worker thread and
+        # reuses its key cache so a burst of dashboard requests cannot block
+        # the ASGI event loop or repeatedly refetch the same signing keys.
         try:
             payload = (
-                decode_neon_access_token(token)
+                await decode_neon_access_token_async(token)
                 if settings.NEON_AUTH_JWKS_URL
                 else decode_access_token(token)
             )
