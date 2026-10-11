@@ -1,43 +1,49 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Search, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { AddUser } from "@/features/users/AddUser";
 import { UserActionsMenu } from "@/features/users/UserActionsMenu";
-import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { SyncStatus } from "@/components/common/SyncStatus";
 import { EmptyState } from "@/components/common/EmptyState";
 import { apiV1UsersListUsers } from "@/client/sdk.gen";
 import type { UserRead } from "@/client/types.gen";
 import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { cn } from "@/lib/utils";
 
 export const UsersDataTable: React.FC = () => {
   const { user: currentUser } = useAuth();
-  const [users, setUsers] = useState<UserRead[]>([]);
+  const [initialCache] = useState(() => readSectionCache<UserRead[]>(currentUser?.id, "users"));
+  const [users, setUsers] = useState<UserRead[]>(initialCache?.data ?? []);
   const [search, setSearch] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
-    setIsLoading(true);
+  const fetchUsers = useCallback(async () => {
+    setIsRefreshing(true);
+    setLoadError(null);
     try {
       const res = await apiV1UsersListUsers({
         query: { skip: 0, limit: 100 },
       });
-      if (res.data?.data) {
-        setUsers(res.data.data);
-      } else if (Array.isArray(res.data)) {
-        setUsers(res.data as UserRead[]);
-      }
+      const nextUsers = res.data?.data
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? (res.data as UserRead[])
+          : [];
+      setUsers(nextUsers);
+      setLastSyncedAt(writeSectionCache(currentUser?.id, "users", nextUsers));
     } catch (err) {
-      console.error("Failed to load users:", err);
+      setLoadError(err instanceof Error ? err.message : "Users could not be refreshed.");
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  };
+  }, [currentUser?.id]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  useBackgroundRefresh(fetchUsers);
 
   const filteredUsers = users.filter(
     (u) =>
@@ -55,14 +61,15 @@ export const UsersDataTable: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchUsers}
-            disabled={isLoading}
+            onClick={() => void fetchUsers()}
+            disabled={isRefreshing}
             className="gap-1.5 text-xs"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", isLoading && "animate-spin text-primary")} />
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-primary")} />
             Refresh
           </Button>
           <AddUser onSuccess={fetchUsers} />
@@ -81,11 +88,7 @@ export const UsersDataTable: React.FC = () => {
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
-        {isLoading ? (
-          <div className="p-12">
-            <LoadingSpinner label="Loading users..." />
-          </div>
-        ) : filteredUsers.length === 0 ? (
+        {filteredUsers.length === 0 ? (
           <EmptyState
             title="No Users Found"
             description={search ? "No users match your filter criteria." : "No platform users registered yet."}

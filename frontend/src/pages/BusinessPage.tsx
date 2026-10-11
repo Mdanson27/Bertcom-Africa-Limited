@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   Banknote,
   Building2,
@@ -18,10 +18,13 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
-import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SyncStatus } from "@/components/common/SyncStatus";
 import { BusinessDocumentsArchive } from "@/components/business/BusinessDocumentsArchive";
 import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
+import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
 import {
@@ -69,6 +72,22 @@ type DraftLineItem = {
   description: string;
   quantity: string;
   unit_price_ugx: string;
+};
+
+type BusinessSnapshot = {
+  summary: BusinessSummary | null;
+  clients: ClientRecord[];
+  suppliers: SupplierRecord[];
+  quotes: QuotationRecord[];
+  invoices: InvoiceRecord[];
+  receipts: ReceiptRecord[];
+  purchaseOrders: PurchaseOrderRecord[];
+  expenses: ExpenseRecord[];
+  projects: ProjectOption[];
+  documents: DocumentOption[];
+  businessDocuments: BusinessDocumentArchiveRecord[];
+  clientStatements: ClientStatementSummary[];
+  supplierStatements: SupplierStatementSummary[];
 };
 
 const blankLineItem = (): DraftLineItem => ({ description: "", quantity: "1", unit_price_ugx: "" });
@@ -175,22 +194,25 @@ const MetricCard: React.FC<{
 
 export const BusinessPage: React.FC = () => {
   const { showSuccessToast, showErrorToast } = useCustomToast();
+  const { user } = useAuth();
+  const [initialCache] = useState(() => readSectionCache<BusinessSnapshot>(user?.id, "business"));
   const [tab, setTab] = useState<BusinessView>("overview");
-  const [summary, setSummary] = useState<BusinessSummary | null>(null);
-  const [clients, setClients] = useState<ClientRecord[]>([]);
-  const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
-  const [quotes, setQuotes] = useState<QuotationRecord[]>([]);
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [receipts, setReceipts] = useState<ReceiptRecord[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderRecord[]>([]);
-  const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
-  const [projects, setProjects] = useState<ProjectOption[]>([]);
-  const [documents, setDocuments] = useState<DocumentOption[]>([]);
-  const [businessDocuments, setBusinessDocuments] = useState<BusinessDocumentArchiveRecord[]>([]);
+  const [summary, setSummary] = useState<BusinessSummary | null>(initialCache?.data.summary ?? null);
+  const [clients, setClients] = useState<ClientRecord[]>(initialCache?.data.clients ?? []);
+  const [suppliers, setSuppliers] = useState<SupplierRecord[]>(initialCache?.data.suppliers ?? []);
+  const [quotes, setQuotes] = useState<QuotationRecord[]>(initialCache?.data.quotes ?? []);
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>(initialCache?.data.invoices ?? []);
+  const [receipts, setReceipts] = useState<ReceiptRecord[]>(initialCache?.data.receipts ?? []);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderRecord[]>(initialCache?.data.purchaseOrders ?? []);
+  const [expenses, setExpenses] = useState<ExpenseRecord[]>(initialCache?.data.expenses ?? []);
+  const [projects, setProjects] = useState<ProjectOption[]>(initialCache?.data.projects ?? []);
+  const [documents, setDocuments] = useState<DocumentOption[]>(initialCache?.data.documents ?? []);
+  const [businessDocuments, setBusinessDocuments] = useState<BusinessDocumentArchiveRecord[]>(initialCache?.data.businessDocuments ?? []);
   const [preview, setPreview] = useState<{ url: string; title: string; filename: string } | null>(null);
-  const [clientStatements, setClientStatements] = useState<ClientStatementSummary[]>([]);
-  const [supplierStatements, setSupplierStatements] = useState<SupplierStatementSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [clientStatements, setClientStatements] = useState<ClientStatementSummary[]>(initialCache?.data.clientStatements ?? []);
+  const [supplierStatements, setSupplierStatements] = useState<SupplierStatementSummary[]>(initialCache?.data.supplierStatements ?? []);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [createKind, setCreateKind] = useState<CreateKind | null>(null);
@@ -200,7 +222,6 @@ export const BusinessPage: React.FC = () => {
 
   const [clientWorkspace, setClientWorkspace] = useState<ClientWorkspace | null>(null);
   const [supplierWorkspace, setSupplierWorkspace] = useState<SupplierWorkspace | null>(null);
-  const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [statementTitle, setStatementTitle] = useState("");
   const [statementRows, setStatementRows] = useState<StatementEntry[] | null>(null);
 
@@ -210,8 +231,8 @@ export const BusinessPage: React.FC = () => {
   );
   useUnsavedChanges(Boolean(formDirty));
 
-  const load = useCallback(async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
+  const load = useCallback(async (_showLoading = true) => {
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const [
@@ -256,16 +277,30 @@ export const BusinessPage: React.FC = () => {
       setBusinessDocuments(nextBusinessDocuments);
       setClientStatements(nextClientStatements);
       setSupplierStatements(nextSupplierStatements);
+      const snapshot: BusinessSnapshot = {
+        summary: nextSummary,
+        clients: nextClients,
+        suppliers: nextSuppliers,
+        quotes: nextQuotes,
+        invoices: nextInvoices,
+        receipts: nextReceipts,
+        purchaseOrders: nextPurchaseOrders,
+        expenses: nextExpenses,
+        projects: nextProjects,
+        documents: nextDocuments,
+        businessDocuments: nextBusinessDocuments,
+        clientStatements: nextClientStatements,
+        supplierStatements: nextSupplierStatements,
+      };
+      setLastSyncedAt(writeSectionCache(user?.id, "business", snapshot));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "Business records could not be loaded."));
+      setLoadError(getErrorMessage(error, "Business records could not be refreshed."));
     } finally {
-      if (showLoading) setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useBackgroundRefresh(load);
 
   const filteredProjects = useMemo(() => {
     if (!form.client_id) return projects;
@@ -462,44 +497,49 @@ export const BusinessPage: React.FC = () => {
   };
 
   const openClientWorkspace = async (client: ClientRecord) => {
-    setWorkspaceLoading(true);
-    setClientWorkspace(null);
+    const cacheKey = `business-client:${client.id}`;
+    const cached = readSectionCache<ClientWorkspace>(user?.id, cacheKey);
+    if (cached) setClientWorkspace(cached.data);
     setSupplierWorkspace(null);
     try {
-      setClientWorkspace(await businessApi.clientWorkspace(client.id));
+      const nextWorkspace = await businessApi.clientWorkspace(client.id);
+      setClientWorkspace(nextWorkspace);
+      writeSectionCache(user?.id, cacheKey, nextWorkspace);
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The client workspace could not be opened."));
-    } finally {
-      setWorkspaceLoading(false);
+      if (!cached) setClientWorkspace(null);
+      showErrorToast(getErrorMessage(error, "The client workspace could not be refreshed."));
     }
   };
 
   const openSupplierWorkspace = async (supplier: SupplierRecord) => {
-    setWorkspaceLoading(true);
+    const cacheKey = `business-supplier:${supplier.id}`;
+    const cached = readSectionCache<SupplierWorkspace>(user?.id, cacheKey);
+    if (cached) setSupplierWorkspace(cached.data);
     setClientWorkspace(null);
-    setSupplierWorkspace(null);
     try {
-      setSupplierWorkspace(await businessApi.supplierWorkspace(supplier.id));
+      const nextWorkspace = await businessApi.supplierWorkspace(supplier.id);
+      setSupplierWorkspace(nextWorkspace);
+      writeSectionCache(user?.id, cacheKey, nextWorkspace);
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The supplier workspace could not be opened."));
-    } finally {
-      setWorkspaceLoading(false);
+      if (!cached) setSupplierWorkspace(null);
+      showErrorToast(getErrorMessage(error, "The supplier workspace could not be refreshed."));
     }
   };
 
   const openStatement = async (item: ClientStatementSummary) => {
+    const cacheKey = `client-statement:${item.client_id}`;
+    const cached = readSectionCache<StatementEntry[]>(user?.id, cacheKey);
     setStatementTitle(`${item.client_name} statement`);
-    setStatementRows(null);
+    setStatementRows(cached?.data ?? null);
     try {
-      setStatementRows(await businessApi.clientStatement(item.client_id));
+      const nextRows = await businessApi.clientStatement(item.client_id);
+      setStatementRows(nextRows);
+      writeSectionCache(user?.id, cacheKey, nextRows);
     } catch (error) {
-      showErrorToast(getErrorMessage(error, "The statement could not be loaded."));
-      setStatementTitle("");
+      if (!cached) setStatementTitle("");
+      showErrorToast(getErrorMessage(error, "The statement could not be refreshed."));
     }
   };
-
-  if (isLoading) return <PageLoading label="Loading business operations..." />;
-  if (loadError) return <PageError message={loadError} onRetry={() => void load()} />;
 
   const navItems = [
     { id: "overview" as const, label: "Dashboard" },
@@ -524,9 +564,12 @@ export const BusinessPage: React.FC = () => {
             Clients, suppliers, commercial records, receipts, balances and statements in one connected workspace.
           </p>
         </div>
-        <Button onClick={() => openCreate(tab === "suppliers" ? "supplier" : "client")} className="sm:hidden">
-          <Plus className="mr-2 h-4 w-4" /> Add record
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
+          <Button onClick={() => openCreate(tab === "suppliers" ? "supplier" : "client")} className="sm:hidden">
+            <Plus className="mr-2 h-4 w-4" /> Add record
+          </Button>
+        </div>
       </div>
 
       <SectionNav items={navItems} active={tab} onChange={setTab} ariaLabel="Business sections" />
@@ -781,16 +824,16 @@ export const BusinessPage: React.FC = () => {
         </form>
       </Modal>
 
-      <Modal isOpen={workspaceLoading || Boolean(clientWorkspace)} onClose={() => { if (!workspaceLoading) setClientWorkspace(null); }} title={clientWorkspace?.client.name || "Client workspace"} description="Profile, projects, quotations, invoices, receipts, documents and activity." className="max-w-5xl">
-        {workspaceLoading ? <PageLoading label="Opening client workspace..." /> : clientWorkspace && <ClientWorkspaceView workspace={clientWorkspace} />}
+      <Modal isOpen={Boolean(clientWorkspace)} onClose={() => setClientWorkspace(null)} title={clientWorkspace?.client.name || "Client workspace"} description="Profile, projects, quotations, invoices, receipts, documents and activity." className="max-w-5xl">
+        {clientWorkspace && <ClientWorkspaceView workspace={clientWorkspace} />}
       </Modal>
 
-      <Modal isOpen={workspaceLoading || Boolean(supplierWorkspace)} onClose={() => { if (!workspaceLoading) setSupplierWorkspace(null); }} title={supplierWorkspace?.supplier.name || "Supplier workspace"} description="Purchase orders, expenses, supplied projects, documents and activity." className="max-w-5xl">
-        {workspaceLoading ? <PageLoading label="Opening supplier workspace..." /> : supplierWorkspace && <SupplierWorkspaceView workspace={supplierWorkspace} />}
+      <Modal isOpen={Boolean(supplierWorkspace)} onClose={() => setSupplierWorkspace(null)} title={supplierWorkspace?.supplier.name || "Supplier workspace"} description="Purchase orders, expenses, supplied projects, documents and activity." className="max-w-5xl">
+        {supplierWorkspace && <SupplierWorkspaceView workspace={supplierWorkspace} />}
       </Modal>
 
-      <Modal isOpen={Boolean(statementTitle)} onClose={() => { setStatementTitle(""); setStatementRows(null); }} title={statementTitle || "Client statement"} description="Running invoice and payment balance." className="max-w-4xl">
-        {statementRows === null ? <PageLoading label="Loading statement..." /> : statementRows.length === 0 ? <EmptyState text="No statement entries yet." /> : <RecordsTable headers={["Date", "Type", "Reference", "Debit", "Credit", "Balance"]}>{statementRows.map((item) => <tr key={`${item.kind}-${item.record_id}`} className="border-t border-border"><Cell>{item.entry_date}</Cell><Cell><StatusPill value={item.kind} /></Cell><Cell strong>{item.reference}</Cell><Cell>{item.debit_ugx ? money(item.debit_ugx) : "â€”"}</Cell><Cell>{item.credit_ugx ? money(item.credit_ugx) : "â€”"}</Cell><Cell>{money(item.running_balance_ugx)}</Cell></tr>)}</RecordsTable>}
+      <Modal isOpen={Boolean(statementTitle && statementRows !== null)} onClose={() => { setStatementTitle(""); setStatementRows(null); }} title={statementTitle || "Client statement"} description="Running invoice and payment balance." className="max-w-4xl">
+        {statementRows?.length === 0 ? <EmptyState text="No statement entries yet." /> : statementRows && <RecordsTable headers={["Date", "Type", "Reference", "Debit", "Credit", "Balance"]}>{statementRows.map((item) => <tr key={`${item.kind}-${item.record_id}`} className="border-t border-border"><Cell>{item.entry_date}</Cell><Cell><StatusPill value={item.kind} /></Cell><Cell strong>{item.reference}</Cell><Cell>{item.debit_ugx ? money(item.debit_ugx) : "—"}</Cell><Cell>{item.credit_ugx ? money(item.credit_ugx) : "—"}</Cell><Cell>{money(item.running_balance_ugx)}</Cell></tr>)}</RecordsTable>}
       </Modal>
     </div>
   );

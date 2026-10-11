@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   BriefcaseBusiness,
   CheckSquare2,
@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SyncStatus } from "@/components/common/SyncStatus";
 import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { getErrorMessage } from "@/lib/api";
 import {
   workspaceApi,
@@ -25,6 +27,12 @@ interface HomePageProps {
   onNavigate: (tab: NavItem) => void;
 }
 
+type HomeSnapshot = {
+  summary: WorkspaceSummary | null;
+  projects: Project[];
+  documents: DocumentRecord[];
+};
+
 const money = (value: number) =>
   new Intl.NumberFormat("en-UG", {
     style: "currency",
@@ -34,14 +42,16 @@ const money = (value: number) =>
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { user } = useAuth();
-  const [summary, setSummary] = useState<WorkspaceSummary | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [initialCache] = useState(() => readSectionCache<HomeSnapshot>(user?.id, "home"));
+  const [summary, setSummary] = useState<WorkspaceSummary | null>(initialCache?.data.summary ?? null);
+  const [projects, setProjects] = useState<Project[]>(initialCache?.data.projects ?? []);
+  const [documents, setDocuments] = useState<DocumentRecord[]>(initialCache?.data.documents ?? []);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    setIsLoading(true);
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const [nextSummary, nextProjects, nextDocuments] = await Promise.all([
@@ -49,29 +59,25 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         workspaceApi.projects(),
         workspaceApi.documents(),
       ]);
-      setSummary(nextSummary);
-      setProjects(nextProjects.slice(0, 4));
-      setDocuments(nextDocuments.slice(0, 5));
+      const snapshot: HomeSnapshot = {
+        summary: nextSummary,
+        projects: nextProjects.slice(0, 4),
+        documents: nextDocuments.slice(0, 5),
+      };
+      setSummary(snapshot.summary);
+      setProjects(snapshot.projects);
+      setDocuments(snapshot.documents);
+      setLastSyncedAt(writeSectionCache(user?.id, "home", snapshot));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "The home dashboard could not be loaded."));
+      setLoadError(getErrorMessage(error, "The home dashboard could not be refreshed."));
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useBackgroundRefresh(load);
 
   const firstName = (user?.full_name || user?.email || "there").split(" ")[0];
-
-  if (isLoading) {
-    return <PageLoading label="Loading your Bertcom workspace..." />;
-  }
-
-  if (loadError) {
-    return <PageError message={loadError} onRetry={load} title="Home is temporarily unavailable" />;
-  }
 
   const stats = [
     {
@@ -98,11 +104,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-7">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Good day, {firstName} 👋</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Everything you need to move Bertcom work forward today.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Good day, {firstName} 👋</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Everything you need to move Bertcom work forward today.
+          </p>
+        </div>
+        <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

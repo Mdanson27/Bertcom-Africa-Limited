@@ -1,10 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Camera, Download, FileText, ScanLine, Search, UploadCloud } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { PageError, PageLoading } from "@/components/common/RequestState";
+import { SyncStatus } from "@/components/common/SyncStatus";
 import { SectionNav } from "@/components/common/SectionNav";
 import { useCustomToast } from "@/hooks/useCustomToast";
+import { useAuth } from "@/hooks/useAuth";
+import { useBackgroundRefresh } from "@/hooks/useBackgroundRefresh";
+import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { getErrorMessage } from "@/lib/api";
 import {
   workspaceApi,
@@ -54,41 +57,46 @@ type DocumentsView =
   | "business_documents"
   | "archived";
 
+type DocumentsSnapshot = { documents: DocumentRecord[]; projects: Project[] };
+
 export const DocumentsPage: React.FC = () => {
   const { showSuccessToast, showErrorToast } = useCustomToast();
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { user } = useAuth();
+  const [initialCache] = useState(() => readSectionCache<DocumentsSnapshot>(user?.id, "documents"));
+  const [documents, setDocuments] = useState<DocumentRecord[]>(initialCache?.data.documents ?? []);
+  const [projects, setProjects] = useState<Project[]>(initialCache?.data.projects ?? []);
   const [view, setView] = useState<DocumentsView>("overview");
   const [query, setQuery] = useState("");
   const [projectId, setProjectId] = useState("");
   const [category, setCategory] = useState("other");
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(initialCache?.savedAt ?? null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
 
-  const load = useCallback(async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
+  const load = useCallback(async (_showLoading = true) => {
+    setIsRefreshing(true);
     setLoadError(null);
     try {
       const [docs, nextProjects] = await Promise.all([
         workspaceApi.documents(),
         workspaceApi.projects(),
       ]);
-      setDocuments(docs);
-      setProjects(nextProjects);
+      const snapshot: DocumentsSnapshot = { documents: docs, projects: nextProjects };
+      setDocuments(snapshot.documents);
+      setProjects(snapshot.projects);
+      setLastSyncedAt(writeSectionCache(user?.id, "documents", snapshot));
     } catch (error) {
-      setLoadError(getErrorMessage(error, "Documents could not be loaded."));
+      setLoadError(getErrorMessage(error, "Documents could not be refreshed."));
     } finally {
-      if (showLoading) setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, []);
+  }, [user?.id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useBackgroundRefresh(load);
 
   const filtered = useMemo(() => {
     const normalized = query.toLowerCase().trim();
@@ -211,20 +219,6 @@ export const DocumentsPage: React.FC = () => {
     }
   };
 
-  if (isLoading) {
-    return <PageLoading label="Loading documents..." />;
-  }
-
-  if (loadError) {
-    return (
-      <PageError
-        message={loadError}
-        onRetry={() => load()}
-        title="Documents are temporarily unavailable"
-      />
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -234,7 +228,8 @@ export const DocumentsPage: React.FC = () => {
             Upload, scan, search and keep every business document in one place.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <SyncStatus isRefreshing={isRefreshing} error={loadError} lastSyncedAt={lastSyncedAt} />
           <Button
             variant="outline"
             className="gap-2"
