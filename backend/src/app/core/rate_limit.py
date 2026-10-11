@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 
@@ -57,7 +58,6 @@ class SlidingWindowRateLimitMiddleware(AbstractMiddleware):
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
-        self.valkey = get_valkey_pool()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -97,9 +97,10 @@ class SlidingWindowRateLimitMiddleware(AbstractMiddleware):
 
         try:
             valkey_client = get_valkey_pool()
-            result = await valkey_client.eval(
-                LUA_SLIDING_WINDOW, 2, key_current, key_prev, limit, current_weight
-            )
+            async with asyncio.timeout(0.75):
+                result = await valkey_client.eval(
+                    LUA_SLIDING_WINDOW, 2, key_current, key_prev, limit, current_weight
+                )
             allowed, remaining, _total = result[0], result[1], result[2]
         except Exception as exc:  # noqa: BLE001
             logger.warning("ratelimit.valkey_error", error=str(exc))

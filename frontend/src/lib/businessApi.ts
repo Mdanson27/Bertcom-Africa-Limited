@@ -1,4 +1,4 @@
-import { apiRequest, authenticatedFetch, getApiBaseUrl } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 
 const request = apiRequest;
 
@@ -8,15 +8,6 @@ const optionalRead = async <T>(loader: () => Promise<T>, fallback: T): Promise<T
   } catch {
     return fallback;
   }
-};
-
-const pdfBlobUrl = async (path: string): Promise<string> => {
-  const response = await authenticatedFetch(`${getApiBaseUrl()}/api/v1${path}`, {
-    headers: { Accept: "application/pdf" },
-  });
-  if (!response.ok) throw new Error("The PDF stream is temporarily unavailable.");
-  const blob = await response.blob();
-  return URL.createObjectURL(blob);
 };
 
 const queryString = (params?: Record<string, string | null | undefined>) => {
@@ -325,28 +316,8 @@ export const businessApi = {
     request<Record<string, unknown>>("/business/payments", { method: "POST", body: JSON.stringify(body) }),
   receiptDocument: (id: string) =>
     request<CommercialDocumentRecord>(`/business/receipts/${id}/document`, { method: "POST" }),
-  previewReceipt: async (id: string) => {
-    try {
-      const saved = await request<CommercialDocumentRecord>(`/business/receipts/${id}/preview`, { method: "POST" });
-      try {
-        return { ...saved, download_url: await pdfBlobUrl(`/business/receipts/${id}/pdf`) };
-      } catch {
-        return saved;
-      }
-    } catch (previewError) {
-      try {
-        return {
-          document_id: null,
-          document_number: "Receipt preview",
-          filename: "Receipt-preview.pdf",
-          download_url: await pdfBlobUrl(`/business/receipts/${id}/pdf`),
-          stored: false,
-        } satisfies CommercialDocumentRecord;
-      } catch {
-        throw previewError;
-      }
-    }
-  },
+  previewReceipt: (id: string) =>
+    request<CommercialDocumentRecord>(`/business/receipts/${id}/preview`, { method: "POST" }),
 
   purchaseOrders: (filters?: { supplier_id?: string; project_id?: string }) =>
     request<PurchaseOrderRecord[]>(`/business/purchase-orders${queryString(filters)}`),

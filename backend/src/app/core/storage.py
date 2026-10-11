@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import asyncio
+from functools import lru_cache
+
 import boto3
+from botocore.config import Config
 
 from app.core.settings import settings
 
@@ -15,6 +19,7 @@ def storage_configured() -> bool:
     )
 
 
+@lru_cache(maxsize=1)
 def get_storage_client():
     if not storage_configured():
         raise RuntimeError("Neon Object Storage is not configured.")
@@ -25,6 +30,7 @@ def get_storage_client():
         endpoint_url=settings.AWS_ENDPOINT_URL_S3,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        config=Config(connect_timeout=3, read_timeout=8, retries={"max_attempts": 2, "mode": "standard"}),
     )
 
 
@@ -64,3 +70,15 @@ def put_object_bytes(storage_key: str, content: bytes, content_type: str) -> Non
 def get_object_bytes(storage_key: str) -> bytes:
     response = get_storage_client().get_object(Bucket=settings.DOCUMENTS_BUCKET, Key=storage_key)
     return response["Body"].read()
+
+
+async def put_object_bytes_async(storage_key: str, content: bytes, content_type: str) -> None:
+    await asyncio.to_thread(put_object_bytes, storage_key, content, content_type)
+
+
+async def get_object_bytes_async(storage_key: str) -> bytes:
+    return await asyncio.to_thread(get_object_bytes, storage_key)
+
+
+async def delete_object_async(storage_key: str) -> None:
+    await asyncio.to_thread(delete_object, storage_key)

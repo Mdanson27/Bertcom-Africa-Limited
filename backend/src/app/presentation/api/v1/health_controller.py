@@ -2,10 +2,10 @@
 Three-Stage Kubernetes / Container Liveness, Readiness, and Startup Health Probes.
 
 Routes:
-  • GET /health/live    – Liveness probe: verifies ASGI event loop responsiveness.
-  • GET /health/ready   – Readiness probe: verifies DB (PostgreSQL) + Cache (Valkey) availability.
-  • GET /health/startup – Startup probe: validates database migration baseline.
-  • GET /health         – General health status.
+  â€¢ GET /health/live    â€“ Liveness probe: verifies ASGI event loop responsiveness.
+  â€¢ GET /health/ready   â€“ Readiness probe: verifies DB (PostgreSQL) + Cache (Valkey) availability.
+  â€¢ GET /health/startup â€“ Startup probe: validates database migration baseline.
+  â€¢ GET /health         â€“ General health status.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from litestar.status_codes import HTTP_200_OK, HTTP_503_SERVICE_UNAVAILABLE
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.settings import settings
+from app.core.cache import get_valkey_pool
 
 
 class HealthController(Controller):
@@ -52,7 +52,7 @@ class HealthController(Controller):
     )
     async def get_readiness(self, db_session: AsyncSession) -> dict[str, Any]:
         results: dict[str, str] = {}
-        all_ready = True
+        database_ready = True
 
         # 1. PostgreSQL check
         try:
@@ -62,35 +62,21 @@ class HealthController(Controller):
                 results["database"] = "healthy"
             else:
                 results["database"] = "unhealthy"
-                all_ready = False
+                database_ready = False
         except Exception as exc:  # noqa: BLE001
             results["database"] = f"error: {exc!s}"
-            all_ready = False
+            database_ready = False
 
-        # 2. Valkey check
+        # 2. Valkey check. Cache degradation is visible but non-fatal:
+        # authentication revocation and rate limiting are explicitly fail-open.
         try:
-            import redis.asyncio as redis
-
-            v_client = redis.from_url(
-                settings.valkey_url,
-                socket_connect_timeout=3.0,
-                socket_timeout=3.0,
-            )
-            pong = await v_client.ping()
-            await v_client.aclose()
-            if pong:
-                results["valkey"] = "healthy"
-            else:
-                results["valkey"] = "unhealthy"
-                all_ready = False
+            async with asyncio.timeout(1.0):
+                pong = await get_valkey_pool().ping()
+            results["valkey"] = "healthy" if pong else "unhealthy"
         except Exception as exc:  # noqa: BLE001
-            # Valkey might be optional in certain test environments
-            results["valkey"] = f"error: {exc!s}"
-            # Don't fail readiness completely if valkey is mock-only in dev, but flag it
-            if settings.ENVIRONMENT == "production":
-                all_ready = False
+            results["valkey"] = f"degraded: {exc!s}"
 
-        if not all_ready:
+        if not database_ready:
             raise HTTPException(
                 status_code=HTTP_503_SERVICE_UNAVAILABLE,
                 detail={"status": "not_ready", "dependencies": results},

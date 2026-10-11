@@ -7,12 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import "@/lib/api";
-import {
-  healthGetHealth,
-  healthReadyGetReadiness,
-  healthStartupGetStartup,
-} from "@/client/sdk.gen";
+import { getApiBaseUrl } from "@/lib/api";
 
 export type HealthStatus = "healthy" | "unhealthy" | "loading";
 
@@ -57,8 +52,6 @@ const initialMigrations: SubsystemHealth = {
 
 const SystemHealthContext = createContext<SystemHealthContextValue | undefined>(undefined);
 
-const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
-
 function extractDependencies(result: unknown): Record<string, unknown> {
   const response = result as {
     data?: Record<string, unknown>;
@@ -79,6 +72,27 @@ function extractSchemaVersion(result: unknown): string | null {
   return typeof version === "string" && version ? version : null;
 }
 
+async function healthFetch(path: string): Promise<{
+  response: { ok: boolean };
+  data?: Record<string, unknown>;
+  error?: Record<string, unknown>;
+}> {
+  const response = await globalThis.fetch(`${getApiBaseUrl()}${path}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  let payload: Record<string, unknown> = {};
+  try {
+    payload = await response.json() as Record<string, unknown>;
+  } catch {
+    // Health status is still represented by the HTTP status when no JSON body exists.
+  }
+  return response.ok
+    ? { response: { ok: true }, data: payload }
+    : { response: { ok: false }, error: payload };
+}
+
 async function runReadinessAttempt(): Promise<{
   databaseHealthy: boolean;
   valkeyHealthy: boolean;
@@ -86,7 +100,7 @@ async function runReadinessAttempt(): Promise<{
 }> {
   const start = performance.now();
   try {
-    const result = await healthReadyGetReadiness();
+    const result = await healthFetch("/health/ready");
     const latencyMs = Math.round(performance.now() - start);
     const deps = extractDependencies(result);
     return {
@@ -122,7 +136,7 @@ export const SystemHealthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const apiPromise = (async (): Promise<SubsystemHealth> => {
         const start = performance.now();
         try {
-          const result = await healthGetHealth();
+          const result = await healthFetch("/health");
           const latencyMs = Math.round(performance.now() - start);
           const healthy = Boolean(result.response?.ok);
           return {
@@ -142,24 +156,14 @@ export const SystemHealthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       })();
 
       const readinessPromise = (async () => {
-        let attempt = await runReadinessAttempt();
-        let retried = false;
-
-        if (!attempt.databaseHealthy || !attempt.valkeyHealthy) {
-          retried = true;
-          await sleep(900);
-          attempt = await runReadinessAttempt();
-        }
-
-        const suffix = retried ? " after retry" : "";
-
+        const attempt = await runReadinessAttempt();
         return {
           database: {
             name: "PostgreSQL & TimescaleDB",
             status: attempt.databaseHealthy ? "healthy" : "unhealthy",
             latencyMs: attempt.latencyMs,
             details: attempt.databaseHealthy
-              ? `Connection verified${suffix}`
+              ? "Connection verified"
               : "Database readiness failed",
           } satisfies SubsystemHealth,
           valkey: {
@@ -167,8 +171,8 @@ export const SystemHealthProvider: React.FC<{ children: React.ReactNode }> = ({ 
             status: attempt.valkeyHealthy ? "healthy" : "unhealthy",
             latencyMs: attempt.latencyMs,
             details: attempt.valkeyHealthy
-              ? `Ping verified${suffix}`
-              : "Valkey readiness failed",
+              ? "Ping verified"
+              : "Valkey degraded",
           } satisfies SubsystemHealth,
         };
       })();
@@ -176,7 +180,7 @@ export const SystemHealthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const migrationsPromise = (async (): Promise<SubsystemHealth> => {
         const start = performance.now();
         try {
-          const result = await healthStartupGetStartup();
+          const result = await healthFetch("/health/startup");
           const latencyMs = Math.round(performance.now() - start);
           const healthy = Boolean(result.response?.ok);
           const schemaVersion = extractSchemaVersion(result);

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import uuid
 from collections.abc import Iterable
@@ -288,7 +289,7 @@ async def upsert_generated_document(
         f"documents/generated/{related_record_type}/{related_record_id}/"
         f"v{next_version}/{safe_filename}"
     )
-    put_object_bytes(storage_key, pdf_bytes, "application/pdf")
+    await asyncio.to_thread(put_object_bytes, storage_key, pdf_bytes, "application/pdf")
 
     document_number = filename.removesuffix(".pdf")
     document = Document(

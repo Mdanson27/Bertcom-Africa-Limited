@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from datetime import UTC, datetime
 from html import escape
@@ -20,6 +21,10 @@ from app.domain.business.document_service import (
     ensure_purchase_order_document,
     ensure_quotation_document,
     ensure_receipt_document,
+    invoice_pdf,
+    purchase_order_pdf,
+    quotation_pdf,
+    receipt_pdf,
     supplier_statement_pdf,
 )
 from app.domain.business.models import (
@@ -220,8 +225,10 @@ class CommercialDocumentsController(Controller):
     async def quotation_pdf_download(
         self, request: Request, quotation_id: uuid.UUID, db_session: AsyncSession
     ) -> Response[bytes]:
-        _, (pdf, _, _, filename) = await self._quotation_document(request, quotation_id, db_session)
-        return _pdf_response(pdf, filename)
+        item = await db_session.get(Quotation, quotation_id)
+        if item is None:
+            raise NotFoundException(detail="Quotation not found.")
+        return _pdf_response(await quotation_pdf(db_session, item), f"{item.quotation_number}.pdf")
 
     async def _invoice_document(
         self, request: Request, invoice_id: uuid.UUID, db_session: AsyncSession
@@ -252,8 +259,10 @@ class CommercialDocumentsController(Controller):
     async def invoice_pdf_download(
         self, request: Request, invoice_id: uuid.UUID, db_session: AsyncSession
     ) -> Response[bytes]:
-        _, (pdf, _, _, filename) = await self._invoice_document(request, invoice_id, db_session)
-        return _pdf_response(pdf, filename)
+        item = await db_session.get(Invoice, invoice_id)
+        if item is None:
+            raise NotFoundException(detail="Invoice not found.")
+        return _pdf_response(await invoice_pdf(db_session, item), f"{item.invoice_number}.pdf")
 
     async def _receipt_document(
         self, request: Request, payment_id: uuid.UUID, db_session: AsyncSession
@@ -285,8 +294,11 @@ class CommercialDocumentsController(Controller):
     async def receipt_pdf_download(
         self, request: Request, payment_id: uuid.UUID, db_session: AsyncSession
     ) -> Response[bytes]:
-        _, (pdf, _, _, filename) = await self._receipt_document(request, payment_id, db_session)
-        return _pdf_response(pdf, filename)
+        item = await db_session.get(Payment, payment_id)
+        if item is None:
+            raise NotFoundException(detail="Receipt/payment not found.")
+        number = item.receipt_number or f"RCT-{str(item.id)[:8].upper()}"
+        return _pdf_response(await receipt_pdf(db_session, item), f"{number}.pdf")
 
     async def _po_document(
         self, request: Request, purchase_order_id: uuid.UUID, db_session: AsyncSession
@@ -317,8 +329,10 @@ class CommercialDocumentsController(Controller):
     async def purchase_order_pdf_download(
         self, request: Request, purchase_order_id: uuid.UUID, db_session: AsyncSession
     ) -> Response[bytes]:
-        _, (pdf, _, _, filename) = await self._po_document(request, purchase_order_id, db_session)
-        return _pdf_response(pdf, filename)
+        item = await db_session.get(PurchaseOrder, purchase_order_id)
+        if item is None:
+            raise NotFoundException(detail="Purchase order not found.")
+        return _pdf_response(await purchase_order_pdf(db_session, item), f"{item.po_number}.pdf")
 
     @post(path="/clients/{client_id:uuid}/statement/document")
     async def generate_client_statement_document(
@@ -607,7 +621,7 @@ class CommercialDocumentsController(Controller):
             raise ClientException(
                 detail="Email sending is not configured on the Bertcom server.", status_code=503
             )
-        pdf_bytes = get_object_bytes(item.storage_key)
+        pdf_bytes = await asyncio.to_thread(get_object_bytes, item.storage_key)
         subject = (data.subject or f"{item.title} - Bertcom Africa Ltd").strip()
         note = (data.message or "Please find the requested Bertcom document attached.").strip()
         await mail_service.send_message(
@@ -790,7 +804,7 @@ class CommercialDocumentsController(Controller):
         if item is None:
             raise NotFoundException(detail="Document not found.")
         try:
-            delete_object(item.storage_key)
+            await asyncio.to_thread(delete_object, item.storage_key)
         except Exception as exc:
             raise ClientException(
                 detail="The stored PDF could not be purged; the archive record was left intact.",

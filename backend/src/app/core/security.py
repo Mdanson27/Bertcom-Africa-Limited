@@ -42,6 +42,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import jwt
+import structlog
 from pwdlib import PasswordHash
 from pwdlib.hashers.argon2 import Argon2Hasher
 
@@ -67,6 +68,7 @@ __all__ = [
 _hasher = PasswordHash((Argon2Hasher(),))
 
 ALGORITHM = "HS256"
+logger = structlog.get_logger("app.security")
 _REVOCATION_PREFIX = "token:revoked:"
 
 
@@ -245,11 +247,20 @@ async def revoke_token(jti: str, expires_in: int) -> None:
 
 
 async def is_token_revoked(jti: str) -> bool:
-    """Return ``True`` if *jti* is present in the Valkey revocation blocklist."""
-    from app.adapters.cache.valkey_service import valkey_store
+    """Return whether *jti* is revoked without letting cache failure stall auth.
+
+    Revocation is a defence-in-depth cache lookup. A temporary Valkey outage must
+    not turn every otherwise-valid Neon session into a 401/500 or freeze the API.
+    """
+    from app.core.cache import get_valkey_pool
 
     key = f"{_REVOCATION_PREFIX}{jti}"
-    return (await valkey_store.get(key)) is not None
+    try:
+        async with asyncio.timeout(0.75):
+            return (await get_valkey_pool().get(key)) is not None
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("auth.revocation_cache_unavailable", error=str(exc))
+        return False
 
 
 # ---------------------------------------------------------------------------
