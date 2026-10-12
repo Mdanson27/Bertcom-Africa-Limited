@@ -28,6 +28,15 @@ export type ActivityItem = {
 };
 
 /**
+ * AssignableUserRead
+ */
+export type AssignableUserRead = {
+    email: string;
+    full_name: string;
+    id: string;
+};
+
+/**
  * BalanceSheetReport
  */
 export type BalanceSheetReport = {
@@ -4041,6 +4050,22 @@ export type ApiV1UsersCreateUserAdminResponses = {
 };
 
 export type ApiV1UsersCreateUserAdminResponse = ApiV1UsersCreateUserAdminResponses[keyof ApiV1UsersCreateUserAdminResponses];
+
+export type ApiV1UsersAssignableListAssignableUsersData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/users/assignable';
+};
+
+export type ApiV1UsersAssignableListAssignableUsersResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<AssignableUserRead>;
+};
+
+export type ApiV1UsersAssignableListAssignableUsersResponse = ApiV1UsersAssignableListAssignableUsersResponses[keyof ApiV1UsersAssignableListAssignableUsersResponses];
 
 export type ApiV1UsersMeDeleteMeData = {
     body?: never;
