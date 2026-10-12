@@ -77,6 +77,27 @@
         "title": "ActivityItem",
         "type": "object"
       },
+      "AssignableUserRead": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "full_name",
+          "id"
+        ],
+        "title": "AssignableUserRead",
+        "type": "object"
+      },
       "BalanceSheetReport": {
         "properties": {
           "as_of": {
@@ -12029,6 +12050,30 @@
           }
         },
         "summary": "Provision user (Admin)"
+      }
+    },
+    "/api/v1/users/assignable": {
+      "get": {
+        "deprecated": false,
+        "description": "Return active Bertcom users that may be assigned to projects and tasks.",
+        "operationId": "ApiV1UsersAssignableListAssignableUsers",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssignableUserRead"
+                  },
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Request fulfilled, document follows",
+            "headers": {}
+          }
+        },
+        "summary": "List assignable users"
       }
     },
     "/api/v1/users/me": {
