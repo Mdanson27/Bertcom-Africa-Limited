@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Lock, Mail } from "lucide-react";
+import { Lock, Mail, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -32,7 +32,6 @@ export const LoginForm: React.FC = () => {
   const { showErrorToast, showSuccessToast, showWarningToast } = useCustomToast();
 
   const [email, setEmail] = useState<string>("");
-  const adminGoogleEmail = "automindsafrica@gmail.com";
   const [password, setPassword] = useState<string>("");
   const [activeField, setActiveField] = useState<MascotMode>("idle");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -139,7 +138,7 @@ export const LoginForm: React.FC = () => {
   };
 
   const openPasswordReset = () => {
-    setResetEmail(email.trim() || adminGoogleEmail);
+    setResetEmail(email.trim());
     setResetCode("");
     setNewPassword("");
     setConfirmNewPassword("");
@@ -269,9 +268,15 @@ export const LoginForm: React.FC = () => {
         <GoogleMark />
         Continue with Google
       </Button>
-      <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
-        Admin Google account: <span className="font-semibold text-[#17324a] dark:text-white">{adminGoogleEmail}</span>
-      </p>
+      <div className="mt-2 flex justify-center">
+        <a
+          href="tel:+256731981424"
+          className="inline-flex h-8 items-center gap-2 rounded-lg border border-[#d8e0ea] px-3 text-[11px] font-semibold text-[#022E55] transition hover:border-[#b8c7d6] hover:bg-[#f8fafc] hover:text-[#DC1D2D] dark:border-white/10 dark:text-white dark:hover:bg-white/[0.06]"
+        >
+          <PhoneCall className="h-3.5 w-3.5" />
+          Contact administrator
+        </a>
+      </div>
 
       <div className="my-3 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />

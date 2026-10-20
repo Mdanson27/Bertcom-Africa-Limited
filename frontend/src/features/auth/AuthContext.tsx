@@ -220,6 +220,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           "Bertcom could not establish a secure session. Please try again.",
         );
       }
+
+      // The platform admin was originally provisioned with email/password.
+      // Link the same verified identity to Google once after a successful
+      // credential sign-in so future Google sign-ins use the existing user.
+      if (email.trim().toLowerCase() === PLATFORM_ADMIN_EMAIL) {
+        try {
+          const authClient = getNeonAuthClient();
+          const accountsResult = await authClient.listAccounts();
+          const accounts = Array.isArray(accountsResult?.data)
+            ? accountsResult.data
+            : [];
+          const googleLinked = accounts.some((account) =>
+            Boolean(
+              account &&
+                typeof account === "object" &&
+                "providerId" in account &&
+                account.providerId === "google",
+            ),
+          );
+
+          if (!googleLinked) {
+            const linkResult = await authClient.linkSocial({
+              provider: "google",
+              callbackURL: getAuthCallbackUrl(),
+            });
+            if (linkResult?.error) {
+              console.warn("Bertcom could not link the admin Google account.");
+            }
+          }
+        } catch {
+          // Google linking must never prevent a valid password sign-in.
+          console.warn("Bertcom admin Google linking was skipped.");
+        }
+      }
     } finally {
       setIsLoading(false);
     }
