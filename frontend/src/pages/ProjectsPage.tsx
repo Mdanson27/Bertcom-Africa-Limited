@@ -438,6 +438,15 @@ export const ProjectsPage: React.FC = () => {
     else setWorkspace(null);
   }, [loadWorkspace, selectedId]);
 
+  useEffect(() => {
+    if (!projects.length || selectedId) return;
+    const requested = sessionStorage.getItem("bertcom.openProjectId");
+    if (!requested || !projects.some((project) => project.id === requested)) return;
+    sessionStorage.removeItem("bertcom.openProjectId");
+    setSelectedId(requested);
+    setWorkspaceTab("overview");
+  }, [projects, selectedId]);
+
   const projectCounts = useMemo(
     () => ({
       all: projects.filter((project) => !project.is_archived).length,

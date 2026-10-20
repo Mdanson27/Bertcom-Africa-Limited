@@ -2,6 +2,7 @@ from litestar import Router
 
 from app.presentation.api.v1.admin_ops_controller import AdminOpsController
 from app.presentation.api.v1.auth_controller import AuthController
+from app.presentation.api.v1.bids_controller import BidsController
 from app.presentation.api.v1.business_controller import BusinessController
 from app.presentation.api.v1.commercial_documents_controller import CommercialDocumentsController
 from app.presentation.api.v1.reporting_controller import ReportingController
@@ -26,6 +27,7 @@ api_router = Router(
         DocumentsController,
         WorkspaceController,
         BusinessController,
+        BidsController,
         CommercialDocumentsController,
         ReportingController,
     ],
