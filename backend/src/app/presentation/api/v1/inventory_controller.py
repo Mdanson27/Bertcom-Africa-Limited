@@ -340,6 +340,81 @@ async def _apply_movement(
     return tx
 
 
+async def _balance_reads(
+    db: AsyncSession,
+    *,
+    project_id: uuid.UUID | None = None,
+    warehouse_id: uuid.UUID | None = None,
+) -> list[StockBalanceRead]:
+    stmt = (
+        select(StockBalance)
+        .where(StockBalance.quantity != 0)
+        .order_by(StockBalance.updated_at.desc())
+    )
+    if project_id:
+        stmt = stmt.where(StockBalance.project_id == project_id)
+    if warehouse_id:
+        stmt = stmt.where(StockBalance.warehouse_id == warehouse_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    result: list[StockBalanceRead] = []
+    for row in rows:
+        item = await db.get(InventoryItem, row.item_id)
+        warehouse = await db.get(Warehouse, row.warehouse_id)
+        location = await db.get(WarehouseLocation, row.location_id) if row.location_id else None
+        project = await db.get(Project, row.project_id) if row.project_id else None
+        cost = Decimal(str(item.unit_cost_ugx if item else 0))
+        result.append(
+            StockBalanceRead(
+                row.id,
+                row.item_id,
+                item.sku if item else "",
+                item.name if item else "Deleted item",
+                row.warehouse_id,
+                warehouse.name if warehouse else "Deleted warehouse",
+                row.location_id,
+                location.name if location else None,
+                row.project_id,
+                project.name if project else None,
+                float(row.quantity),
+                float(cost),
+                float(Decimal(str(row.quantity)) * cost),
+            )
+        )
+    return result
+
+
+async def _request_reads(
+    db: AsyncSession, *, project_id: uuid.UUID | None = None
+) -> list[StockRequestRead]:
+    stmt = select(StockRequest).order_by(StockRequest.created_at.desc())
+    if project_id:
+        stmt = stmt.where(StockRequest.project_id == project_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    result: list[StockRequestRead] = []
+    for row in rows:
+        project = await db.get(Project, row.project_id)
+        item = await db.get(InventoryItem, row.item_id)
+        result.append(
+            StockRequestRead(
+                row.id,
+                row.project_id,
+                project.name if project else "Deleted project",
+                row.item_id,
+                item.sku if item else "",
+                item.name if item else "Deleted item",
+                float(row.requested_quantity),
+                float(row.approved_quantity),
+                row.status,
+                row.requested_by_email,
+                row.approved_by_email,
+                row.notes,
+                row.created_at,
+                row.updated_at,
+            )
+        )
+    return result
+
+
 class InventoryController(Controller):
     path = "/inventory"
     guards: ClassVar[list[Any]] = [JWTAuthGuard()]
@@ -631,45 +706,7 @@ class InventoryController(Controller):
         project_id: uuid.UUID | None = None,
         warehouse_id: uuid.UUID | None = None,
     ) -> list[StockBalanceRead]:
-        stmt = (
-            select(StockBalance)
-            .where(StockBalance.quantity != 0)
-            .order_by(StockBalance.updated_at.desc())
-        )
-        if project_id:
-            stmt = stmt.where(StockBalance.project_id == project_id)
-        if warehouse_id:
-            stmt = stmt.where(StockBalance.warehouse_id == warehouse_id)
-        rows = (await db_session.execute(stmt)).scalars().all()
-        result: list[StockBalanceRead] = []
-        for row in rows:
-            item = await db_session.get(InventoryItem, row.item_id)
-            warehouse = await db_session.get(Warehouse, row.warehouse_id)
-            location = (
-                await db_session.get(WarehouseLocation, row.location_id)
-                if row.location_id
-                else None
-            )
-            project = await db_session.get(Project, row.project_id) if row.project_id else None
-            cost = Decimal(str(item.unit_cost_ugx if item else 0))
-            result.append(
-                StockBalanceRead(
-                    row.id,
-                    row.item_id,
-                    item.sku if item else "",
-                    item.name if item else "Deleted item",
-                    row.warehouse_id,
-                    warehouse.name if warehouse else "Deleted warehouse",
-                    row.location_id,
-                    location.name if location else None,
-                    row.project_id,
-                    project.name if project else None,
-                    float(row.quantity),
-                    float(cost),
-                    float(Decimal(str(row.quantity)) * cost),
-                )
-            )
-        return result
+        return await _balance_reads(db_session, project_id=project_id, warehouse_id=warehouse_id)
 
     @get(path="/projects/{project_id:uuid}")
     async def project_inventory(
@@ -677,7 +714,7 @@ class InventoryController(Controller):
     ) -> list[StockBalanceRead]:
         if await db_session.get(Project, project_id) is None:
             raise NotFoundException(detail="Project not found.")
-        return await self.balances(db_session, project_id=project_id)
+        return await _balance_reads(db_session, project_id=project_id)
 
     @get(path="/movements")
     async def movements(
@@ -715,33 +752,7 @@ class InventoryController(Controller):
     async def requests(
         self, db_session: AsyncSession, project_id: uuid.UUID | None = None
     ) -> list[StockRequestRead]:
-        stmt = select(StockRequest).order_by(StockRequest.created_at.desc())
-        if project_id:
-            stmt = stmt.where(StockRequest.project_id == project_id)
-        rows = (await db_session.execute(stmt)).scalars().all()
-        result: list[StockRequestRead] = []
-        for row in rows:
-            project = await db_session.get(Project, row.project_id)
-            item = await db_session.get(InventoryItem, row.item_id)
-            result.append(
-                StockRequestRead(
-                    row.id,
-                    row.project_id,
-                    project.name if project else "Deleted project",
-                    row.item_id,
-                    item.sku if item else "",
-                    item.name if item else "Deleted item",
-                    float(row.requested_quantity),
-                    float(row.approved_quantity),
-                    row.status,
-                    row.requested_by_email,
-                    row.approved_by_email,
-                    row.notes,
-                    row.created_at,
-                    row.updated_at,
-                )
-            )
-        return result
+        return await _request_reads(db_session, project_id=project_id)
 
     @post(path="/requests", status_code=HTTP_201_CREATED)
     async def create_request(
@@ -764,7 +775,7 @@ class InventoryController(Controller):
         db_session.add(row)
         await db_session.commit()
         await db_session.refresh(row)
-        return (await self.requests(db_session, project_id=row.project_id))[0]
+        return (await _request_reads(db_session, project_id=row.project_id))[0]
 
     @patch(path="/requests/{request_id:uuid}")
     async def update_request(
@@ -801,7 +812,7 @@ class InventoryController(Controller):
         await db_session.commit()
         await db_session.refresh(row)
         matches = [
-            r for r in await self.requests(db_session, project_id=row.project_id) if r.id == row.id
+            r for r in await _request_reads(db_session, project_id=row.project_id) if r.id == row.id
         ]
         return matches[0]
 
@@ -854,6 +865,6 @@ class InventoryController(Controller):
         await db_session.commit()
         await db_session.refresh(row)
         matches = [
-            r for r in await self.requests(db_session, project_id=row.project_id) if r.id == row.id
+            r for r in await _request_reads(db_session, project_id=row.project_id) if r.id == row.id
         ]
         return matches[0]
