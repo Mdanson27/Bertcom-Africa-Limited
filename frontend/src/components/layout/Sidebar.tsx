@@ -10,6 +10,7 @@ import {
   Home,
   ListTodo,
   Gavel,
+  Boxes,
   LogOut,
   Settings,
   ShieldCheck,
@@ -26,6 +27,7 @@ export type NavItem =
   | "telemetry"
   | "home"
   | "projects"
+  | "inventory"
   | "bids"
   | "documents"
   | "business"
@@ -56,6 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, isOpe
   const workspace = [
     { id: "home" as NavItem, label: "Dashboard", icon: Home },
     { id: "projects" as NavItem, label: "Projects", icon: FolderKanban },
+    { id: "inventory" as NavItem, label: "Inventory", icon: Boxes },
     { id: "bids" as NavItem, label: "Bids & Tenders", icon: Gavel },
     { id: "documents" as NavItem, label: "Documents", icon: Files },
     { id: "business" as NavItem, label: "Business", icon: BriefcaseBusiness },

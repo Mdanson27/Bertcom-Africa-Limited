@@ -364,6 +364,26 @@ export type CashFlowReport = {
 };
 
 /**
+ * CategoryCreate
+ */
+export type CategoryCreate = {
+    description?: string | null;
+    name: string;
+};
+
+/**
+ * CategoryRead
+ */
+export type CategoryRead = {
+    created_at: string;
+    description: string | null;
+    id: string;
+    is_active: boolean;
+    name: string;
+    updated_at: string;
+};
+
+/**
  * ClientCreate
  */
 export type ClientCreate = {
@@ -618,6 +638,19 @@ export type ExpenseRead = {
 };
 
 /**
+ * InventoryDashboard
+ */
+export type InventoryDashboard = {
+    inventory_value_ugx: number;
+    items: number;
+    low_stock_items: number;
+    project_stock_value_ugx: number;
+    recent_movements: Array<StockTransactionRead>;
+    total_quantity: number;
+    warehouses: number;
+};
+
+/**
  * InvoiceCreate
  */
 export type InvoiceCreate = {
@@ -672,6 +705,59 @@ export type InvoiceUpdate = {
 };
 
 /**
+ * ItemCreate
+ */
+export type ItemCreate = {
+    category_id?: string | null;
+    description?: string | null;
+    minimum_stock_level?: number;
+    name: string;
+    sku: string;
+    supplier_id?: string | null;
+    unit_cost_ugx?: number;
+    unit_id?: string | null;
+};
+
+/**
+ * ItemRead
+ */
+export type ItemRead = {
+    category_id: string | null;
+    category_name: string | null;
+    created_at: string;
+    description: string | null;
+    id: string;
+    is_active: boolean;
+    is_low_stock: boolean;
+    minimum_stock_level: number;
+    name: string;
+    sku: string;
+    supplier_id: string | null;
+    supplier_name: string | null;
+    total_quantity: number;
+    total_value_ugx: number;
+    unit_code: string | null;
+    unit_cost_ugx: number;
+    unit_id: string | null;
+    updated_at: string;
+};
+
+/**
+ * ItemUpdate
+ */
+export type ItemUpdate = {
+    category_id?: string | null;
+    description?: string | null;
+    is_active?: boolean | null;
+    minimum_stock_level?: number | null;
+    name?: string | null;
+    sku?: string | null;
+    supplier_id?: string | null;
+    unit_cost_ugx?: number | null;
+    unit_id?: string | null;
+};
+
+/**
  * JournalEntryRead
  */
 export type JournalEntryRead = {
@@ -693,6 +779,32 @@ export type JournalLineRead = {
     credit_ugx: number;
     debit_ugx: number;
     description: string | null;
+};
+
+/**
+ * LocationCreate
+ */
+export type LocationCreate = {
+    code: string;
+    location_type?: string;
+    name: string;
+    parent_location_id?: string | null;
+    warehouse_id: string;
+};
+
+/**
+ * LocationRead
+ */
+export type LocationRead = {
+    code: string;
+    created_at: string;
+    id: string;
+    is_active: boolean;
+    location_type: string;
+    name: string;
+    parent_location_id: string | null;
+    updated_at: string;
+    warehouse_id: string;
 };
 
 /**
@@ -1205,6 +1317,116 @@ export type StatementLine = {
 };
 
 /**
+ * StockBalanceRead
+ */
+export type StockBalanceRead = {
+    id: string;
+    item_id: string;
+    item_name: string;
+    item_sku: string;
+    location_id: string | null;
+    location_name: string | null;
+    project_id: string | null;
+    project_name: string | null;
+    quantity: number;
+    unit_cost_ugx: number;
+    value_ugx: number;
+    warehouse_id: string;
+    warehouse_name: string;
+};
+
+/**
+ * StockMovementCreate
+ */
+export type StockMovementCreate = {
+    from_location_id?: string | null;
+    from_project_id?: string | null;
+    from_warehouse_id?: string | null;
+    item_id: string;
+    movement_type: string;
+    notes?: string | null;
+    quantity: number;
+    reference?: string | null;
+    to_location_id?: string | null;
+    to_project_id?: string | null;
+    to_warehouse_id?: string | null;
+    unit_cost_ugx?: number | null;
+};
+
+/**
+ * StockRequestCreate
+ */
+export type StockRequestCreate = {
+    item_id: string;
+    notes?: string | null;
+    project_id: string;
+    requested_quantity: number;
+};
+
+/**
+ * StockRequestIssue
+ */
+export type StockRequestIssue = {
+    location_id?: string | null;
+    notes?: string | null;
+    quantity?: number | null;
+    reference?: string | null;
+    warehouse_id: string;
+};
+
+/**
+ * StockRequestRead
+ */
+export type StockRequestRead = {
+    approved_by_email: string | null;
+    approved_quantity: number;
+    created_at: string;
+    id: string;
+    item_id: string;
+    item_name: string;
+    item_sku: string;
+    notes: string | null;
+    project_id: string;
+    project_name: string;
+    requested_by_email: string;
+    requested_quantity: number;
+    status: string;
+    updated_at: string;
+};
+
+/**
+ * StockRequestUpdate
+ */
+export type StockRequestUpdate = {
+    approved_quantity?: number | null;
+    notes?: string | null;
+    status: string;
+};
+
+/**
+ * StockTransactionRead
+ */
+export type StockTransactionRead = {
+    created_at: string;
+    created_by_email: string;
+    from_location_id: string | null;
+    from_project_id: string | null;
+    from_warehouse_id: string | null;
+    id: string;
+    item_id: string;
+    item_name: string;
+    item_sku: string;
+    movement_type: string;
+    notes: string | null;
+    quantity: number;
+    reference: string | null;
+    to_location_id: string | null;
+    to_project_id: string | null;
+    to_warehouse_id: string | null;
+    unit_cost_ugx: number;
+};
+
+/**
  * SupplierCreate
  */
 export type SupplierCreate = {
@@ -1378,6 +1600,26 @@ export type TrialBalanceRow = {
 };
 
 /**
+ * UnitCreate
+ */
+export type UnitCreate = {
+    code: string;
+    name: string;
+};
+
+/**
+ * UnitRead
+ */
+export type UnitRead = {
+    code: string;
+    created_at: string;
+    id: string;
+    is_active: boolean;
+    name: string;
+    updated_at: string;
+};
+
+/**
  * UpdatePassword
  */
 export type UpdatePassword = {
@@ -1442,6 +1684,30 @@ export type UserUpdateMe = {
 export type UsersPublic = {
     count: number;
     data: Array<UserRead>;
+};
+
+/**
+ * WarehouseCreate
+ */
+export type WarehouseCreate = {
+    address?: string | null;
+    code: string;
+    name: string;
+    notes?: string | null;
+};
+
+/**
+ * WarehouseRead
+ */
+export type WarehouseRead = {
+    address: string | null;
+    code: string;
+    created_at: string;
+    id: string;
+    is_active: boolean;
+    name: string;
+    notes: string | null;
+    updated_at: string;
 };
 
 /**
@@ -3751,6 +4017,589 @@ export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses = {
 };
 
 export type ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponse = ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses[keyof ApiV1DocumentsDocumentIdDownloadGetDownloadUrlResponses];
+
+export type ApiV1InventoryBalancesBalancesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        project_id?: string | null;
+        warehouse_id?: string | null;
+    };
+    url: '/api/v1/inventory/balances';
+};
+
+export type ApiV1InventoryBalancesBalancesErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryBalancesBalancesError = ApiV1InventoryBalancesBalancesErrors[keyof ApiV1InventoryBalancesBalancesErrors];
+
+export type ApiV1InventoryBalancesBalancesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<StockBalanceRead>;
+};
+
+export type ApiV1InventoryBalancesBalancesResponse = ApiV1InventoryBalancesBalancesResponses[keyof ApiV1InventoryBalancesBalancesResponses];
+
+export type ApiV1InventoryCategoriesCategoriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/categories';
+};
+
+export type ApiV1InventoryCategoriesCategoriesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<CategoryRead>;
+};
+
+export type ApiV1InventoryCategoriesCategoriesResponse = ApiV1InventoryCategoriesCategoriesResponses[keyof ApiV1InventoryCategoriesCategoriesResponses];
+
+export type ApiV1InventoryCategoriesCreateCategoryData = {
+    body: CategoryCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/categories';
+};
+
+export type ApiV1InventoryCategoriesCreateCategoryErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryCategoriesCreateCategoryError = ApiV1InventoryCategoriesCreateCategoryErrors[keyof ApiV1InventoryCategoriesCreateCategoryErrors];
+
+export type ApiV1InventoryCategoriesCreateCategoryResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: CategoryRead;
+};
+
+export type ApiV1InventoryCategoriesCreateCategoryResponse = ApiV1InventoryCategoriesCreateCategoryResponses[keyof ApiV1InventoryCategoriesCreateCategoryResponses];
+
+export type ApiV1InventoryDashboardDashboardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/dashboard';
+};
+
+export type ApiV1InventoryDashboardDashboardResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: InventoryDashboard;
+};
+
+export type ApiV1InventoryDashboardDashboardResponse = ApiV1InventoryDashboardDashboardResponses[keyof ApiV1InventoryDashboardDashboardResponses];
+
+export type ApiV1InventoryItemsItemsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        q?: string | null;
+        low_stock?: boolean;
+        include_inactive?: boolean;
+    };
+    url: '/api/v1/inventory/items';
+};
+
+export type ApiV1InventoryItemsItemsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryItemsItemsError = ApiV1InventoryItemsItemsErrors[keyof ApiV1InventoryItemsItemsErrors];
+
+export type ApiV1InventoryItemsItemsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<ItemRead>;
+};
+
+export type ApiV1InventoryItemsItemsResponse = ApiV1InventoryItemsItemsResponses[keyof ApiV1InventoryItemsItemsResponses];
+
+export type ApiV1InventoryItemsCreateItemData = {
+    body: ItemCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/items';
+};
+
+export type ApiV1InventoryItemsCreateItemErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryItemsCreateItemError = ApiV1InventoryItemsCreateItemErrors[keyof ApiV1InventoryItemsCreateItemErrors];
+
+export type ApiV1InventoryItemsCreateItemResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: ItemRead;
+};
+
+export type ApiV1InventoryItemsCreateItemResponse = ApiV1InventoryItemsCreateItemResponses[keyof ApiV1InventoryItemsCreateItemResponses];
+
+export type ApiV1InventoryItemsItemIdUpdateItemData = {
+    body: ItemUpdate;
+    path: {
+        item_id: string;
+    };
+    query?: never;
+    url: '/api/v1/inventory/items/{item_id}';
+};
+
+export type ApiV1InventoryItemsItemIdUpdateItemErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryItemsItemIdUpdateItemError = ApiV1InventoryItemsItemIdUpdateItemErrors[keyof ApiV1InventoryItemsItemIdUpdateItemErrors];
+
+export type ApiV1InventoryItemsItemIdUpdateItemResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: ItemRead;
+};
+
+export type ApiV1InventoryItemsItemIdUpdateItemResponse = ApiV1InventoryItemsItemIdUpdateItemResponses[keyof ApiV1InventoryItemsItemIdUpdateItemResponses];
+
+export type ApiV1InventoryLocationsLocationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        warehouse_id?: string | null;
+    };
+    url: '/api/v1/inventory/locations';
+};
+
+export type ApiV1InventoryLocationsLocationsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryLocationsLocationsError = ApiV1InventoryLocationsLocationsErrors[keyof ApiV1InventoryLocationsLocationsErrors];
+
+export type ApiV1InventoryLocationsLocationsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<LocationRead>;
+};
+
+export type ApiV1InventoryLocationsLocationsResponse = ApiV1InventoryLocationsLocationsResponses[keyof ApiV1InventoryLocationsLocationsResponses];
+
+export type ApiV1InventoryLocationsCreateLocationData = {
+    body: LocationCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/locations';
+};
+
+export type ApiV1InventoryLocationsCreateLocationErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryLocationsCreateLocationError = ApiV1InventoryLocationsCreateLocationErrors[keyof ApiV1InventoryLocationsCreateLocationErrors];
+
+export type ApiV1InventoryLocationsCreateLocationResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: LocationRead;
+};
+
+export type ApiV1InventoryLocationsCreateLocationResponse = ApiV1InventoryLocationsCreateLocationResponses[keyof ApiV1InventoryLocationsCreateLocationResponses];
+
+export type ApiV1InventoryMovementsMovementsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        item_id?: string | null;
+        project_id?: string | null;
+        limit?: number;
+    };
+    url: '/api/v1/inventory/movements';
+};
+
+export type ApiV1InventoryMovementsMovementsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryMovementsMovementsError = ApiV1InventoryMovementsMovementsErrors[keyof ApiV1InventoryMovementsMovementsErrors];
+
+export type ApiV1InventoryMovementsMovementsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<StockTransactionRead>;
+};
+
+export type ApiV1InventoryMovementsMovementsResponse = ApiV1InventoryMovementsMovementsResponses[keyof ApiV1InventoryMovementsMovementsResponses];
+
+export type ApiV1InventoryMovementsCreateMovementData = {
+    body: StockMovementCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/movements';
+};
+
+export type ApiV1InventoryMovementsCreateMovementErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryMovementsCreateMovementError = ApiV1InventoryMovementsCreateMovementErrors[keyof ApiV1InventoryMovementsCreateMovementErrors];
+
+export type ApiV1InventoryMovementsCreateMovementResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: StockTransactionRead;
+};
+
+export type ApiV1InventoryMovementsCreateMovementResponse = ApiV1InventoryMovementsCreateMovementResponses[keyof ApiV1InventoryMovementsCreateMovementResponses];
+
+export type ApiV1InventoryProjectsProjectIdProjectInventoryData = {
+    body?: never;
+    path: {
+        project_id: string;
+    };
+    query?: never;
+    url: '/api/v1/inventory/projects/{project_id}';
+};
+
+export type ApiV1InventoryProjectsProjectIdProjectInventoryErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryProjectsProjectIdProjectInventoryError = ApiV1InventoryProjectsProjectIdProjectInventoryErrors[keyof ApiV1InventoryProjectsProjectIdProjectInventoryErrors];
+
+export type ApiV1InventoryProjectsProjectIdProjectInventoryResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<StockBalanceRead>;
+};
+
+export type ApiV1InventoryProjectsProjectIdProjectInventoryResponse = ApiV1InventoryProjectsProjectIdProjectInventoryResponses[keyof ApiV1InventoryProjectsProjectIdProjectInventoryResponses];
+
+export type ApiV1InventoryRequestsRequestsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        project_id?: string | null;
+    };
+    url: '/api/v1/inventory/requests';
+};
+
+export type ApiV1InventoryRequestsRequestsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryRequestsRequestsError = ApiV1InventoryRequestsRequestsErrors[keyof ApiV1InventoryRequestsRequestsErrors];
+
+export type ApiV1InventoryRequestsRequestsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<StockRequestRead>;
+};
+
+export type ApiV1InventoryRequestsRequestsResponse = ApiV1InventoryRequestsRequestsResponses[keyof ApiV1InventoryRequestsRequestsResponses];
+
+export type ApiV1InventoryRequestsCreateRequestData = {
+    body: StockRequestCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/requests';
+};
+
+export type ApiV1InventoryRequestsCreateRequestErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryRequestsCreateRequestError = ApiV1InventoryRequestsCreateRequestErrors[keyof ApiV1InventoryRequestsCreateRequestErrors];
+
+export type ApiV1InventoryRequestsCreateRequestResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: StockRequestRead;
+};
+
+export type ApiV1InventoryRequestsCreateRequestResponse = ApiV1InventoryRequestsCreateRequestResponses[keyof ApiV1InventoryRequestsCreateRequestResponses];
+
+export type ApiV1InventoryRequestsRequestIdUpdateRequestData = {
+    body: StockRequestUpdate;
+    path: {
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v1/inventory/requests/{request_id}';
+};
+
+export type ApiV1InventoryRequestsRequestIdUpdateRequestErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryRequestsRequestIdUpdateRequestError = ApiV1InventoryRequestsRequestIdUpdateRequestErrors[keyof ApiV1InventoryRequestsRequestIdUpdateRequestErrors];
+
+export type ApiV1InventoryRequestsRequestIdUpdateRequestResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: StockRequestRead;
+};
+
+export type ApiV1InventoryRequestsRequestIdUpdateRequestResponse = ApiV1InventoryRequestsRequestIdUpdateRequestResponses[keyof ApiV1InventoryRequestsRequestIdUpdateRequestResponses];
+
+export type ApiV1InventoryRequestsRequestIdIssueIssueRequestData = {
+    body: StockRequestIssue;
+    path: {
+        request_id: string;
+    };
+    query?: never;
+    url: '/api/v1/inventory/requests/{request_id}/issue';
+};
+
+export type ApiV1InventoryRequestsRequestIdIssueIssueRequestErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryRequestsRequestIdIssueIssueRequestError = ApiV1InventoryRequestsRequestIdIssueIssueRequestErrors[keyof ApiV1InventoryRequestsRequestIdIssueIssueRequestErrors];
+
+export type ApiV1InventoryRequestsRequestIdIssueIssueRequestResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: StockRequestRead;
+};
+
+export type ApiV1InventoryRequestsRequestIdIssueIssueRequestResponse = ApiV1InventoryRequestsRequestIdIssueIssueRequestResponses[keyof ApiV1InventoryRequestsRequestIdIssueIssueRequestResponses];
+
+export type ApiV1InventoryUnitsUnitsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/units';
+};
+
+export type ApiV1InventoryUnitsUnitsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<UnitRead>;
+};
+
+export type ApiV1InventoryUnitsUnitsResponse = ApiV1InventoryUnitsUnitsResponses[keyof ApiV1InventoryUnitsUnitsResponses];
+
+export type ApiV1InventoryUnitsCreateUnitData = {
+    body: UnitCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/units';
+};
+
+export type ApiV1InventoryUnitsCreateUnitErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryUnitsCreateUnitError = ApiV1InventoryUnitsCreateUnitErrors[keyof ApiV1InventoryUnitsCreateUnitErrors];
+
+export type ApiV1InventoryUnitsCreateUnitResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: UnitRead;
+};
+
+export type ApiV1InventoryUnitsCreateUnitResponse = ApiV1InventoryUnitsCreateUnitResponses[keyof ApiV1InventoryUnitsCreateUnitResponses];
+
+export type ApiV1InventoryWarehousesWarehousesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/warehouses';
+};
+
+export type ApiV1InventoryWarehousesWarehousesResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<WarehouseRead>;
+};
+
+export type ApiV1InventoryWarehousesWarehousesResponse = ApiV1InventoryWarehousesWarehousesResponses[keyof ApiV1InventoryWarehousesWarehousesResponses];
+
+export type ApiV1InventoryWarehousesCreateWarehouseData = {
+    body: WarehouseCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inventory/warehouses';
+};
+
+export type ApiV1InventoryWarehousesCreateWarehouseErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1InventoryWarehousesCreateWarehouseError = ApiV1InventoryWarehousesCreateWarehouseErrors[keyof ApiV1InventoryWarehousesCreateWarehouseErrors];
+
+export type ApiV1InventoryWarehousesCreateWarehouseResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: WarehouseRead;
+};
+
+export type ApiV1InventoryWarehousesCreateWarehouseResponse = ApiV1InventoryWarehousesCreateWarehouseResponses[keyof ApiV1InventoryWarehousesCreateWarehouseResponses];
 
 export type ApiV1ProjectsListProjectsData = {
     body?: never;
