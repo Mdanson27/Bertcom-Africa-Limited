@@ -89,6 +89,8 @@ class TestMigrationCycle:
             conn.execute(sa.text("DROP TABLE IF EXISTS accounts CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS business_number_counters CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS business_document_events CASCADE;"))
+            conn.execute(sa.text("DROP TABLE IF EXISTS bid_requirements CASCADE;"))
+            conn.execute(sa.text("DROP TABLE IF EXISTS bids CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS purchase_order_line_items CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS invoice_line_items CASCADE;"))
             conn.execute(sa.text("DROP TABLE IF EXISTS quotation_line_items CASCADE;"))
