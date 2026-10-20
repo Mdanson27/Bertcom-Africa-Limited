@@ -52,6 +52,219 @@ export type BalanceSheetReport = {
 };
 
 /**
+ * BidActivityRead
+ */
+export type BidActivityRead = {
+    changed_by: string | null;
+    created_at: string;
+    id: string;
+    operation: string;
+    summary: string;
+    title: string;
+};
+
+/**
+ * BidConvertRequest
+ */
+export type BidConvertRequest = {
+    due_date?: string | null;
+    project_name?: string | null;
+    start_date?: string | null;
+};
+
+/**
+ * BidCreate
+ */
+export type BidCreate = {
+    bid_fee_ugx?: number;
+    bid_manager_email?: string | null;
+    bid_security_ugx?: number;
+    category?: string | null;
+    client_id?: string | null;
+    closing_date?: string | null;
+    contact_email?: string | null;
+    contact_person?: string | null;
+    contact_phone?: string | null;
+    currency?: string;
+    description?: string | null;
+    eligibility_notes?: string | null;
+    estimated_value_ugx?: number;
+    expected_profit_ugx?: number;
+    internal_estimated_cost_ugx?: number;
+    procuring_entity: string;
+    proposed_bid_price_ugx?: number;
+    publication_date?: string | null;
+    source?: string | null;
+    status?: string;
+    submission_location?: string | null;
+    submission_method?: string | null;
+    team_emails?: Array<string>;
+    tender_number: string;
+    title: string;
+};
+
+/**
+ * BidDashboardSummary
+ */
+export type BidDashboardSummary = {
+    awarded: number;
+    awarded_value_ugx: number;
+    due_within_7_days: number;
+    evaluation: number;
+    lost: number;
+    open_opportunities: number;
+    overdue_open: number;
+    pipeline_value_ugx: number;
+    preparing: number;
+    submitted: number;
+    total_bids: number;
+    win_rate_percent: number;
+};
+
+/**
+ * BidDocumentRead
+ */
+export type BidDocumentRead = {
+    category: string;
+    content_type: string;
+    created_at: string;
+    id: string;
+    original_filename: string;
+    size_bytes: number;
+    title: string;
+    uploaded_by_email: string;
+};
+
+/**
+ * BidRead
+ */
+export type BidRead = {
+    award_date: string | null;
+    award_value_ugx: number;
+    bid_fee_ugx: number;
+    bid_manager_email: string | null;
+    bid_security_ugx: number;
+    category: string | null;
+    client_id: string | null;
+    closing_date: string | null;
+    contact_email: string | null;
+    contact_person: string | null;
+    contact_phone: string | null;
+    converted_at: string | null;
+    created_at: string;
+    created_by_email: string;
+    currency: string;
+    description: string | null;
+    eligibility_notes: string | null;
+    estimated_value_ugx: number;
+    expected_profit_ugx: number;
+    id: string;
+    internal_estimated_cost_ugx: number;
+    is_archived: boolean;
+    procuring_entity: string;
+    project_id: string | null;
+    proposed_bid_price_ugx: number;
+    publication_date: string | null;
+    result_notes: string | null;
+    source: string | null;
+    status: string;
+    submission_location: string | null;
+    submission_method: string | null;
+    team_emails: Array<string>;
+    tender_number: string;
+    title: string;
+    updated_at: string;
+};
+
+/**
+ * BidRequirementCreate
+ */
+export type BidRequirementCreate = {
+    description?: string | null;
+    due_date?: string | null;
+    is_mandatory?: boolean;
+    notes?: string | null;
+    responsible_email?: string | null;
+    status?: string;
+    title: string;
+};
+
+/**
+ * BidRequirementRead
+ */
+export type BidRequirementRead = {
+    bid_id: string;
+    created_at: string;
+    description: string | null;
+    due_date: string | null;
+    id: string;
+    is_mandatory: boolean;
+    notes: string | null;
+    responsible_email: string | null;
+    status: string;
+    title: string;
+    updated_at: string;
+};
+
+/**
+ * BidRequirementUpdate
+ */
+export type BidRequirementUpdate = {
+    description?: string | null;
+    due_date?: string | null;
+    is_mandatory?: boolean | null;
+    notes?: string | null;
+    responsible_email?: string | null;
+    status?: string | null;
+    title?: string | null;
+};
+
+/**
+ * BidUpdate
+ */
+export type BidUpdate = {
+    award_date?: string | null;
+    award_value_ugx?: number | null;
+    bid_fee_ugx?: number | null;
+    bid_manager_email?: string | null;
+    bid_security_ugx?: number | null;
+    category?: string | null;
+    client_id?: string | null;
+    closing_date?: string | null;
+    contact_email?: string | null;
+    contact_person?: string | null;
+    contact_phone?: string | null;
+    currency?: string | null;
+    description?: string | null;
+    eligibility_notes?: string | null;
+    estimated_value_ugx?: number | null;
+    expected_profit_ugx?: number | null;
+    internal_estimated_cost_ugx?: number | null;
+    is_archived?: boolean | null;
+    procuring_entity?: string | null;
+    proposed_bid_price_ugx?: number | null;
+    publication_date?: string | null;
+    result_notes?: string | null;
+    source?: string | null;
+    status?: string | null;
+    submission_location?: string | null;
+    submission_method?: string | null;
+    team_emails?: Array<string> | null;
+    tender_number?: string | null;
+    title?: string | null;
+};
+
+/**
+ * BidWorkspaceRead
+ */
+export type BidWorkspaceRead = {
+    activity: Array<BidActivityRead>;
+    bid: BidRead;
+    documents: Array<BidDocumentRead>;
+    requirements: Array<BidRequirementRead>;
+};
+
+/**
  * BusinessDocumentActionResponse
  */
 export type BusinessDocumentActionResponse = {
@@ -1291,6 +1504,323 @@ export type ApiV1AuthTokenTokenResponses = {
 };
 
 export type ApiV1AuthTokenTokenResponse = ApiV1AuthTokenTokenResponses[keyof ApiV1AuthTokenTokenResponses];
+
+export type ApiV1BidsListBidsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        q?: string | null;
+        status?: string | null;
+        include_archived?: boolean;
+    };
+    url: '/api/v1/bids';
+};
+
+export type ApiV1BidsListBidsErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsListBidsError = ApiV1BidsListBidsErrors[keyof ApiV1BidsListBidsErrors];
+
+export type ApiV1BidsListBidsResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: Array<BidRead>;
+};
+
+export type ApiV1BidsListBidsResponse = ApiV1BidsListBidsResponses[keyof ApiV1BidsListBidsResponses];
+
+export type ApiV1BidsCreateBidData = {
+    body: BidCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/bids';
+};
+
+export type ApiV1BidsCreateBidErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsCreateBidError = ApiV1BidsCreateBidErrors[keyof ApiV1BidsCreateBidErrors];
+
+export type ApiV1BidsCreateBidResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: BidRead;
+};
+
+export type ApiV1BidsCreateBidResponse = ApiV1BidsCreateBidResponses[keyof ApiV1BidsCreateBidResponses];
+
+export type ApiV1BidsDashboardDashboardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/bids/dashboard';
+};
+
+export type ApiV1BidsDashboardDashboardResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BidDashboardSummary;
+};
+
+export type ApiV1BidsDashboardDashboardResponse = ApiV1BidsDashboardDashboardResponses[keyof ApiV1BidsDashboardDashboardResponses];
+
+export type ApiV1BidsBidIdGetBidData = {
+    body?: never;
+    path: {
+        bid_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}';
+};
+
+export type ApiV1BidsBidIdGetBidErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdGetBidError = ApiV1BidsBidIdGetBidErrors[keyof ApiV1BidsBidIdGetBidErrors];
+
+export type ApiV1BidsBidIdGetBidResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BidRead;
+};
+
+export type ApiV1BidsBidIdGetBidResponse = ApiV1BidsBidIdGetBidResponses[keyof ApiV1BidsBidIdGetBidResponses];
+
+export type ApiV1BidsBidIdUpdateBidData = {
+    body: BidUpdate;
+    path: {
+        bid_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}';
+};
+
+export type ApiV1BidsBidIdUpdateBidErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdUpdateBidError = ApiV1BidsBidIdUpdateBidErrors[keyof ApiV1BidsBidIdUpdateBidErrors];
+
+export type ApiV1BidsBidIdUpdateBidResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BidRead;
+};
+
+export type ApiV1BidsBidIdUpdateBidResponse = ApiV1BidsBidIdUpdateBidResponses[keyof ApiV1BidsBidIdUpdateBidResponses];
+
+export type ApiV1BidsBidIdConvertToProjectConvertToProjectData = {
+    body: BidConvertRequest;
+    path: {
+        bid_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}/convert-to-project';
+};
+
+export type ApiV1BidsBidIdConvertToProjectConvertToProjectErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdConvertToProjectConvertToProjectError = ApiV1BidsBidIdConvertToProjectConvertToProjectErrors[keyof ApiV1BidsBidIdConvertToProjectConvertToProjectErrors];
+
+export type ApiV1BidsBidIdConvertToProjectConvertToProjectResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: ProjectRead;
+};
+
+export type ApiV1BidsBidIdConvertToProjectConvertToProjectResponse = ApiV1BidsBidIdConvertToProjectConvertToProjectResponses[keyof ApiV1BidsBidIdConvertToProjectConvertToProjectResponses];
+
+export type ApiV1BidsBidIdRequirementsAddRequirementData = {
+    body: BidRequirementCreate;
+    path: {
+        bid_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}/requirements';
+};
+
+export type ApiV1BidsBidIdRequirementsAddRequirementErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdRequirementsAddRequirementError = ApiV1BidsBidIdRequirementsAddRequirementErrors[keyof ApiV1BidsBidIdRequirementsAddRequirementErrors];
+
+export type ApiV1BidsBidIdRequirementsAddRequirementResponses = {
+    /**
+     * Document created, URL follows
+     */
+    201: BidRequirementRead;
+};
+
+export type ApiV1BidsBidIdRequirementsAddRequirementResponse = ApiV1BidsBidIdRequirementsAddRequirementResponses[keyof ApiV1BidsBidIdRequirementsAddRequirementResponses];
+
+export type ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementData = {
+    body?: never;
+    path: {
+        bid_id: string;
+        requirement_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}/requirements/{requirement_id}';
+};
+
+export type ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementError = ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementErrors[keyof ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementErrors];
+
+export type ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementResponse = ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementResponses[keyof ApiV1BidsBidIdRequirementsRequirementIdDeleteRequirementResponses];
+
+export type ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementData = {
+    body: BidRequirementUpdate;
+    path: {
+        bid_id: string;
+        requirement_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}/requirements/{requirement_id}';
+};
+
+export type ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementError = ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementErrors[keyof ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementErrors];
+
+export type ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BidRequirementRead;
+};
+
+export type ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementResponse = ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementResponses[keyof ApiV1BidsBidIdRequirementsRequirementIdUpdateRequirementResponses];
+
+export type ApiV1BidsBidIdWorkspaceWorkspaceData = {
+    body?: never;
+    path: {
+        bid_id: string;
+    };
+    query?: never;
+    url: '/api/v1/bids/{bid_id}/workspace';
+};
+
+export type ApiV1BidsBidIdWorkspaceWorkspaceErrors = {
+    /**
+     * Validation Exception
+     */
+    400: {
+        detail: string;
+        extra?: null | {
+            [key: string]: unknown;
+        } | Array<unknown>;
+        status_code: number;
+    };
+};
+
+export type ApiV1BidsBidIdWorkspaceWorkspaceError = ApiV1BidsBidIdWorkspaceWorkspaceErrors[keyof ApiV1BidsBidIdWorkspaceWorkspaceErrors];
+
+export type ApiV1BidsBidIdWorkspaceWorkspaceResponses = {
+    /**
+     * Request fulfilled, document follows
+     */
+    200: BidWorkspaceRead;
+};
+
+export type ApiV1BidsBidIdWorkspaceWorkspaceResponse = ApiV1BidsBidIdWorkspaceWorkspaceResponses[keyof ApiV1BidsBidIdWorkspaceWorkspaceResponses];
 
 export type ApiV1BusinessClientsClientsData = {
     body?: never;

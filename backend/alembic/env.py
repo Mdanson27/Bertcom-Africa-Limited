@@ -26,12 +26,13 @@ if SRC not in sys.path:
 # Import every model module so SQLAlchemy's metadata knows about them.
 # Add new model imports here as the project grows.
 # ---------------------------------------------------------------------------
-from app.domain.base import Base  # noqa: E402
-import app.domain.users.models  # noqa: E402, F401  – registers User on Base.metadata
-import app.domain.telemetry.models  # noqa: E402, F401  – registers TelemetryReading
-import app.domain.workspace.models  # noqa: E402, F401  – registers OS workspace tables
-import app.domain.business.models  # noqa: E402, F401  – registers commercial tables
-import app.domain.reporting.models  # noqa: E402, F401  – registers accounting/reporting tables
+import app.domain.bids.models
+import app.domain.business.models
+import app.domain.reporting.models
+import app.domain.telemetry.models
+import app.domain.users.models
+import app.domain.workspace.models  # noqa: F401  – registers OS workspace tables
+from app.domain.base import Base
 
 # ---------------------------------------------------------------------------
 # Standard Alembic boilerplate
