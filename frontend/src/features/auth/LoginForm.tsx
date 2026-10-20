@@ -270,7 +270,7 @@ export const LoginForm: React.FC = () => {
       </Button>
       <div className="mt-2 flex justify-center">
         <a
-          href="tel:+256731981424"
+          href="tel:+256787132332"
           className="inline-flex h-8 items-center gap-2 rounded-lg border border-[#d8e0ea] px-3 text-[11px] font-semibold text-[#022E55] transition hover:border-[#b8c7d6] hover:bg-[#f8fafc] hover:text-[#DC1D2D] dark:border-white/10 dark:text-white dark:hover:bg-white/[0.06]"
         >
           <PhoneCall className="h-3.5 w-3.5" />
