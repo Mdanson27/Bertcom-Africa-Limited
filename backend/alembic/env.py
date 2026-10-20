@@ -5,6 +5,7 @@ works in every context (local venv, container, CI).
 
 Domain models are imported here so autogenerate can detect new tables.
 """
+
 import os
 import sys
 from logging.config import fileConfig
@@ -28,6 +29,7 @@ if SRC not in sys.path:
 # ---------------------------------------------------------------------------
 import app.domain.bids.models
 import app.domain.business.models
+import app.domain.inventory.models
 import app.domain.reporting.models
 import app.domain.telemetry.models
 import app.domain.users.models

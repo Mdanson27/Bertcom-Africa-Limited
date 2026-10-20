@@ -5,6 +5,7 @@ import {
   Archive,
   ArrowLeft,
   Banknote,
+  Boxes,
   CalendarDays,
   CheckCircle2,
   Circle,
@@ -42,6 +43,7 @@ import { readSectionCache, writeSectionCache } from "@/lib/sectionCache";
 import { confirmDiscardChanges, useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { getErrorMessage } from "@/lib/api";
 import { businessApi, type ClientRecord } from "@/lib/businessApi";
+import { inventoryApi, type StockBalance } from "@/lib/inventoryApi";
 import {
   uploadToPresignedUrl,
   workspaceApi,
@@ -63,7 +65,7 @@ type ProjectsSection =
   | "archived";
 
 type PortfolioView = "table" | "cards" | "timeline" | "calendar";
-type WorkspaceTab = "overview" | "tasks" | "documents" | "finance" | "activity";
+type WorkspaceTab = "overview" | "tasks" | "documents" | "finance" | "inventory" | "activity";
 type FinanceKind = "quotation" | "invoice" | "payment" | "purchase" | "expense";
 type FinanceView = "quotations" | "invoices" | "payments" | "purchase_orders" | "expenses";
 
@@ -273,6 +275,8 @@ export const ProjectsPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState("");
   const [workspace, setWorkspace] = useState<ProjectWorkspace | null>(null);
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>("overview");
+  const [projectStock, setProjectStock] = useState<StockBalance[]>([]);
+  const [projectStockLoading, setProjectStockLoading] = useState(false);
   const [financeView, setFinanceView] = useState<FinanceView>("invoices");
 
   const [query, setQuery] = useState("");
@@ -437,6 +441,15 @@ export const ProjectsPage: React.FC = () => {
     if (selectedId) void loadWorkspace(selectedId);
     else setWorkspace(null);
   }, [loadWorkspace, selectedId]);
+
+  useEffect(() => {
+    if (!selectedId || workspaceTab !== "inventory") return;
+    setProjectStockLoading(true);
+    void inventoryApi.projectStock(selectedId)
+      .then(setProjectStock)
+      .catch((error) => showErrorToast(getErrorMessage(error, "Project inventory could not be loaded."), "Inventory unavailable"))
+      .finally(() => setProjectStockLoading(false));
+  }, [selectedId, workspaceTab, showErrorToast]);
 
   useEffect(() => {
     if (!projects.length || selectedId) return;
@@ -1308,6 +1321,7 @@ export const ProjectsPage: React.FC = () => {
     { id: "tasks" as const, label: "Tasks", icon: CheckCircle2 },
     { id: "documents" as const, label: "Documents", icon: FileText },
     { id: "finance" as const, label: "Finance", icon: WalletCards },
+    { id: "inventory" as const, label: "Inventory", icon: Boxes },
     { id: "activity" as const, label: "Activity", icon: Activity },
   ];
 
@@ -2285,6 +2299,37 @@ export const ProjectsPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </Card>
+            </div>
+          )}
+
+          {workspaceTab === "inventory" && (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                {metricCard("Items Assigned", new Set(projectStock.map((row) => row.item_id)).size)}
+                {metricCard("Quantity Assigned", projectStock.reduce((sum, row) => sum + row.quantity, 0).toLocaleString())}
+                {metricCard("Stock Value", money(projectStock.reduce((sum, row) => sum + row.value_ugx, 0)))}
+              </div>
+              <Card className="overflow-x-auto">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold">Project inventory</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">Stock allocated to this project, including its current warehouse and storage location.</p>
+                  </div>
+                  {projectStockLoading && <span className="text-xs text-muted-foreground">Updating…</span>}
+                </div>
+                {projectStock.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Boxes className="mx-auto h-9 w-9 text-muted-foreground" />
+                    <p className="mt-3 font-medium">No stock allocated to this project</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Use Inventory → Stock Movement → Project Allocation to assign items.</p>
+                  </div>
+                ) : (
+                  <table className="w-full min-w-[760px] text-left text-sm">
+                    <thead className="text-xs text-muted-foreground"><tr><th className="pb-3">SKU</th><th className="pb-3">Item</th><th className="pb-3">Warehouse</th><th className="pb-3">Location</th><th className="pb-3 text-right">Quantity</th><th className="pb-3 text-right">Unit Cost</th><th className="pb-3 text-right">Value</th></tr></thead>
+                    <tbody>{projectStock.map((row) => <tr key={row.id} className="border-t border-border"><td className="py-3 font-mono text-xs">{row.item_sku}</td><td className="py-3 font-medium">{row.item_name}</td><td className="py-3">{row.warehouse_name}</td><td className="py-3">{row.location_name || "Warehouse root"}</td><td className="py-3 text-right">{row.quantity.toLocaleString()}</td><td className="py-3 text-right">{money(row.unit_cost_ugx)}</td><td className="py-3 text-right font-semibold">{money(row.value_ugx)}</td></tr>)}</tbody>
+                  </table>
+                )}
               </Card>
             </div>
           )}

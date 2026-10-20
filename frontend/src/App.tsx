@@ -9,6 +9,7 @@ import { UsersPage } from "@/pages/UsersPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { HomePage } from "@/pages/HomePage";
 import { ProjectsPage } from "@/pages/ProjectsPage";
+import { InventoryPage } from "@/pages/InventoryPage";
 import { BidsPage } from "@/pages/BidsPage";
 import { DocumentsPage } from "@/pages/DocumentsPage";
 import { BusinessPage } from "@/pages/BusinessPage";
@@ -27,6 +28,7 @@ const ALL_TABS: NavItem[] = [
   "telemetry",
   "home",
   "projects",
+  "inventory",
   "bids",
   "documents",
   "business",
@@ -79,6 +81,7 @@ const AuthenticatedApp: React.FC = () => {
       {currentTab === "telemetry" && isPlatformAdmin && <div className="max-w-4xl"><TelemetryStream /></div>}
       {currentTab === "home" && <HomePage onNavigate={selectTab} />}
       {currentTab === "projects" && <ProjectsPage />}
+      {currentTab === "inventory" && <InventoryPage />}
       {currentTab === "bids" && <BidsPage onNavigate={selectTab} />}
       {currentTab === "documents" && <DocumentsPage />}
       {currentTab === "business" && <BusinessPage />}
