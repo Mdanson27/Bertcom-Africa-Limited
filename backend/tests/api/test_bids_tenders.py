@@ -8,7 +8,9 @@ from httpx import AsyncClient
 pytestmark = pytest.mark.asyncio
 
 
-async def test_bid_lifecycle_and_project_conversion(async_client: AsyncClient, registered_user: dict):
+async def test_bid_lifecycle_and_project_conversion(
+    async_client: AsyncClient, registered_user: dict
+):
     headers = {"Authorization": f"Bearer {registered_user['token']}"}
     tender_no = f"TND-{uuid.uuid4().hex[:8].upper()}"
 
