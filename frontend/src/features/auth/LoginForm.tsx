@@ -32,6 +32,7 @@ export const LoginForm: React.FC = () => {
   const { showErrorToast, showSuccessToast, showWarningToast } = useCustomToast();
 
   const [email, setEmail] = useState<string>("");
+  const adminGoogleEmail = "automindsafrica@gmail.com";
   const [password, setPassword] = useState<string>("");
   const [activeField, setActiveField] = useState<MascotMode>("idle");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -138,7 +139,7 @@ export const LoginForm: React.FC = () => {
   };
 
   const openPasswordReset = () => {
-    setResetEmail(email.trim());
+    setResetEmail(email.trim() || adminGoogleEmail);
     setResetCode("");
     setNewPassword("");
     setConfirmNewPassword("");
@@ -234,18 +235,18 @@ export const LoginForm: React.FC = () => {
 
   return (
     <div className="w-full">
-      <div className="mb-6 lg:hidden">
+      <div className="mb-3 lg:hidden">
         <Logo variant="full" className="h-14 w-48" />
       </div>
 
-      <div className="mb-6">
+      <div className="mb-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#DC1D2D]">
           Bertcom Africa
         </p>
-        <h2 className="mt-2 text-[38px] font-semibold tracking-[-0.045em] text-[#07233c] dark:text-white">
+        <h2 className="mt-1 text-[32px] font-semibold tracking-[-0.045em] text-[#07233c] dark:text-white">
           Welcome back.
         </h2>
-        <p className="mt-2 text-[15px] text-muted-foreground">
+        <p className="mt-1 text-[13px] text-muted-foreground">
           Sign in to your workspace.
         </p>
       </div>
@@ -263,13 +264,16 @@ export const LoginForm: React.FC = () => {
         variant="outline"
         onClick={handleGoogleSignIn}
         disabled={!authConfigured}
-        className="h-12 w-full gap-3 rounded-xl border-[#d8e0ea] bg-white text-[#17324a] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f8fafc] hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
+        className="h-11 w-full gap-3 rounded-xl border-[#d8e0ea] bg-white text-[#17324a] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f8fafc] hover:shadow-md dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:bg-white/[0.08]"
       >
         <GoogleMark />
         Continue with Google
       </Button>
+      <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
+        Admin Google account: <span className="font-semibold text-[#17324a] dark:text-white">{adminGoogleEmail}</span>
+      </p>
 
-      <div className="my-6 flex items-center gap-3">
+      <div className="my-3 flex items-center gap-3">
         <div className="h-px flex-1 bg-border" />
         <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
           or
@@ -277,7 +281,7 @@ export const LoginForm: React.FC = () => {
         <div className="h-px flex-1 bg-border" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <form onSubmit={handleSubmit} className="space-y-3" noValidate>
         <Input
           id="email"
           name="email"
@@ -299,7 +303,7 @@ export const LoginForm: React.FC = () => {
           helperText={emailError ? undefined : emailHelper}
           icon={<Mail className="h-4 w-4" />}
           autoComplete="username"
-          className="h-11 rounded-xl"
+          className="h-10 rounded-xl"
           required
         />
 
@@ -318,7 +322,7 @@ export const LoginForm: React.FC = () => {
               className="text-xs font-semibold text-[#022E55] transition hover:text-[#DC1D2D] dark:text-white/75 dark:hover:text-white"
               onClick={openPasswordReset}
             >
-              Forgot password?
+              Set / forgot password
             </button>
           </div>
 
@@ -341,7 +345,7 @@ export const LoginForm: React.FC = () => {
             helperText={passwordError ? undefined : passwordHelper}
             showLeftLock={true}
             autoComplete="current-password"
-            className="h-11 rounded-xl"
+            className="h-10 rounded-xl"
             required
           />
         </div>
@@ -349,7 +353,7 @@ export const LoginForm: React.FC = () => {
         <Button
           type="submit"
           variant="primary"
-          className="mt-2 h-12 w-full rounded-xl bg-[#022E55] font-semibold shadow-[0_12px_30px_rgba(2,46,85,0.16)] transition hover:-translate-y-0.5 hover:bg-[#063d6e] hover:shadow-[0_16px_34px_rgba(2,46,85,0.20)] dark:bg-[#DC1D2D] dark:hover:bg-[#ef3040]"
+          className="mt-1 h-11 w-full rounded-xl bg-[#022E55] font-semibold shadow-[0_12px_30px_rgba(2,46,85,0.16)] transition hover:-translate-y-0.5 hover:bg-[#063d6e] hover:shadow-[0_16px_34px_rgba(2,46,85,0.20)] dark:bg-[#DC1D2D] dark:hover:bg-[#ef3040]"
           loading={isLoading}
         >
           Sign in
@@ -468,7 +472,7 @@ export const LoginForm: React.FC = () => {
         )}
       </Modal>
 
-      <div className="mt-6 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+      <div className="mt-3 flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
         <Lock className="h-3 w-3" />
         Secure Bertcom access
       </div>
